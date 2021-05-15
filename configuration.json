@@ -1,6 +1,10 @@
 {
     "environment":{
-            "modelsrc": "/home/huijiezhang/NerualRenderingProject/code/NeuralFieldFusion/Prepocessing/labelposeModel/",
-            "modelposesrc": "/home/huijiezhang/NerualRenderingProject/data/NeualDataNew/515_stand/objectpose/"
+            "modelsrc": 
+                "/home/huijiezhang/NerualRenderingProject/code/NeuralFieldFusion/Prepocessing/labelposeModel/",
+            "modelposesrc": 
+                "/home/huijiezhang/NerualRenderingProject/data/NeualDataNew/515_stand/objectpose/",
+            "reconstructionsrc":
+                "/home/huijiezhang/Dense_Reconstruction/data/output/"
         }
 }

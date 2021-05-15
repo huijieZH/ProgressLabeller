@@ -11,6 +11,8 @@ class Configuration(bpy.types.PropertyGroup):
                     subtype = "DIR_PATH", default= configuration['environment']['modelsrc'])
         modelposesrc: bpy.props.StringProperty(name = "modelposesrc", 
                     subtype = "DIR_PATH", default= configuration['environment']['modelposesrc'])   
+        reconstructionsrc: bpy.props.StringProperty(name = "modelposesrc", 
+                    subtype = "DIR_PATH", default= configuration['environment']['reconstructionsrc'])           
 
 
 def register():

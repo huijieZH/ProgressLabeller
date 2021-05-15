@@ -1,8 +1,14 @@
 import bpy
-import FileImporter.model_loader 
+from FileImporter import model_loader 
+from Registeration import init_configuration, init_collection
 
 def register():
-    FileImporter.model_loader.register()
+    init_configuration.register()
+    init_collection.register()
+    model_loader.register()
+
 
 def unregister():
-    FileImporter.model_loader.unregister()
+    init_configuration.unregister()
+    init_collection.unregister()
+    model_loader.unregister()

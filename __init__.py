@@ -11,7 +11,7 @@ import bpy
 import sys
 sys.path.append("./")
 
-from Registeration.register import register, unregister
+from registeration.register import register, unregister
 
 if __name__ == "__main__":
     register()

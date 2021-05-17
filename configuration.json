@@ -1,12 +1,19 @@
 {
     "environment":{
-            "modelsrc": 
-                "/home/huijiezhang/NerualRenderingProject/code/NeuralFieldFusion/Prepocessing/labelposeModel/",
-            "modelposesrc": 
-                "/home/huijiezhang/NerualRenderingProject/data/NeualDataNew/515_stand/objectpose/",
-            "reconstructionsrc":
-                "/home/huijiezhang/Dense_Reconstruction/data/output/",
-            "imagesrc":
-                "/home/huijiezhang/NerualRenderingProject/data/NeualDataNew/515_stand/rgb"
-        }
+        "modelsrc": 
+            "/home/huijiezhang/NerualRenderingProject/code/NeuralFieldFusion/Prepocessing/labelposeModel/",
+        "modelposesrc": 
+            "/home/huijiezhang/Dense_Reconstruction/data/output/515_stand_COLMAP_fullloop/reconstruction_result/",
+        "reconstructionsrc":
+            "/home/huijiezhang/Dense_Reconstruction/data/output/",
+        "imagesrc":
+            "/home/huijiezhang/NerualRenderingProject/data/NeualDataNew/515_stand/rgb/"
+        },
+    "camera":{
+        "resolution": [1280, 720],
+        "intrinsic": [[904.572, 0, 635.981],
+                      [0, 905.295, 353.060],
+                      [0, 0, 1]],
+        "lens": 25
+    }
 }

@@ -85,8 +85,14 @@ def load_reconstruction_result(filepath,
                 framename = data[-1]
                 framepath = os.path.join(imagesrc, framename)
 
-                ## create a new camera
+                ## create a new camera, specify its parameters
+                ## the lens could be define by yourself, and the sensor size could be calculate from intrinsic
                 camera_data = bpy.data.cameras.new(name="view" + perfix)
+                camera_data.lens = bpy.context.scene.configuration.lens  # realsense L515
+                f = (bpy.context.scene.configuration.fx + bpy.context.scene.configuration.fy)/2
+                camera_data.sensor_width = camera_data.lens * bpy.context.scene.configuration.resX/f
+                # camera_data.shift_x = (bpy.context.scene.configuration.px - bpy.context.scene.configuration.resX/2) * camera_data.sensor_width / bpy.context.scene.configuration.resX
+                # camera_data.shift_y = (bpy.context.scene.configuration.py - bpy.context.scene.configuration.resY/2) * camera_data.sensor_width / bpy.context.scene.configuration.resX
                 camera_data.display_size = camera_display_scale
                 camera_object = bpy.data.objects.new("view" + perfix, camera_data)
                 bpy.data.collections["Camera"].objects.link(camera_object)

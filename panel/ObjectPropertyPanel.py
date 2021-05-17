@@ -11,6 +11,7 @@ class ObjectPropertyPanel(bpy.types.Panel):
 
     def draw(self, context):
         current_object = bpy.context.object.name
+        scene = context.scene
         if "type" in bpy.data.objects[current_object]:
             object_type = bpy.data.objects[current_object]["type"]
             if object_type == "model":
@@ -23,8 +24,10 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 box = layout.box() 
                 row = box.row(align=True)
                 row.prop(scene.objectproperty, "viewimage_mode")
+                row = box.row(align=True)
                 row.operator("object_property.viewimage")
-
+                row.prop(scene.objectproperty, "empty_alpha")
+                row.prop(scene.objectproperty, "segment_alpha")
 def register():
     bpy.utils.register_class(ObjectPropertyPanel)
 

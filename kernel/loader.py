@@ -5,6 +5,10 @@ import numpy as np
 from mathutils import Vector
 
 from kernel.geometry import _pose2Rotation, _rotation2Pose
+from kernel.ply_importer.point_data_file_handler import(
+    PointDataFileHandler
+)
+
 
 def load_model(filepath):
     objFilename = filepath.split("/")[-1]
@@ -51,9 +55,9 @@ def load_reconstruction_result(filepath,
         ## load reconstruction result
         camera_rgb_file = os.path.join(filepath, "extracted_campose.txt")
         reconstruction_path = os.path.join(filepath, "fused.ply")
-        bpy.ops.import_mesh.ply(filepath=reconstruction_path)
-
-        bpy.data.objects['fused'].name = 'reconstruction'
+        # bpy.ops.import_mesh.ply(filepath=reconstruction_path)
+        points = PointDataFileHandler.parse_point_data_file(reconstruction_path)
+        # bpy.data.objects['fused'].name = 'reconstruction'
         bpy.ops.object.select_all(action='DESELECT')
 
         bpy.data.collections["Model"].objects.link(bpy.data.objects['reconstruction'])

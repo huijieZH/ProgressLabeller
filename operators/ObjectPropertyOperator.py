@@ -5,6 +5,8 @@ import numpy as np
 from PIL import Image
 import os
 
+from kernel.render import save_img
+
 
 class ViewImage(Operator):
     """This appears in the tooltip of the operator and in the generated docs"""
@@ -58,6 +60,15 @@ class ViewImage(Operator):
             os.system('rm ' + tmpimgname_render)
             # img_rgb = img_rgb[::-1, :]
             bpy.data.images[pair_image_name].pixels = img_rgb.ravel()
+
+            #### save current image
+            foreground_mask = img_render[:, :, 3] == 0
+            img_origin = (img_rgb[::-1, :, :3]*255).astype(np.uint8)
+            img_segment = img_origin.copy()
+            img_segment[foreground_mask, :3] = 0
+            save_img(img_render[:, :, :3], img_origin, img_segment, pair_image_name)
+
+
         elif bpy.context.scene.objectproperty.viewimage_mode == 'Segment(Inverse)':
             current_object = bpy.context.object.name
             assert "type" in bpy.data.objects[current_object] and\

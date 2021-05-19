@@ -8,7 +8,9 @@ from kernel.geometry import _pose2Rotation, _rotation2Pose
 from kernel.ply_importer.point_data_file_handler import(
     PointDataFileHandler
 )
-
+from kernel.ply_importer.utility import(
+    draw_points
+)
 
 def load_model(filepath):
     objFilename = filepath.split("/")[-1]
@@ -51,20 +53,24 @@ def load_reconstruction_result(filepath,
                                imagesrc,
                                camera_display_scale):
     if reconstruction_method == 'COLMAP':
-
         ## load reconstruction result
         camera_rgb_file = os.path.join(filepath, "extracted_campose.txt")
         reconstruction_path = os.path.join(filepath, "fused.ply")
         # bpy.ops.import_mesh.ply(filepath=reconstruction_path)
         points = PointDataFileHandler.parse_point_data_file(reconstruction_path)
+        draw_points(points = points, 
+                    point_size = 5, 
+                    add_points_to_point_cloud_handle = True, 
+                    reconstruction_collection = bpy.data.collections["PointCloud"], 
+                    object_anchor_handle_name="reconstruction", op=None)
         # bpy.data.objects['fused'].name = 'reconstruction'
         bpy.ops.object.select_all(action='DESELECT')
 
-        bpy.data.collections["Model"].objects.link(bpy.data.objects['reconstruction'])
+        # bpy.data.collections["Model"].objects.link(bpy.data.objects['reconstruction'])
         ## first unlink all collection, then link to Model collection
-        for collection in bpy.data.objects['reconstruction'].users_collection:
-            collection.objects.unlink(bpy.data.objects['reconstruction'])
-        bpy.data.collections['PointCloud'].objects.link(bpy.data.objects['reconstruction'])
+        # for collection in bpy.data.objects['reconstruction'].users_collection:
+        #     collection.objects.unlink(bpy.data.objects['reconstruction'])
+        # bpy.data.collections['PointCloud'].objects.link(bpy.data.objects['reconstruction'])
         bpy.data.objects['reconstruction'].scale = Vector((pointcloudscale, 
                                                            pointcloudscale, 
                                                            pointcloudscale))

@@ -4,7 +4,7 @@ import bpy
 import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
-from kernel.ply_importer.logging_utility import log_report
+from kernel.logging_utility import log_report
 
 
 def _compute_transformed_coords(object_anchor_matrix_world, positions):

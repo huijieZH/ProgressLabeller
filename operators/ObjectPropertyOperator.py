@@ -5,8 +5,10 @@ import numpy as np
 from PIL import Image
 import os
 
-from kernel.render import save_img
 
+from kernel.render import save_img
+from kernel.geometry import plane_alignment, transform_from_plane, _pose2Rotation, _rotation2Pose
+from kernel.logging_utility import log_report
 
 class ViewImage(Operator):
     """This appears in the tooltip of the operator and in the generated docs"""
@@ -105,30 +107,6 @@ class ViewImage(Operator):
 
         return {'FINISHED'}
 
-# def updataEmptyAlpha(self,context):
-#     current_object = bpy.context.object.name
-#     assert "type" in bpy.data.objects[current_object] and\
-#             bpy.data.objects[current_object]["type"] == "camera"
-#     pair_image_name = bpy.data.objects[current_object]["image"].name
-#     img_rgb = np.array(bpy.data.images[pair_image_name].pixels).reshape(bpy.context.scene.configuration.resY, bpy.context.scene.configuration.resX, 4)
-    
-#     foreground_mask = img_rgb[:, :, 3] != bpy.context.scene.objectproperty.segment_alpha
-#     img_rgb[foreground_mask, 3] = bpy.context.scene.objectproperty.empty_alpha
-
-#     bpy.data.images[pair_image_name].pixels = img_rgb.ravel()
-
-# def updataSegmentAlpha(self,context):
-#     current_object = bpy.context.object.name
-#     assert "type" in bpy.data.objects[current_object] and\
-#             bpy.data.objects[current_object]["type"] == "camera"
-#     pair_image_name = bpy.data.objects[current_object]["image"].name
-#     img_rgb = np.array(bpy.data.images[pair_image_name].pixels).reshape(bpy.context.scene.configuration.resY, bpy.context.scene.configuration.resX, 4)
-    
-#     foreground_mask = img_rgb[:, :, 3] != bpy.context.scene.objectproperty.empty_alpha
-#     img_rgb[foreground_mask, 3] = bpy.context.scene.objectproperty.segment_alpha
-    
-#     bpy.data.images[pair_image_name].pixels = img_rgb.ravel()
-
 class ObjectProperty(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.
     viewimage_mode: EnumProperty(
@@ -141,7 +119,7 @@ class ObjectProperty(bpy.types.PropertyGroup):
         ),
         default='Origin',
     )
-    empty_alpha = bpy.props.FloatProperty(name="EmptyAlpha", 
+    empty_alpha: bpy.props.FloatProperty(name="EmptyAlpha", 
                                         description="Alhpa value for empty regin", 
                                         default=0.2, 
                                         min=0.00, 
@@ -149,7 +127,7 @@ class ObjectProperty(bpy.types.PropertyGroup):
                                         step=3, 
                                         precision=2)
 
-    segment_alpha = bpy.props.FloatProperty(name="SegmentAlpha", 
+    segment_alpha: bpy.props.FloatProperty(name="SegmentAlpha", 
                                             description="Alhpa value for segmented regin", 
                                             default=1.00, 
                                             min=0.00, 
@@ -157,31 +135,46 @@ class ObjectProperty(bpy.types.PropertyGroup):
                                             step=3, 
                                             precision=2)
 
-    # empty_alpha = bpy.props.FloatProperty(name="EmptyAlpha", 
-    #                                     description="Alhpa value for empty regin", 
-    #                                     default=0.0, 
-    #                                     min=0.00, 
-    #                                     max=1.00, 
-    #                                     step=3, 
-    #                                     precision=2, 
-    #                                     update=updataEmptyAlpha)
 
-    # segment_alpha = bpy.props.FloatProperty(name="SegmentAlpha", 
-    #                                         description="Alhpa value for segmented regin", 
-    #                                         default=1.00, 
-    #                                         min=0.00, 
-    #                                         max=1.00, 
-    #                                         step=3, 
-    #                                         precision=2, 
-    #                                         update=updataSegmentAlpha)
+class PlaneAlignment(Operator):
+    """This appears in the tooltip of the operator and in the generated docs"""
+    bl_idname = "object_property.planealignment"  # important since its how bpy.ops.import_test.some_data is constructed
+    bl_label = "Plane Alignment"
 
+    def execute(self, context):
+        log_report(
+            "INFO", "Starting calculate the plane function", None
+        )        
+        [a, b, c, d], plane_center = plane_alignment(bpy.data.objects['reconstruction']["path"], 
+                                         bpy.data.objects['reconstruction']["scale"])
+        log_report(
+            "INFO", f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0", None
+        )        
+
+        trans  = transform_from_plane([a, b, c, d], plane_center)
+
+        log_report(
+            "INFO", "Starting Transform the scene", None
+        )   
+        
+        for obj in bpy.data.objects:
+            if "type" in obj and (obj["type"] == "reconstruction" or obj["type"] == "camera"):
+                origin_pose = [list(obj.location), list(obj.rotation_quaternion)]
+                origin_trans = _pose2Rotation(origin_pose)
+                after_align_trans = trans.dot(origin_trans)
+                after_align_pose = _rotation2Pose(after_align_trans)
+                obj.location = after_align_pose[0]
+                obj.rotation_quaternion = after_align_pose[1]/np.linalg.norm(after_align_pose[1])
+        return {'FINISHED'}
 
 
 def register():
     bpy.utils.register_class(ViewImage)
     bpy.utils.register_class(ObjectProperty)
+    bpy.utils.register_class(PlaneAlignment)
     bpy.types.Scene.objectproperty = bpy.props.PointerProperty(type=ObjectProperty)   
 
 def unregister():
     bpy.utils.unregister_class(ViewImage)
     bpy.utils.unregister_class(ObjectProperty)
+    bpy.utils.unregister_class(PlaneAlignment)

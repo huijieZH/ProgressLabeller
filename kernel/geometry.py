@@ -1,4 +1,5 @@
 import numpy as np
+import open3d as o3d
 
 def _pose2Rotation(pose):
     x, y, z = pose[0]
@@ -56,3 +57,36 @@ def _rotation2Pose(rotation):
         qz = S/4
     location = rotation[:3, 3]
     return [[float(location[0]), float(location[1]), float(location[2])], [float(qw), float(qx), float(qy), float(qz)]]
+
+def plane_alignment(filepath, scale):
+    pcd = o3d.io.read_point_cloud(filepath)
+    scaled_xyz = np.asarray(pcd.points)* scale
+    scaled_pcd = o3d.geometry.PointCloud()
+    scaled_pcd.points = o3d.utility.Vector3dVector(scaled_xyz)
+    plane_model, inliers = scaled_pcd.segment_plane(distance_threshold=0.03,
+                                         ransac_n=3,
+                                         num_iterations=1000)
+    [a, b, c, d] = plane_model
+    plane_cloud = scaled_pcd.select_by_index(inliers)
+    plane_xyz = np.asarray(plane_cloud.points)
+    plane_center = np.mean(plane_xyz, axis = 0)
+    plane_center[2] = -(a * plane_center[0] + b * plane_center[1] + d)/c
+    
+    return [a, b, c, d], list(plane_center)
+
+def transform_from_plane(plane, plane_center):
+    [a, b, c, d] = plane
+    ct = c/np.sqrt(a**2 + b**2 + c**2)
+    st = np.sqrt(a**2 + b**2)/np.sqrt(a**2 + b**2 + c**2)
+    u1 = b/np.sqrt(a**2 + b**2)
+    u2 = -a/np.sqrt(a**2 + b**2)
+    move = np.array([[1, 0, 0, -plane_center[0]],
+                     [0, 1, 0, -plane_center[1]],
+                     [0, 0, 1, -plane_center[2]],
+                     [0, 0, 0, 1]])
+    rotate = np.array([[ct + u1**2 * (1 - ct), u1 * u2*(1 - ct), u2 * st, 0],
+                       [u1 * u2 * (1 - ct), ct + u2**2 * (1 - ct), -u1 * st, 0],
+                       [-u2 *st, u1 *st, ct, 0],
+                       [0, 0, 0, 1]])
+    return rotate.dot(move)
+

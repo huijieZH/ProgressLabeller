@@ -9,7 +9,7 @@ from gpu_extras.batch import batch_for_shader
 from kernel.ply_importer.point import Point
 from kernel.ply_importer.draw_manager import DrawManager
 from kernel.ply_importer.object_utility import add_empty
-from kernel.ply_importer.logging_utility import log_report
+from kernel.logging_utility import log_report
 
 
 def _draw_coords_with_color(

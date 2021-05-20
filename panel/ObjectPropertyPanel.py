@@ -17,7 +17,10 @@ class ObjectPropertyPanel(bpy.types.Panel):
             if object_type == "model":
                 pass
             elif object_type == "reconstruction":
-                pass
+                layout = self.layout
+                scene = context.scene
+                row = layout.row()
+                row.operator("object_property.planealignment")
             elif object_type == "camera":
                 layout = self.layout
                 scene = context.scene

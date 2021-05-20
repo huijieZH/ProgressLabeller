@@ -1,8 +1,9 @@
 import bpy
 import json
 import os
+import numpy as np
 
-class Configuration(bpy.types.PropertyGroup):
+class config(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.
 
     modelsrc: bpy.props.StringProperty(name = "modelsrc", 
@@ -25,12 +26,17 @@ class Configuration(bpy.types.PropertyGroup):
     py: bpy.props.FloatProperty(name="py", description="camera intrinsic py.", 
         min=0.00, max=1000.00, step=3, precision=2)
     lens: bpy.props.FloatProperty(name="lens", description="camera lens length", 
-        min=0.00, max=100.00, step=3, precision=2)        
+        min=0.00, max=100.00, step=3, precision=2)
+
+    # plane_trans: np.array([[1, 0, 0, 0],
+    #                        [0, 1, 0, 0],
+    #                        [0, 0, 1, 0],
+    #                        [0, 0, 0, 1]])        
 
 
 def register():
-    bpy.utils.register_class(Configuration)
-    bpy.types.Scene.configuration = bpy.props.PointerProperty(type=Configuration)  
+    bpy.utils.register_class(config)
+    bpy.types.Scene.configuration = bpy.props.PointerProperty(type=config)  
 
 def unregister():
-    bpy.utils.unregister_class(Configuration)
+    bpy.utils.unregister_class(config)

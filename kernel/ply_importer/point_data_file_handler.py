@@ -3,7 +3,7 @@ import numpy as np
 import importlib
 
 from kernel.ply_importer.point import Point
-from kernel.ply_importer.logging_utility import log_report
+from kernel.logging_utility import log_report
 from kernel.ply_importer.type_utility import is_float, is_int
 
 

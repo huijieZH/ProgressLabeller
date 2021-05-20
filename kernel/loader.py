@@ -30,26 +30,6 @@ def load_configuration(filepath):
         bpy.context.scene.configuration.py = configuration['camera']['intrinsic'][1][2]
         bpy.context.scene.configuration.lens = configuration['camera']['lens']
 
-        # modelposesrc: bpy.props.StringProperty(name = "modelposesrc", 
-        #             subtype = "DIR_PATH", default= configuration['environment']['modelposesrc'])   
-        # reconstructionsrc: bpy.props.StringProperty(name = "modelposesrc", 
-        #             subtype = "DIR_PATH", default= configuration['environment']['reconstructionsrc']) 
-        # imagesrc: bpy.props.StringProperty(name = "imagesrc", 
-        #             subtype = "DIR_PATH", default= configuration['environment']['imagesrc']) 
-
-        # resX: bpy.props.IntProperty(name = "resX",  default= configuration['camera']['resolution'][0])
-        # resY: bpy.props.IntProperty(name = "resX",  default= configuration['camera']['resolution'][1])
-        # fx: bpy.props.FloatProperty(name="fx", description="camera intrinsic fx.", 
-        #     default=configuration['camera']['intrinsic'][0][0], min=0.00, max=1500.00, step=3, precision=2)    
-        # fy: bpy.props.FloatProperty(name="fy", description="camera intrinsic fy.", 
-        #     default=configuration['camera']['intrinsic'][1][1], min=0.00, max=1500.00, step=3, precision=2)   
-        # px: bpy.props.FloatProperty(name="px", description="camera intrinsic px.", 
-        #     default=configuration['camera']['intrinsic'][0][2], min=0.00, max=1000.00, step=3, precision=2)    
-        # py: bpy.props.FloatProperty(name="py", description="camera intrinsic py.", 
-        #     default=configuration['camera']['intrinsic'][1][2], min=0.00, max=1000.00, step=3, precision=2)
-        # lens: bpy.props.FloatProperty(name="lens", description="camera lens length", 
-        #     default=configuration['camera']['lens'], min=0.00, max=100.00, step=3, precision=2)
-
 def load_model(filepath):
     objFilename = filepath.split("/")[-1]
     objName = objFilename.split(".")[0]
@@ -88,6 +68,22 @@ def load_model_from_pose(filepath):
                     bpy.data.objects[objname].location = poses[objname]['pose'][0]
                     bpy.data.objects[objname].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
 
+def load_pc(filepath, pointcloudscale):
+    points = PointDataFileHandler.parse_point_data_file(filepath)
+    draw_points(points = points, 
+                point_size = 5, 
+                add_points_to_point_cloud_handle = True, 
+                reconstruction_collection = bpy.data.collections["PointCloud"], 
+                object_anchor_handle_name="reconstruction", op=None)
+    bpy.data.objects['reconstruction']["type"] = "reconstruction"
+    bpy.data.objects['reconstruction'].scale = Vector((pointcloudscale, 
+                                                        pointcloudscale, 
+                                                        pointcloudscale))
+
+    bpy.data.objects['reconstruction']["path"] = filepath
+    bpy.data.objects['reconstruction']["scale"] = pointcloudscale
+    bpy.data.objects['reconstruction'].rotation_mode = 'QUATERNION'
+
 def load_reconstruction_result(filepath, 
                                reconstruction_method, 
                                pointcloudscale, 
@@ -110,25 +106,8 @@ def load_reconstruction_result(filepath,
         ## load reconstruction result
         camera_rgb_file = os.path.join(filepath, "extracted_campose.txt")
         reconstruction_path = os.path.join(filepath, "fused.ply")
-        # bpy.ops.import_mesh.ply(filepath=reconstruction_path)
-        points = PointDataFileHandler.parse_point_data_file(reconstruction_path)
-        draw_points(points = points, 
-                    point_size = 5, 
-                    add_points_to_point_cloud_handle = True, 
-                    reconstruction_collection = bpy.data.collections["PointCloud"], 
-                    object_anchor_handle_name="reconstruction", op=None)
-        # bpy.data.objects['fused'].name = 'reconstruction'
+        load_pc(reconstruction_path, pointcloudscale)
         bpy.ops.object.select_all(action='DESELECT')
-
-        # bpy.data.collections["Model"].objects.link(bpy.data.objects['reconstruction'])
-        ## first unlink all collection, then link to Model collection
-        # for collection in bpy.data.objects['reconstruction'].users_collection:
-        #     collection.objects.unlink(bpy.data.objects['reconstruction'])
-        # bpy.data.collections['PointCloud'].objects.link(bpy.data.objects['reconstruction'])
-        bpy.data.objects['reconstruction'].scale = Vector((pointcloudscale, 
-                                                           pointcloudscale, 
-                                                           pointcloudscale))
-        bpy.data.objects['reconstruction']["type"] = "reconstruction"
 
         ## load camera and image result
         file = open(camera_rgb_file, "r")

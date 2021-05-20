@@ -3,6 +3,7 @@ import os
 import yaml
 import numpy as np
 from mathutils import Vector
+import json
 
 from kernel.geometry import _pose2Rotation, _rotation2Pose
 from kernel.ply_importer.point_data_file_handler import(
@@ -11,6 +12,43 @@ from kernel.ply_importer.point_data_file_handler import(
 from kernel.ply_importer.utility import(
     draw_points
 )
+
+def load_configuration(filepath):
+    if os.path.exists(filepath):
+        with open(filepath) as file:
+            configuration = json.load(file)
+        bpy.context.scene.configuration.modelsrc = configuration['environment']['modelsrc']
+        bpy.context.scene.configuration.modelposesrc = configuration['environment']['modelposesrc']
+        bpy.context.scene.configuration.reconstructionsrc = configuration['environment']['reconstructionsrc']
+        bpy.context.scene.configuration.imagesrc = configuration['environment']['imagesrc']
+
+        bpy.context.scene.configuration.resX = configuration['camera']['resolution'][0]
+        bpy.context.scene.configuration.resY = configuration['camera']['resolution'][1]
+        bpy.context.scene.configuration.fx = configuration['camera']['intrinsic'][0][0]
+        bpy.context.scene.configuration.fy = configuration['camera']['intrinsic'][1][1]
+        bpy.context.scene.configuration.px = configuration['camera']['intrinsic'][0][2]
+        bpy.context.scene.configuration.py = configuration['camera']['intrinsic'][1][2]
+        bpy.context.scene.configuration.lens = configuration['camera']['lens']
+
+        # modelposesrc: bpy.props.StringProperty(name = "modelposesrc", 
+        #             subtype = "DIR_PATH", default= configuration['environment']['modelposesrc'])   
+        # reconstructionsrc: bpy.props.StringProperty(name = "modelposesrc", 
+        #             subtype = "DIR_PATH", default= configuration['environment']['reconstructionsrc']) 
+        # imagesrc: bpy.props.StringProperty(name = "imagesrc", 
+        #             subtype = "DIR_PATH", default= configuration['environment']['imagesrc']) 
+
+        # resX: bpy.props.IntProperty(name = "resX",  default= configuration['camera']['resolution'][0])
+        # resY: bpy.props.IntProperty(name = "resX",  default= configuration['camera']['resolution'][1])
+        # fx: bpy.props.FloatProperty(name="fx", description="camera intrinsic fx.", 
+        #     default=configuration['camera']['intrinsic'][0][0], min=0.00, max=1500.00, step=3, precision=2)    
+        # fy: bpy.props.FloatProperty(name="fy", description="camera intrinsic fy.", 
+        #     default=configuration['camera']['intrinsic'][1][1], min=0.00, max=1500.00, step=3, precision=2)   
+        # px: bpy.props.FloatProperty(name="px", description="camera intrinsic px.", 
+        #     default=configuration['camera']['intrinsic'][0][2], min=0.00, max=1000.00, step=3, precision=2)    
+        # py: bpy.props.FloatProperty(name="py", description="camera intrinsic py.", 
+        #     default=configuration['camera']['intrinsic'][1][2], min=0.00, max=1000.00, step=3, precision=2)
+        # lens: bpy.props.FloatProperty(name="lens", description="camera lens length", 
+        #     default=configuration['camera']['lens'], min=0.00, max=100.00, step=3, precision=2)
 
 def load_model(filepath):
     objFilename = filepath.split("/")[-1]
@@ -26,6 +64,9 @@ def load_model(filepath):
         ## first unlink all collection, then link to Model collection
         for collection in bpy.data.objects[objName].users_collection:
             collection.objects.unlink(bpy.data.objects[objName])
+        if "Model" not in bpy.data.collections:
+            model_collection = bpy.data.collections.new("Model")
+            bpy.context.scene.collection.children.link(model_collection)
         bpy.data.collections['Model'].objects.link(bpy.data.objects[objName])
     
 def load_model_from_pose(filepath):
@@ -52,6 +93,19 @@ def load_reconstruction_result(filepath,
                                pointcloudscale, 
                                imagesrc,
                                camera_display_scale):
+    if "Reconstruction" not in bpy.data.collections:
+        reconstruction_collection = bpy.data.collections.new("Reconstruction")
+        bpy.context.scene.collection.children.link(reconstruction_collection)
+
+    ## pointcloud collection  
+    if "PointCloud" not in bpy.data.collections:
+        pointcloud_collection = bpy.data.collections.new("PointCloud")
+        bpy.data.collections["Reconstruction"].children.link(pointcloud_collection)
+    ## Camera collection  
+    if "Camera" not in bpy.data.collections:
+        camera_collection = bpy.data.collections.new("Camera")
+        bpy.data.collections["Reconstruction"].children.link(camera_collection)
+    
     if reconstruction_method == 'COLMAP':
         ## load reconstruction result
         camera_rgb_file = os.path.join(filepath, "extracted_campose.txt")

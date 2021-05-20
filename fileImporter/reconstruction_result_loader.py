@@ -58,7 +58,7 @@ class ImportReconstruction(Operator, ImportHelper):
     
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
-        if bpy.context.scene.configuration.reconstructionsrc != "":
+        if hasattr(bpy.context.scene.configuration, 'reconstructionsrc'):
             self.filepath = bpy.context.scene.configuration.reconstructionsrc
         # Tells Blender to hang on for the slow user input
         return {'RUNNING_MODAL'}

@@ -14,10 +14,15 @@ class ViewImage(Operator):
     bl_label = "View Image"
 
     def execute(self, context):
+        ### init to UV Editing frame
+
+        bpy.context.window.workspace = bpy.data.workspaces['UV Editing']
         current_object = bpy.context.object.name
+
         assert "type" in bpy.data.objects[current_object] and\
                 bpy.data.objects[current_object]["type"] == "camera"
         pair_image_name = bpy.data.objects[current_object]["image"].name
+
         ## change the active image
         bpy.context.scene.camera = bpy.data.objects[current_object]
         for area in bpy.data.screens['UV Editing'].areas:
@@ -33,6 +38,7 @@ class ViewImage(Operator):
         if bpy.context.scene.objectproperty.viewimage_mode == 'Origin':
             img_rgb[:, :, 3] = bpy.context.scene.objectproperty.segment_alpha
             bpy.data.images[pair_image_name].pixels = img_rgb.ravel()
+
         elif bpy.context.scene.objectproperty.viewimage_mode == 'Segment':
             current_object = bpy.context.object.name
             assert "type" in bpy.data.objects[current_object] and\
@@ -67,7 +73,6 @@ class ViewImage(Operator):
             img_segment = img_origin.copy()
             img_segment[foreground_mask, :3] = 0
             save_img(img_render[:, :, :3], img_origin, img_segment, pair_image_name)
-
 
         elif bpy.context.scene.objectproperty.viewimage_mode == 'Segment(Inverse)':
             current_object = bpy.context.object.name

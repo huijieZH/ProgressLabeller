@@ -14,7 +14,17 @@
 
 ## Installation
 
+Our blender add-on has been tested in the following environment:
+
+* Ubuntu 18.04
+* Blender 2.9.2
+
 ### Install add-on in blender
+
+Open ``Edit > Preferences > Install...``, search ``path/to/repo/ProgressLabeller.zip`` and install it. After successful installation, you could see Progress Labeller in your Add-ons lists.
+
+<img src='doc/fig/installadd-on.png' width="500"/>
+
 
 ### Install denpencies
 

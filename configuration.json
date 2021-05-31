@@ -1,13 +1,13 @@
 {
     "environment":{
         "modelsrc": 
-            "/home/huijiezhang/NerualRenderingProject/code/NeuralFieldFusion/Prepocessing/labelposeModel/",
+            "/home/huijiezhang/Desktop/ProgressLabellerData/model/",
         "modelposesrc": 
-            "/home/huijiezhang/Dense_Reconstruction/data/output/515_stand_COLMAP_fullloop/reconstruction_result/",
+            "/home/huijiezhang/Desktop/ProgressLabellerData/COLMAP_recon/",
         "reconstructionsrc":
-            "/home/huijiezhang/Dense_Reconstruction/data/output/",
+            "/home/huijiezhang/Desktop/ProgressLabellerData/",
         "imagesrc":
-            "/home/huijiezhang/NerualRenderingProject/data/NeualDataNew/515_stand/rgb/"
+            "/home/huijiezhang/Desktop/ProgressLabellerData/data/rgb/"
         },
     "camera":{
         "resolution": [1280, 720],

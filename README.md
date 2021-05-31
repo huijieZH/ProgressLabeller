@@ -23,6 +23,7 @@ Our blender add-on has been tested in the following environment:
 
 Open ``Edit > Preferences > Install...``, search ``path/to/repo/ProgressLabeller.zip`` and install it. After successful installation, you could see Progress Labeller in your Add-ons lists.
 
+<img src='doc/fig/installadd-on.png' width="500"/>
 
 
 ### Install denpencies

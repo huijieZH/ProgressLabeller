@@ -42,12 +42,12 @@ class ViewImage(Operator):
             bpy.data.images[pair_image_name].pixels = img_rgb.ravel()
 
         elif bpy.context.scene.objectproperty.viewimage_mode == 'Segment':
-            current_object = bpy.context.object.name
-            assert "type" in bpy.data.objects[current_object] and\
-                    bpy.data.objects[current_object]["type"] == "camera"
-            pair_image_name = bpy.data.objects[current_object]["image"].name
-            # ## change the active image
-            bpy.context.scene.camera = bpy.data.objects[current_object]
+            # current_object = bpy.context.object.name
+            # assert "type" in bpy.data.objects[current_object] and\
+            #         bpy.data.objects[current_object]["type"] == "camera"
+            # pair_image_name = bpy.data.objects[current_object]["image"].name
+            # # ## change the active image
+            # bpy.context.scene.camera = bpy.data.objects[current_object]
             
             # H = img_rgb.shape[0]
             # W = img_rgb.shape[1]
@@ -70,19 +70,19 @@ class ViewImage(Operator):
             bpy.data.images[pair_image_name].pixels = img_rgb.ravel()
 
             #### save current image
-            foreground_mask = img_render[:, :, 3] == 0
-            img_origin = (img_rgb[::-1, :, :3]*255).astype(np.uint8)
-            img_segment = img_origin.copy()
-            img_segment[foreground_mask, :3] = 0
-            save_img(img_render[:, :, :3], img_origin, img_segment, pair_image_name)
+            # foreground_mask = img_render[:, :, 3] == 0
+            # img_origin = (img_rgb[::-1, :, :3]*255).astype(np.uint8)
+            # img_segment = img_origin.copy()
+            # img_segment[foreground_mask, :3] = 0
+            # save_img(img_render[:, :, :3], img_origin, img_segment, pair_image_name)
 
         elif bpy.context.scene.objectproperty.viewimage_mode == 'Segment(Inverse)':
-            current_object = bpy.context.object.name
-            assert "type" in bpy.data.objects[current_object] and\
-                    bpy.data.objects[current_object]["type"] == "camera"
-            pair_image_name = bpy.data.objects[current_object]["image"].name
-            # ## change the active image
-            bpy.context.scene.camera = bpy.data.objects[current_object]
+            # current_object = bpy.context.object.name
+            # assert "type" in bpy.data.objects[current_object] and\
+            #         bpy.data.objects[current_object]["type"] == "camera"
+            # pair_image_name = bpy.data.objects[current_object]["image"].name
+            # # ## change the active image
+            # bpy.context.scene.camera = bpy.data.objects[current_object]
             
             # H = img_rgb.shape[0]
             # W = img_rgb.shape[1]

@@ -21,7 +21,7 @@
   * [Reference](#references)
 ------
 
-## Installation
+## 3.Installation
 
 Our blender add-on has been tested in the following environment:
 
@@ -182,11 +182,20 @@ We create new collections in blender for a better arrangement for our pipline, i
 
 ### Collection-wise property
 
-Collection-wise properties are all added as panels in ``Object Properties``, you could find it when you click any object instance.
+Collection-wise properties are all added as panels in ``Object Properties``, you could find them when you click any object instance.
+
+<img src='doc/fig/objproperty2.png' width="300"/>
+<img src='doc/fig/objproperty1.png' width="300"/>
 
 #### PointCloud Collection
 
+Plane Alignment: We would use RANSAC to search the plane in the point cloud and align the plane to X-Y plane. 
+
 #### Camera Collection
+
+View Mode: For object instances in Camera collection, we could change the cooresponding rgb image display mode in the ``UV Editing`` workspace. When selecting ``Origin``, it would display the original image, when selecting ``Segment``, it would render the Silhouettes of each model in Model collection and show the segment on the image.
+
+
 
 
 

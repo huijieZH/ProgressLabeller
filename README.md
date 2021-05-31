@@ -12,6 +12,7 @@
   * [Data structure](#data-structure)
     * [Dataset](#dataset)
     * [Configuration](#configuration)
+    * [Collection](#collection)
   * [Quick Start](#what-we-have-achieved)
     * [Import](#import)
     * [Cameras and images](#cameras-and-images)
@@ -128,14 +129,44 @@ You could design your own configuration in a ``.json`` file, we present a demo i
         "intrinsic": [[904.572, 0, 635.981],
                       [0, 905.295, 353.060],
                       [0, 0, 1]],
-        "lens": 25
+        "lens": 25   # could be random number, no physical meaning
     }
 }
 ```
 
+### Collection
+
+We create new collections in blender for a better arrangement for our pipline, it has the following structure:
+
+```bash
+
+|-- Scene Collection              # root cocllection in blender
+    |-- Reconstruction
+        |-- PointCloud        
+        |-- Camera
+        ...
+    |-- depth
+        |-- 0.png        
+        |-- 1.png
+
+
 ## What we have achieved
 
 ### Import
+
+#### Import Configuration
+
+``File > Import > ProgressLabeller Configuration(.json)`` would load [configuration file](#configuration), which provides environment for more convenient import and load some basic parameters for our pipeline.
+
+#### Import object model
+
+``File > Import > ProgressLabeller Model(.obj)`` would load single object model (right now only support .obj file) into collection ``Model``
+
+``File > Import > ProgressLabeller Model from pose file(.yaml)``
+
+#### Import reconstruction result
+
+``File > Import > ProgressLabeller Load Reconstruction Result(package)``
 
 ### Cameras and images
 

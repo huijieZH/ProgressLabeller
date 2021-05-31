@@ -47,18 +47,62 @@ pip3 install --target /path/to/blender/2.92/python/lib/python3.7/site-packages o
 
 ### Dataset
 
-To prepare a new dataset, please follow. We also provide a demo dataset [here](https://www.dropbox.com/s/04ogfvubpgar695/ProgressLabellerData.zip?dl=0)
+To prepare a new dataset, please follow the structure below. We also provide a **demo dataset** [here](https://www.dropbox.com/s/04ogfvubpgar695/ProgressLabellerData.zip?dl=0)
 
-#### Object pose file
+```bash
+<dataset>
+|-- data              # pairwise rgb and depth images
+    |-- rgb
+        |-- 0.png        
+        |-- 1.png
+        ...
+    |-- depth
+        |-- 0.png        
+        |-- 1.png
+        ...
+|-- model
+    |-- object1        # model for pose labelling 
+        |-- object1.obj
+    |-- object2
+        |-- object2.obj
+    ...
+|-- reconstruction package     # reconstruction result(right now only support COLMAP)
+    |-- extracted_campose.txt  # Camera poses file, stored camera pose for each images
+    |-- fused.ply              # reconstructed point clound
+    |-- label_pose.yaml        # Object pose file, stored labelled object poses
+    ...
+```
+
+
+#### Object poses file
 
 Object pose file is a ``.yaml`` file stored all labelled pose. It makes it more convenient for you to re-load your labelled results. We present a demo in the given demo dataset ```path/to/demodataset/COLMAP_recon/label_pose.yaml```, it should be aranged as:
 
-
 ```bash
-object_name
+object1:
+   pose:
+   - [x, y, z]
+   - [qw, qx, qy, qz]
+object2:
+   pose:
+   - [x, y, z]
+   - [qw, qx, qy, qz]
+...   
 ```
 
-#### Reconstruction package
+The object name in Object pose file should be the same as the package/file name for models in ```path/to/dataset/model```, [using object pose file to import objects](#import) would automatically search objects in ```path/to/dataset/model``` from names in object pose file.
+
+#### Camera poses file
+
+
+Object pose file is a ``.txt`` file stored camera poses for each image in ```path/to/dataset/data/rgb```. It is an output from [COLMAP](https://colmap.github.io/). We present a demo in the given demo dataset ```path/to/demodataset/COLMAP_recon/extracted_campose.txt```, it should be aranged as:
+
+```bash
+# IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME
+
+1 qw, qx, qy, qz, tx, ty, tz, 1, 0.png
+...   
+```
 
 ### Configuration
 
@@ -88,10 +132,6 @@ You could design your own configuration in a ``.json`` file, we present a demo i
     }
 }
 ```
-
-
-
-
 
 ## What we have achieved
 

@@ -10,9 +10,8 @@
     * [Install add-on in blender](#install-add-on-in-blender)
     * [Install denpencies](#install-denpencies)
   * [Data structure](#data-structure)
+    * [Dataset](#dataset)
     * [Configuration](#configuration)
-    * [Object pose file](#object-pose-file)
-    * [Reconstruction package](#reconstruction-package)
   * [Quick Start](#what-we-have-achieved)
     * [Import](#import)
     * [Cameras and images](#cameras-and-images)
@@ -46,20 +45,39 @@ pip3 install --target /path/to/blender/2.92/python/lib/python3.7/site-packages o
 
 ## Data structure
 
+### Dataset
+
+To prepare a new dataset, please follow. We also provide a demo dataset [here](https://www.dropbox.com/s/04ogfvubpgar695/ProgressLabellerData.zip?dl=0)
+
+#### Object pose file
+
+Object pose file is a ``.yaml`` file stored all labelled pose. It makes it more convenient for you to re-load your labelled results. We present a demo in the given demo dataset ```path/to/demodataset/COLMAP_recon/label_pose.yaml```, it should be aranged as:
+
+
+```bash
+object_name
+```
+
+#### Reconstruction package
+
 ### Configuration
 
 You could design your own configuration in a ``.json`` file, we present a demo in ```path/to/repo/configuration.json```
 ```python
 {
     "environment":{
-        "modelsrc": 
-            "/home/huijiezhang/NerualRenderingProject/code/NeuralFieldFusion/Prepocessing/labelposeModel/",
+        "modelsrc":
+        ## path for the model used to label pose
+            "/path/to/dataset/model/",
         "modelposesrc": 
-            "/home/huijiezhang/Dense_Reconstruction/data/output/515_stand_COLMAP_fullloop/reconstruction_result/",
+        ## path for the files containing per-object labelled pose
+            "/path/to/dataset/COLMAP_recon/",
         "reconstructionsrc":
-            "/home/huijiezhang/Dense_Reconstruction/data/output/",
+        ## path for the reconstruction output
+            "/path/to/dataset/",
         "imagesrc":
-            "/home/huijiezhang/NerualRenderingProject/data/NeualDataNew/515_stand/rgb/"
+        ## path for the rgb data used for reconstruction
+            "/path/to/dataset/data/rgb/"
         },
     "camera":{
         "resolution": [1280, 720],
@@ -71,9 +89,9 @@ You could design your own configuration in a ``.json`` file, we present a demo i
 }
 ```
 
-### Object pose file
 
-### Reconstruction package
+
+
 
 ## What we have achieved
 

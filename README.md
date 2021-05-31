@@ -15,7 +15,7 @@
     * [Collection](#collection)
   * [Quick Start](#what-we-have-achieved)
     * [Import](#import)
-    * [Cameras and images](#cameras-and-images)
+    * [Collection-wise property](#collection-wise-property)
   * [Reference](#references)
 ------
 
@@ -91,7 +91,7 @@ object2:
 ...   
 ```
 
-The object name in Object pose file should be the same as the package/file name for models in ```path/to/dataset/model```, [using object pose file to import objects](#import) would automatically search objects in ```path/to/dataset/model``` from names in object pose file.
+The object name in Object pose file should be the same as the package/file name for models in ```path/to/dataset/model```, [using object pose file to import objects](#Import-object-model) would automatically search objects in ```path/to/dataset/model``` from names in object pose file.
 
 #### Camera poses file
 
@@ -141,13 +141,21 @@ We create new collections in blender for a better arrangement for our pipline, i
 ```bash
 
 |-- Scene Collection              # root cocllection in blender
-    |-- Reconstruction
-        |-- PointCloud        
+    |-- Reconstruction            # collection for reconstruction result
+        |-- PointCloud  
+            |-- reconstruction
         |-- Camera
+            |-- view0001
+            |-- view0002
+            ...
+    |-- Model                     # collection for object model
+        |-- object1      
+        |-- object2
         ...
-    |-- depth
-        |-- 0.png        
-        |-- 1.png
+```
+
+<img src='doc/fig/collection.png' width="250"/>
+
 
 
 ## What we have achieved
@@ -160,15 +168,15 @@ We create new collections in blender for a better arrangement for our pipline, i
 
 #### Import object model
 
-``File > Import > ProgressLabeller Model(.obj)`` would load single object model (right now only support .obj file) into collection ``Model``
+``File > Import > ProgressLabeller Model(.obj)`` would load single object model (right now only support .obj file) into [Model collection ](#collection)
 
-``File > Import > ProgressLabeller Model from pose file(.yaml)``
+``File > Import > ProgressLabeller Model from pose file(.yaml)`` would load multiple object models mentioned in [object pose file](#object-poses-file) into [Model collection](#collection), automatically search in the environment(please load configuration before use this function). The function is designed not for first time labeling, but to make it convenient to reload the model after the first time. 
 
 #### Import reconstruction result
 
-``File > Import > ProgressLabeller Load Reconstruction Result(package)``
+``File > Import > ProgressLabeller Load Reconstruction Result(package)`` would read a reconstruction package (right now we only support COLMAP results). 
 
-### Cameras and images
+### Collection-wise property
 
 ## References
 [1] Marion, Pat, Peter R. Florence, Lucas Manuelli, and Russ Tedrake. **"Label fusion: A pipeline for generating ground truth labels for real rgbd data of cluttered scenes."** In 2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 3235-3242. IEEE, 2018.

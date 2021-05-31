@@ -2,6 +2,8 @@
 
 ## Overview
 
+<img src='doc/fig/collection.png' width="300"/>
+
 **This is an developing repository**. The project is an blender add-on to re-implement a pipeline, Labelfusion. Labelfusion is a pipleine to generate ground truth object-centric pose and mask labels from sequential images. It is powerful, but we find it is hard to install due to some out-of-date dependencies. Therefore, this project is trying to re-implement Labelfusion in a more user-friendly, cross-platform software, blender. Moreover, we would further improve the accuracy of Labelfusion, and make it model-free.
 
 ## Table of contents
@@ -154,7 +156,7 @@ We create new collections in blender for a better arrangement for our pipline, i
         ...
 ```
 
-<img src='doc/fig/collection.png' width="250"/>
+<img src='doc/fig/collection.png' width="300"/>
 
 
 
@@ -164,19 +166,25 @@ We create new collections in blender for a better arrangement for our pipline, i
 
 #### Import Configuration
 
-``File > Import > ProgressLabeller Configuration(.json)`` would load [configuration file](#configuration), which provides environment for more convenient import and load some basic parameters for our pipeline.
+``File > Import > ProgressLabeller Configuration(.json)`` would load [configuration file](#configuration), which provides environment path and load some basic parameters for our pipeline.
 
 #### Import object model
 
-``File > Import > ProgressLabeller Model(.obj)`` would load single object model (right now only support .obj file) into [Model collection ](#collection)
+``File > Import > ProgressLabeller Model(.obj)`` would load single object model (right now only support .obj file) into [Model collection](#collection)
 
 ``File > Import > ProgressLabeller Model from pose file(.yaml)`` would load multiple object models mentioned in [object pose file](#object-poses-file) into [Model collection](#collection), automatically search in the environment(please load configuration before use this function). The function is designed not for first time labeling, but to make it convenient to reload the model after the first time. 
 
 #### Import reconstruction result
 
-``File > Import > ProgressLabeller Load Reconstruction Result(package)`` would read a reconstruction package (right now we only support COLMAP results). 
+``File > Import > ProgressLabeller Load Reconstruction Result(package)`` would read a [reconstruction package](#dataset) (right now we only support COLMAP results). It loads merged point cloud to [PointCloud collection](#collection) and loads pair-wise pose-aligned camera and rgb image mentioned in [camera poses file](#camera-pose-file) to [Camera collection](#collection)
+
+
 
 ### Collection-wise property
+
+#### PointCloud Collection
+
+#### Camera Collection
 
 ## References
 [1] Marion, Pat, Peter R. Florence, Lucas Manuelli, and Russ Tedrake. **"Label fusion: A pipeline for generating ground truth labels for real rgbd data of cluttered scenes."** In 2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 3235-3242. IEEE, 2018.

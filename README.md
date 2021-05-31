@@ -196,6 +196,8 @@ Plane Alignment: We would use RANSAC to search the plane in the point cloud and 
 View Mode: For object instances in Camera collection, we could change the cooresponding rgb image display mode in the ``UV Editing`` workspace. When selecting ``Origin``, it would display the original image, when selecting ``Segment``, it would render the Silhouettes of each model in Model collection and show the segment on the image.
 
 
+<img src='doc/fig/render.png' width="1000"/>
+
 
 
 

@@ -90,3 +90,16 @@ def transform_from_plane(plane, plane_center):
                        [0, 0, 0, 1]])
     return rotate.dot(move)
 
+def modelICP(scene_vertices, model_vertices):
+    scene = o3d.geometry.PointCloud()
+    scene.points = o3d.utility.Vector3dVector(scene_vertices)
+    model = o3d.geometry.PointCloud()
+    model.points = o3d.utility.Vector3dVector(model_vertices)
+    trans_init = np.identity(4)
+    threshold = 0.02
+    reg_p2p = o3d.pipelines.registration.registration_icp(
+        model, scene, threshold, trans_init,
+        o3d.pipelines.registration.TransformationEstimationPointToPoint())
+    # print(reg_p2p.transformation)
+    return reg_p2p.transformation
+

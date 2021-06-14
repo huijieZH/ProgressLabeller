@@ -5,6 +5,9 @@ import os
 import itertools
 from kernel.logging_utility import log_report
 
+def render_fromblender():
+    pass
+
 def save_img(img_render, img_origin, img_segment, img_segment_inverse, name):
     renderim = Image.fromarray(img_render)
     renderim.save(os.path.join("tmp", name + "_render.png"))

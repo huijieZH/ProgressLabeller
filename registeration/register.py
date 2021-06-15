@@ -1,7 +1,7 @@
 import bpy
 from file.fileImporter import model_loader, reconstruction_result_loader, configuration_loader
 from file.fileNew import new_workspace
-from file.fileExporter import configuration_export, objectposes_export
+from file.fileExporter import configuration_export, objectposes_export, data_export
 from registeration import init_configuration
 from panel import ObjectPropertyPanel, FloatScreenPanel
 from operators import ObjectPropertyOperator, ReconstructionOperator
@@ -20,6 +20,7 @@ def register():
 
     configuration_export.register()
     objectposes_export.register()
+    data_export.register()
 
 def unregister():
     init_configuration.unregister()
@@ -33,3 +34,4 @@ def unregister():
     configuration_export.unregister()
     objectposes_export.unregister()
     FloatScreenPanel.unregister()
+    data_export.unregister()

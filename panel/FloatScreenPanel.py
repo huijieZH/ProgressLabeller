@@ -2,7 +2,8 @@ import bpy
 import bgl
 import gpu
 from gpu_extras.presets import draw_texture_2d
-from bpy.props import StringProperty, EnumProperty, FloatProperty
+from bpy_extras.view3d_utils import location_3d_to_region_2d
+from bpy.props import StringProperty, EnumProperty, FloatProperty, BoolProperty
 from bpy.types import Operator
 
 def draw():
@@ -35,19 +36,52 @@ def draw():
                         pixels = list(show_frame.pixels) 
                         for i in range(3, len(pixels), 4):
                             pixels[i] = show_frame["alpha"][i]
-                        show_frame.pixels[:] = pixels     
-                    
-                for area in bpy.context.screen.areas:
-                    ## change camera view
-                    if area.type == 'VIEW_3D':
-                        area.spaces[0].region_3d.view_perspective = 'CAMERA'
-                bpy.context.scene.render.resolution_x = bpy.context.scene.configuration[config_id].resX
-                bpy.context.scene.render.resolution_y = bpy.context.scene.configuration[config_id].resY
-                bpy.context.scene.camera = obj
-                draw_texture_2d(show_frame.bindcode, 
-                                (scene.floatscreenproperty.display_X, scene.floatscreenproperty.display_Y), 
-                                int(config.resX * scene.floatscreenproperty.display_scale), 
-                                int(config.resY * scene.floatscreenproperty.display_scale))
+                        show_frame.pixels[:] = pixels   
+                
+                obj.data.show_background_images = scene.floatscreenproperty.BACKGROUND
+                obj.data.background_images[0].image = show_frame
+                obj.data.background_images[0].alpha = scene.floatscreenproperty.background_alpha
+
+                if scene.floatscreenproperty.TRACK:
+                    for area in bpy.context.screen.areas:
+                        ## change camera view
+                        if area.type == 'VIEW_3D':
+                            area.spaces[0].region_3d.view_perspective = 'CAMERA'
+                    bpy.context.scene.render.resolution_x = bpy.context.scene.configuration[config_id].resX
+                    bpy.context.scene.render.resolution_y = bpy.context.scene.configuration[config_id].resY
+                    bpy.context.scene.camera = obj
+                
+
+                if scene.floatscreenproperty.TRACK and scene.floatscreenproperty.ALIGN:
+                    for area in bpy.context.screen.areas:
+                        if area.type == 'VIEW_3D':
+                            cam = bpy.context.scene.camera
+                            frame = cam.data.view_frame(scene = bpy.context.scene)
+                            frame = [cam.matrix_world @ corner for corner in frame]
+                            region = bpy.context.region
+
+                            rv3d = bpy.context.region_data
+                            frame_px = [location_3d_to_region_2d(region, rv3d, corner) for corner in frame]           
+                            bias_X = min([v[0] for v in frame_px])
+                            bias_Y = min([v[1] for v in frame_px])
+                            res_X = max([v[0] for v in frame_px]) - min([v[0] for v in frame_px])
+                            res_Y = max([v[1] for v in frame_px]) - min([v[1] for v in frame_px])                    
+                            break
+                        else:
+                            bias_X = scene.floatscreenproperty.display_X
+                            bias_Y = scene.floatscreenproperty.display_Y
+                            res_X = int(config.resX * scene.floatscreenproperty.display_scale)
+                            res_Y = int(config.resY * scene.floatscreenproperty.display_scale) 
+                else:
+                    bias_X = scene.floatscreenproperty.display_X
+                    bias_Y = scene.floatscreenproperty.display_Y
+                    res_X = int(config.resX * scene.floatscreenproperty.display_scale)
+                    res_Y = int(config.resY * scene.floatscreenproperty.display_scale)                           
+                if scene.floatscreenproperty.DISPLAY:
+                    draw_texture_2d(show_frame.bindcode, 
+                                    (bias_X, bias_Y), 
+                                    res_X, 
+                                    res_Y)
                 show_frame["UPDATEALPHA"] = False
 
 class FloatScreenProperty(bpy.types.PropertyGroup):
@@ -58,48 +92,74 @@ class FloatScreenProperty(bpy.types.PropertyGroup):
         items=(
             ('RGB Origin', "RGB Origin", "Display Origin RGB Image"),
             ('Depth Origin', "Depth Origin", "Display Origin Depth Image"),
-            ('Segment', "Segment", "Display Segment Image"),
-            ('Segment(Inverse)', "Segment(Inverse)", "Display Inverse Segment Image"),
         ),
         default='RGB Origin',
     )
-    empty_alpha: bpy.props.FloatProperty(name="EmptyAlpha", 
-                                        description="Alhpa value for empty regin", 
-                                        default=0.2, 
-                                        min=0.00, 
-                                        max=1.00, 
-                                        step=0.1, 
-                                        precision=2)
+    DISPLAY:  BoolProperty(
+                name="Show Float Screen",
+                description="Display the float screen to show rgb and depth image",
+                default=True,
+            )
+    TRACK:  BoolProperty(
+                name="Track the camera",
+                description="Automaticly change to active camera view",
+                default=True,
+            )
+    BACKGROUND:  BoolProperty(
+                name="Show pairwise image in background",
+                description="Display the image(either depth or rgb) in the camera view background",
+                default=True,
+            )
+    background_alpha: FloatProperty(name="BackgoundAlhpa", 
+                            description="Alhpa value for background", 
+                            default=1.00, 
+                            min=0.00, 
+                            max=1.00, 
+                            step=0.1, 
+                            precision=2)
 
-    segment_alpha: bpy.props.FloatProperty(name="SegmentAlpha", 
-                                            description="Alhpa value for segmented regin", 
-                                            default=1.00, 
-                                            min=0.00, 
-                                            max=1.00, 
-                                            step=0.1, 
-                                            precision=2)
+    ALIGN:  BoolProperty(
+                name="Align the float screen and camera view",
+                description="Align the float screen and camera view to verify the model pose and segmentation",
+                default=False,
+            )
+    empty_alpha: FloatProperty(name="EmptyAlpha", 
+                                description="Alhpa value for empty regin", 
+                                default=0.2, 
+                                min=0.00, 
+                                max=1.00, 
+                                step=0.1, 
+                                precision=2)
 
-    display_scale: bpy.props.FloatProperty(name="Display Scale", 
-                                            description="Display Scale for the floating screen", 
-                                            default=0.50, 
-                                            min=0.00, 
-                                            max=1.00, 
-                                            step=0.1, 
-                                            precision=2)
-    display_X: bpy.props.FloatProperty(name="X position", 
-                                        description="X bias position for the floating screen", 
-                                        default=0, 
-                                        min=0, 
-                                        max=2000, 
-                                        step=100, 
-                                        precision=0)
-    display_Y: bpy.props.FloatProperty(name="Y position", 
-                                        description="Y bias position for the floating screen", 
-                                        default=0, 
-                                        min=0, 
-                                        max=2000, 
-                                        step=100, 
-                                        precision=0)
+    segment_alpha: FloatProperty(name="SegmentAlpha", 
+                                description="Alhpa value for segmented regin", 
+                                default=1.00, 
+                                min=0.00, 
+                                max=1.00, 
+                                step=0.1, 
+                                precision=2)
+
+    display_scale: FloatProperty(name="Display Scale", 
+                                description="Display Scale for the floating screen", 
+                                default=0.50, 
+                                min=0.00, 
+                                max=4.00, 
+                                step=0.1, 
+                                precision=2)
+    display_X: FloatProperty(name="X position", 
+                            description="X bias position for the floating screen", 
+                            default=0, 
+                            min=0, 
+                            max=2000, 
+                            step=100, 
+                            precision=0)
+    display_Y: FloatProperty(name="Y position", 
+                            description="Y bias position for the floating screen", 
+                            default=0, 
+                            min=0, 
+                            max=2000, 
+                            step=100, 
+                            precision=0)
 
 def register():
     global floatscreen_handler

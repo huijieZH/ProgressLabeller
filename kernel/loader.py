@@ -53,6 +53,7 @@ def load_model(filepath, config_id):
         bpy.data.objects[objName].rotation_mode = 'QUATERNION'
         bpy.data.objects[objName].rotation_quaternion = [1., 0., 0., 0.]
         bpy.data.objects[objName]["type"] = "model"
+        bpy.data.objects[objName]["path"] = filepath
         ## first unlink all collection, then link to Model collection
         for collection in bpy.data.objects[objName].users_collection:
             collection.objects.unlink(bpy.data.objects[objName])
@@ -101,7 +102,10 @@ def load_pc(filepath, pointcloudscale, config_id):
         bpy.data.objects[workspace_name + ":" + 'reconstruction']["path"] = filepath
         bpy.data.objects[workspace_name + ":" + 'reconstruction']["scale"] = pointcloudscale
         bpy.data.objects[workspace_name + ":" + 'reconstruction'].rotation_mode = 'QUATERNION'
-        bpy.data.objects[workspace_name + ":" + 'reconstruction']["align"] = False
+        bpy.data.objects[workspace_name + ":" + 'reconstruction']["alignT"] = [[1., 0., 0., 0.],
+                                                                              [0., 1., 0., 0.], 
+                                                                              [0., 0., 1., 0.], 
+                                                                              [0., 0., 0., 1.]]
 
 def load_cam_img_depth(packagepath, config_id, camera_display_scale):
 
@@ -133,8 +137,11 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
                 f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2
                 cam_data.sensor_width = cam_data.lens * bpy.context.scene.configuration[config_id].resX/f
                 cam_data.display_size = camera_display_scale
-                cam_data.shift_x = cam_data.lens * (bpy.context.scene.configuration[config_id].resX/2 - bpy.context.scene.configuration[config_id].cx)/f
-                cam_data.shift_y = cam_data.lens * (bpy.context.scene.configuration[config_id].resY/2 - bpy.context.scene.configuration[config_id].cy)/f
+                cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX/2 - bpy.context.scene.configuration[config_id].cx)/bpy.context.scene.configuration[config_id].resX
+                cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/bpy.context.scene.configuration[config_id].resY
+                ## allow background display
+                cam_data.background_images.new()
+                
                 cam_object = bpy.data.objects.new(cam_name, cam_data)
                 cam_collection.objects.link(cam_object)
                 cam_object.rotation_mode = 'QUATERNION'
@@ -211,6 +218,11 @@ def load_reconstruction_result(filepath,
                                     [0, 0, -1, 0],
                                     [0, 0, 0, 1],]
             )
+            # Axis_align = np.array([[1, 0, 0, 0],
+            #                         [0, 1, 0, 0],
+            #                         [0, 0, 1, 0],
+            #                         [0, 0, 0, 1],]
+            # )
             # Trans = np.linalg.inv(_pose2Rotation(pose)).dot(Axis_align)
             Trans = _pose2Rotation(pose).dot(Axis_align) if not CAMPOSE_INVERSE else np.linalg.inv(_pose2Rotation(pose)).dot(Axis_align)
             pose = _rotation2Pose(Trans)
@@ -227,15 +239,20 @@ def load_reconstruction_result(filepath,
                 cam_data.lens = bpy.context.scene.configuration[config_id].lens
                 f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2
                 cam_data.sensor_width = cam_data.lens * bpy.context.scene.configuration[config_id].resX/f
-                cam_data.shift_x = cam_data.lens * (bpy.context.scene.configuration[config_id].cx - bpy.context.scene.configuration[config_id].resX/2)/f
-                cam_data.shift_y = cam_data.lens * (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/f
+                # cam_data.shift_x = cam_data.lens * (bpy.context.scene.configuration[config_id].cx - bpy.context.scene.configuration[config_id].resX/2)/f
+                # cam_data.shift_y = cam_data.lens * (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/f
+                cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX/2 - bpy.context.scene.configuration[config_id].cx)/bpy.context.scene.configuration[config_id].resX
+                ### divide resX not resY
+                cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/bpy.context.scene.configuration[config_id].resX
                 cam_data.display_size = camera_display_scale
+                ## allow background display
+                cam_data.background_images.new()
+
                 cam_object = bpy.data.objects.new(cam_name, cam_data)
                 cam_collection.objects.link(cam_object)
                 cam_object.rotation_mode = 'QUATERNION'
                 cam_object.location = pose[0]
                 cam_object.rotation_quaternion = pose[1]
-
                 ## load rgb
                 rgb_name = workspace_name + ":rgb" + perfix
                 if rgb_name not in bpy.data.images:
@@ -243,7 +260,7 @@ def load_reconstruction_result(filepath,
                                         directory=rgb_path, 
                                         files=[{"name":perfix + "_rgb.png"}], 
                                         relative_path=True, show_multiview=False)
-                bpy.data.images[perfix + "_rgb.png"].name = rgb_name
+                    bpy.data.images[perfix + "_rgb.png"].name = rgb_name
                 bpy.data.images[rgb_name]["UPDATEALPHA"] = True
                 bpy.data.images[rgb_name]["alpha"] = [0.5]
                 ## load depth
@@ -253,7 +270,7 @@ def load_reconstruction_result(filepath,
                                         directory=depth_path, 
                                         files=[{"name":perfix + "_depth.png"}], 
                                         relative_path=True, show_multiview=False)
-                bpy.data.images[perfix + "_depth.png"].name = depth_name
+                    bpy.data.images[perfix + "_depth.png"].name = depth_name
                 bpy.data.images[depth_name]["UPDATEALPHA"] = True
                 bpy.data.images[depth_name]["alpha"] = [0.5]
 

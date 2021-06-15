@@ -34,15 +34,27 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 box = layout.box() 
                 row = box.row(align=True)
                 row.prop(scene.floatscreenproperty, "viewimage_mode")
-                row = box.row(align=True)
+                # row = box.row(align=True)
                 # row.operator("object_property.viewimage")
-                row.prop(scene.floatscreenproperty, "empty_alpha")
-                row.prop(scene.floatscreenproperty, "segment_alpha")
+                # row.prop(scene.floatscreenproperty, "empty_alpha")
+                # row.prop(scene.floatscreenproperty, "segment_alpha")
+                row = box.row()
+                row.prop(scene.floatscreenproperty, "DISPLAY")
+                row = box.row()
+                row.prop(scene.floatscreenproperty, "TRACK")
+                if scene.floatscreenproperty.TRACK:
+                    row = box.row()
+                    row.prop(scene.floatscreenproperty, "ALIGN")
                 row = box.row(align=True)
-                row.prop(scene.floatscreenproperty, "display_scale")
-                row = box.row(align=True)
-                row.prop(scene.floatscreenproperty, "display_X")
-                row.prop(scene.floatscreenproperty, "display_Y")
+                row.prop(scene.floatscreenproperty, "BACKGROUND")
+                row.prop(scene.floatscreenproperty, "background_alpha")
+
+                if not scene.floatscreenproperty.ALIGN:
+                    row = box.row(align=True)
+                    row.prop(scene.floatscreenproperty, "display_scale")
+                    row = box.row(align=True)
+                    row.prop(scene.floatscreenproperty, "display_X")
+                    row.prop(scene.floatscreenproperty, "display_Y")
             elif object_type == "setting":
                 object = bpy.data.objects[current_object]
                 scene = context.scene
@@ -96,7 +108,13 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 layout.label(text="Reconstruction:")
                 box = layout.box() 
                 row = box.row(align=True)
-                row.operator("reconstruction.methodselect")                
+                row.operator("reconstruction.methodselect")  
+
+                layout.label(text="Data Output:")
+                box = layout.box() 
+                row = box.row(align=True)
+                row.operator("export_data.dataoutput")  
+                              
                 # row = box.row()
                 # row.operator("default.intrinsic")
 

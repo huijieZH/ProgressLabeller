@@ -58,14 +58,50 @@ def _rotation2Pose(rotation):
     location = rotation[:3, 3]
     return [[float(location[0]), float(location[1]), float(location[2])], [float(qw), float(qx), float(qy), float(qz)]]
 
-def plane_alignment(filepath, scale):
+def _render(image, pose, intrinsic, model):
+    homoP = np.dot(pose[0:3, :], model.T)
+    homoP = homoP / homoP[2]
+    pixel = intrinsic.dot(homoP)
+    pixel = (np.around(pixel[0:2])).astype(np.int32)
+    pixel[0, pixel[0] < 0] = 0
+    pixel[1, pixel[1] < 0] = 0
+    pixel[0, pixel[0] >=image.shape[1]] = image.shape[1] - 1
+    pixel[1, pixel[1] >=image.shape[0]] = image.shape[0] - 1
+    ## remove the repeate pixel
+    pixel_sort = pixel[:, np.argsort(pixel[0] * 10000 + pixel[1], axis=0)]
+    _unique = np.unique(pixel[0] * 10000 + pixel[1])
+    pixel_sort_unique = np.vstack((np.floor(_unique / 10000).astype(np.uint32), (_unique % 10000).astype(np.uint32)))
+    ## mask
+    maskimage = np.zeros_like(image)
+    maskimage[pixel_sort_unique[1], pixel_sort_unique[0], :] = 1
+    segimage = maskimage * image
+    segimage[maskimage == 0] = 1.
+    return segimage
+
+def _loadModel(modelPath):
+
+    ## load vertex from .obj
+    pointCloud = []
+    f = open(modelPath, "r")
+    line = f.readline()
+    while line:
+        if line.startswith("v "):
+            line = line.replace("\n", "")
+            point = line.split(" ")[1:]
+            pointCloud.append([float(point[i]) for i in range(3)] + [1.])
+        else:
+            pass
+        line = f.readline()
+    return np.array(pointCloud)
+
+def plane_alignment(filepath, scale, alignT, threshold, n, iteration):
     pcd = o3d.io.read_point_cloud(filepath)
-    scaled_xyz = np.asarray(pcd.points)* scale
+    scaled_xyz = (alignT[:3, :3].dot(np.asarray(pcd.points).T) + alignT[:3, [3]]).T* scale
     scaled_pcd = o3d.geometry.PointCloud()
     scaled_pcd.points = o3d.utility.Vector3dVector(scaled_xyz)
-    plane_model, inliers = scaled_pcd.segment_plane(distance_threshold=0.03,
-                                         ransac_n=3,
-                                         num_iterations=1000)
+    plane_model, inliers = scaled_pcd.segment_plane(distance_threshold=threshold,
+                                         ransac_n=n,
+                                         num_iterations=iteration)
     [a, b, c, d] = plane_model
     plane_cloud = scaled_pcd.select_by_index(inliers)
     plane_xyz = np.asarray(plane_cloud.points)
@@ -103,3 +139,47 @@ def modelICP(scene_vertices, model_vertices):
     # print(reg_p2p.transformation)
     return reg_p2p.transformation
 
+
+def globalRegisteration(scene_vertices, model_vertices):
+    scene = o3d.geometry.PointCloud()
+    scene.points = o3d.utility.Vector3dVector(scene_vertices)
+    model = o3d.geometry.PointCloud()
+    model.points = o3d.utility.Vector3dVector(model_vertices)
+    _, modelfpfh = _preprocess_point_cloud(model)
+    _, scenefpfh = _preprocess_point_cloud(scene)
+    return _register_point_cloud_fpfh(model, scene, modelfpfh, scenefpfh)
+
+def _preprocess_point_cloud(pcd, voxel_size = 0.005):
+    pcd_down = pcd.voxel_down_sample(voxel_size)
+    pcd_down.estimate_normals(
+        o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2.0,
+                                             max_nn=30))
+    pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
+        pcd_down,
+        o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 5.0,
+                                             max_nn=100))
+    return (pcd_down, pcd_fpfh)
+
+def _register_point_cloud_fpfh(source, target, source_fpfh, target_fpfh, distance_threshold = 0.005 * 1.4):
+
+    # result = o3d.pipelines.registration.registration_fast_based_on_feature_matching(
+    #     source, target, source_fpfh, target_fpfh,
+    #     o3d.pipelines.registration.FastGlobalRegistrationOption(
+    #         maximum_correspondence_distance=distance_threshold))
+    result = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
+        source, target, source_fpfh, target_fpfh, True, distance_threshold,
+        o3d.pipelines.registration.TransformationEstimationPointToPoint(
+            False), 3,
+        [
+            o3d.pipelines.registration.
+            CorrespondenceCheckerBasedOnEdgeLength(0.9),
+            o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(
+                distance_threshold)
+        ],
+        o3d.pipelines.registration.RANSACConvergenceCriteria(
+            1000000, 0.999))
+    if (result.transformation.trace() == 4.0):
+        print("fail")
+        return np.identity(4)
+    else:
+        return result.transformation

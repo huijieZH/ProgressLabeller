@@ -1,5 +1,5 @@
 import bpy
-from bpy.props import StringProperty, EnumProperty, FloatProperty
+from bpy.props import StringProperty, EnumProperty, FloatProperty, IntProperty
 from bpy.types import Operator
 import numpy as np
 from PIL import Image
@@ -9,7 +9,7 @@ import time
 
 
 from kernel.render import save_img
-from kernel.geometry import plane_alignment, transform_from_plane, _pose2Rotation, _rotation2Pose, modelICP
+from kernel.geometry import plane_alignment, transform_from_plane, _pose2Rotation, _rotation2Pose, modelICP, globalRegisteration
 from kernel.logging_utility import log_report
 from kernel.loader import load_cam_img_depth, load_reconstruction_result, updateprojectname, removeworkspace
 
@@ -130,45 +130,83 @@ class PlaneAlignment(Operator):
         current_object = bpy.context.object.name
         workspace_name = current_object.split(":")[0]
 
-        if not bpy.data.objects[workspace_name + ":" + 'reconstruction']["align"]:
-            log_report(
-                "INFO", "Starting calculate the plane function", None
-            )      
+        log_report(
+            "INFO", "Starting calculate the plane function", None
+        )      
 
-            config_id = bpy.data.objects[workspace_name + ":Setting"]['config_id']
-            
+        config_id = bpy.data.objects[workspace_name + ":Setting"]['config_id']
+        
 
-            [a, b, c, d], plane_center = plane_alignment(bpy.data.objects[workspace_name + ":reconstruction"]["path"], 
-                                                         bpy.data.objects[workspace_name + ":reconstruction"]["scale"])
+        [a, b, c, d], plane_center = plane_alignment(bpy.data.objects[workspace_name + ":reconstruction"]["path"], 
+                                                     bpy.data.objects[workspace_name + ":reconstruction"]["scale"],
+                                                     np.array(bpy.data.objects[workspace_name + ":reconstruction"]["alignT"]),
+                                                     bpy.context.scene.planalignmentparas.threshold,
+                                                     bpy.context.scene.planalignmentparas.n,
+                                                     bpy.context.scene.planalignmentparas.iteration)
 
-            log_report(
-                "INFO", f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0", None
-            )        
-            if d < 0:
-                trans  = transform_from_plane([-a, -b, -c, -d], plane_center)
-            else:
-                trans  = transform_from_plane([a, b, c, d], plane_center)
-            log_report(
-                "INFO", "Starting Transform the scene", None
-            )   
-            
-            for obj in bpy.data.objects:
-                if "type" in obj and (obj["type"] == "reconstruction" or obj["type"] == "camera")\
-                    and obj.name.split(":")[0] == workspace_name:
-
-                    origin_pose = [list(obj.location), list(obj.rotation_quaternion)]
-                    origin_trans = _pose2Rotation(origin_pose)
-                    after_align_trans = trans.dot(origin_trans)
-                    after_align_pose = _rotation2Pose(after_align_trans)
-                    obj.location = after_align_pose[0]
-                    obj.rotation_quaternion = after_align_pose[1]/np.linalg.norm(after_align_pose[1])
-            bpy.data.objects[workspace_name + ":" + 'reconstruction']["align"] = True
-
+        log_report(
+            "INFO", f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0", None
+        )        
+        if d < 0:
+            trans  = transform_from_plane([-a, -b, -c, -d], plane_center)
         else:
-            log_report(
-                "INFO", "Model has been aligned", None
-            )                  
+            trans  = transform_from_plane([a, b, c, d], plane_center)
+        log_report(
+            "INFO", "Starting Transform the scene", None
+        )   
+        
+        for obj in bpy.data.objects:
+            if "type" in obj and (obj["type"] == "reconstruction" or obj["type"] == "camera")\
+                and obj.name.split(":")[0] == workspace_name:
+
+                origin_pose = [list(obj.location), list(obj.rotation_quaternion)]
+                origin_trans = _pose2Rotation(origin_pose)
+                after_align_trans = trans.dot(origin_trans)
+                after_align_pose = _rotation2Pose(after_align_trans)
+                obj.location = after_align_pose[0]
+                obj.rotation_quaternion = after_align_pose[1]/np.linalg.norm(after_align_pose[1])
+        bpy.data.objects[workspace_name + ":" + 'reconstruction']["alignT"] = trans.tolist()
+        
         return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width = 400)
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        layout.label(text="Set Plane Alignment (ICP) Parameters:")
+        box = layout.box() 
+        row = box.row()
+        row.prop(scene.planalignmentparas, "threshold") 
+        row = box.row()
+        row.prop(scene.planalignmentparas, "n") 
+        row = box.row()
+        row.prop(scene.planalignmentparas, "iteration") 
+
+class PlaneAlignmentConfig(bpy.types.PropertyGroup):
+    # The properties for this class which is referenced as an 'entry' below.
+    threshold: bpy.props.FloatProperty(name="Inlier Threshold", 
+                                        description="Inlier threshold for points aligned to plane", 
+                                        default=0.01, 
+                                        min=0.001, 
+                                        max=1.000, 
+                                        step=0.001, 
+                                        precision=3)
+
+    n: bpy.props.IntProperty(name="Fit Number", 
+                                description="Numbers for fitting a plane", 
+                                default=3, 
+                                min=3, 
+                                max=10, 
+                                step=1)
+    iteration: bpy.props.IntProperty(name="Fit Iteration", 
+                                        description="ICP Iteration", 
+                                        default=1000, 
+                                        min=10, 
+                                        max=10000, 
+                                        step=100)
+
 
 class ImportCamRGBDepth(Operator):
     """This appears in the tooltip of the operator and in the generated docs"""
@@ -307,6 +345,8 @@ class ModelICP(Operator):
             rot = np.array(scene.matrix_world)
             scene_vertices_rotated = (rot[:3, :3].dot(scene_vertices.T) + rot[:3, [3]]).T
             trans_obj_icp = modelICP(scene_vertices_rotated, model_vertices)
+            # trans_obj_icp = globalRegisteration(scene_vertices_rotated, model_vertices)
+            # print(trans_obj_icp)
             current_pose = [list(obj.location), list(obj.rotation_quaternion)]
             current_trans = _pose2Rotation(current_pose)
             mew_trans = trans_obj_icp @ current_trans
@@ -315,14 +355,17 @@ class ModelICP(Operator):
             obj.rotation_quaternion = new_pose[1]
         return {'FINISHED'}      
 
+
 def register():
     # bpy.utils.register_class(ViewImage)
     bpy.utils.register_class(PlaneAlignment)
+    bpy.utils.register_class(PlaneAlignmentConfig)
+    bpy.types.Scene.planalignmentparas = bpy.props.PointerProperty(type=PlaneAlignmentConfig) 
     bpy.utils.register_class(ImportCamRGBDepth)
     bpy.utils.register_class(ImportReconResult)
     bpy.utils.register_class(LoadRecon)
     bpy.types.Scene.loadreconparas = bpy.props.PointerProperty(type=LoadRecon)   
-
+    
     
 
     bpy.utils.register_class(ModelICP)
@@ -334,6 +377,7 @@ def unregister():
     # bpy.utils.unregister_class(ViewImage)
     
     bpy.utils.unregister_class(PlaneAlignment)
+    bpy.utils.unregister_class(PlaneAlignmentConfig)
     bpy.utils.unregister_class(ImportCamRGBDepth)
     bpy.utils.unregister_class(ImportReconResult)
     bpy.utils.unregister_class(LoadRecon)

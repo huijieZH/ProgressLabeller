@@ -57,8 +57,8 @@ class Reconstruction(Operator):
                             pointcloudscale = 1.0, 
                             datasrc = config.datasrc,
                             config_id = config_id,
-                            camera_display_scale = 0.1,
-                            CAMPOSE_INVERSE= True
+                            camera_display_scale = config.cameradisplayscale,
+                            CAMPOSE_INVERSE= False
                             )
         return {'FINISHED'}
 

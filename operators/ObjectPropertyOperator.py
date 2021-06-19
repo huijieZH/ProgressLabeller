@@ -239,13 +239,14 @@ class ImportReconResult(Operator):
         datasrc = config.datasrc
         filepath = config.reconstructionsrc
         scene.loadreconparas.pointcloud_scale = config.reconstructionscale
+        # config.cameradisplayscale = scene.loadreconparas.camera_display_scale
 
         if not scene.loadreconparas.AUTOALIGN:
             load_reconstruction_result(filepath = filepath, 
                                         pointcloudscale = scene.loadreconparas.pointcloud_scale, 
                                         datasrc = datasrc,
                                         config_id = config_id,
-                                        camera_display_scale = scene.loadreconparas.camera_display_scale,
+                                        camera_display_scale = config.cameradisplayscale,
                                         CAMPOSE_INVERSE = scene.loadreconparas.CAMPOSE_INVERSE
                                         )
         else:
@@ -260,6 +261,7 @@ class ImportReconResult(Operator):
             plane_model, inliers = pcd.segment_plane(distance_threshold=scene.planalignmentparas.threshold,
                                                      ransac_n=scene.planalignmentparas.n,
                                                      num_iterations=scene.planalignmentparas.iteration)
+            
             plane_pcd = pcd.select_by_index(inliers)
             points = np.asarray(plane_pcd.points)
             file = open(camera_rgb_file, "r")
@@ -283,7 +285,8 @@ class ImportReconResult(Operator):
 
                         SUCCESS, scale = align_scale(points, pose, depthfile,
                                             scene.loadreconparas.depth_scale,
-                                            intrinsic, config.resX, config.resY)
+                                            intrinsic, config.resX, config.resY, 
+                                            camposeinv = scene.loadreconparas.CAMPOSE_INVERSE)
                         if SUCCESS:
                             scales.append(scale)
             if len(scales) != 0:
@@ -294,7 +297,7 @@ class ImportReconResult(Operator):
             else:
                 scale = 1.0
                 log_report(
-                "ERROR", "Failed finding the scale", None
+                "ERROR", "Failed finding the scale, maybe there is not a plane in your ", None
                 )  
                 
             config.reconstructionscale = scale
@@ -302,7 +305,7 @@ class ImportReconResult(Operator):
                                         pointcloudscale = scale, 
                                         datasrc = datasrc,
                                         config_id = config_id,
-                                        camera_display_scale = scene.loadreconparas.camera_display_scale,
+                                        camera_display_scale = config.cameradisplayscale,
                                         CAMPOSE_INVERSE = scene.loadreconparas.CAMPOSE_INVERSE
                                         )
             
@@ -359,7 +362,8 @@ class ImportReconResult(Operator):
             row = box.row()
             row.prop(scene.loadreconparas, "depth_scale")
         row = layout.row()
-        row.prop(scene.loadreconparas, "camera_display_scale")
+        # row.prop(scene.loadreconparas, "camera_display_scale")
+        row.prop(config, "cameradisplayscale")
         row = layout.row()
         row.prop(scene.loadreconparas, "CAMPOSE_INVERSE")       
             
@@ -375,13 +379,13 @@ class LoadRecon(bpy.types.PropertyGroup):
     AUTOALIGN: bpy.props.BoolProperty(name="Auto Align Point Cloud Scale", 
                                       description="Algin the Point Clound from Depth Information", 
                                       default=True)  
-    camera_display_scale: bpy.props.FloatProperty(name="Cameras Display Scale", 
-                                            description="Scale for cameras", 
-                                            default=0.1, 
-                                            min=0.0, 
-                                            max=1.0, 
-                                            step=2, 
-                                            precision=2)      
+    # camera_display_scale: bpy.props.FloatProperty(name="Cameras Display Scale", 
+    #                                         description="Scale for cameras", 
+    #                                         default=0.1, 
+    #                                         min=0.0, 
+    #                                         max=1.0, 
+    #                                         step=2, 
+    #                                         precision=2)      
     depth_scale: bpy.props.FloatProperty(name="Depth Data Scale", 
                                             description="Scale for depth", 
                                             default=0.00025)  

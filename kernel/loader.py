@@ -137,6 +137,7 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
                 f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2
                 cam_data.sensor_width = cam_data.lens * bpy.context.scene.configuration[config_id].resX/f
                 cam_data.display_size = camera_display_scale
+                
                 cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX/2 - bpy.context.scene.configuration[config_id].cx)/bpy.context.scene.configuration[config_id].resX
                 cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/bpy.context.scene.configuration[config_id].resY
                 ## allow background display

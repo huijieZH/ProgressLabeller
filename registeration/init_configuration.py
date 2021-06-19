@@ -19,6 +19,7 @@ config_json_dict = {
     'cy':[['camera', 'intrinsic'], ['1', '2']],    
     'lens':[['camera', 'lens']],
     'reconstructionscale': [['reconstruction', 'scale']],
+    'cameradisplayscale': [['reconstruction', 'cameradisplayscale']],
 }
 
 def decode_dict(configuration, code):
@@ -48,6 +49,7 @@ def encode_dict(configuration):
         },
         'reconstruction':{
         "scale": configuration.reconstructionscale,
+        "cameradisplayscale": configuration.cameradisplayscale,
         }
     }
     return output_dict
@@ -92,22 +94,25 @@ class config(bpy.types.PropertyGroup):
             old_scale = recon["scale"]
             new_scale = self.reconstructionscale
             alignT = np.asarray(recon["alignT"])
-    # def updatereconscale(old_scale, new_scale, alignT, workspacename):
+
+            self.cameradisplayscale = self.cameradisplayscale * new_scale/old_scale
+
             for obj in bpy.data.objects:
                 if obj.name.startswith(workspacename):
                     if obj["type"] == "reconstruction":
                         obj.scale = Vector((new_scale, new_scale, new_scale))
                     if obj["type"] == "camera":
                         current_location = np.asarray(obj.location).reshape((3, 1))
-                        print("old:", old_scale)
-                        print("new:", new_scale)
+                        # print("old:", old_scale)
+                        # print("new:", new_scale)
                         origin_location = np.linalg.inv(alignT[:3, :3]).dot(current_location - alignT[:3, [3]])/old_scale
-                        print("original:", origin_location)
+                        # print("original:", origin_location)
                         scaled_location = origin_location * new_scale
                         current_scaled_location = (alignT[:3, :3].dot(scaled_location) + alignT[:3, [3]]).reshape((3, ))
-                        print(current_scaled_location)
+                        # print(current_scaled_location)
                         obj.location = Vector(current_scaled_location)
-                        obj.data.display_size = obj.data.display_size * new_scale/old_scale
+                        # obj.data.display_size = obj.data.display_size * new_scale/old_scale
+                        
             recon["scale"] = self.reconstructionscale   
 
     
@@ -115,7 +120,23 @@ class config(bpy.types.PropertyGroup):
         min=0.01, max=10.000, step=3, precision=3, default = 1.000, 
         update=scale_update)
 
+    def cameradisplayscale_update(self, context):
+        
+        if hasattr(context, "object") \
+            and context.object \
+            and "type" in context.object \
+            and context.object["type"] == "reconstruction":
+            recon = context.object
+            workspacename = recon.name.split(":")[0]
+            for obj in bpy.data.objects:
+                if obj.name.startswith(workspacename):
+                    if obj["type"] == "camera":
+                        obj.data.display_size = self.cameradisplayscale
+                    
 
+    cameradisplayscale: bpy.props.FloatProperty(name="camera display scale", description="scale of the camera display size", 
+        min=0.01, max=1.000, step=0.1, precision=3, default = 0.1, 
+        update=cameradisplayscale_update)
 
 
 

@@ -29,9 +29,10 @@ class ObjectPropertyPanel(bpy.types.Panel):
 
                 layout = self.layout
                 scene = context.scene
-                layout.label(text="Set reconstruction scale:")
+                layout.label(text="Set scale:")
                 row = layout.row()
                 row.prop(scene.configuration[config_id], 'reconstructionscale')
+                row.prop(scene.configuration[config_id], 'cameradisplayscale')
                 layout.label(text="Align plane in reconstruction to X-Y:")
                 row = layout.row()
                 row.operator("object_property.planealignment")

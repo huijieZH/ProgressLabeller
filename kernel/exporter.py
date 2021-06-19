@@ -54,7 +54,7 @@ def data_export(config, target_dir):
             if not os.path.exists(rgbpath):
                 os.mkdir(rgbpath)
             for cam in tqdm(bpy.data.objects):     
-                if cam.name.split(":")[0] == name and cam["type"] == "camera":
+                if cam.name.split(":")[0] == name and "type" in cam and cam["type"] == "camera":
                     image = np.array(Image.open(cam["rgb"].filepath))
                     cameraT = _pose2Rotation([list(cam.location), list(cam.rotation_quaternion)])
                     # model_camT = np.linalg.inv(cameraT).dot(modelT)

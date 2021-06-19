@@ -197,8 +197,6 @@ def load_reconstruction_result(filepath,
                                       parent_collection = recon_collection)    
     ## load reconstruction result
     
-       
-
     camera_rgb_file = os.path.join(filepath, "campose.txt")
     reconstruction_path = os.path.join(filepath, "fused.ply")
     load_pc(reconstruction_path, pointcloudscale, config_id)
@@ -218,12 +216,6 @@ def load_reconstruction_result(filepath,
                                     [0, 0, -1, 0],
                                     [0, 0, 0, 1],]
             )
-            # Axis_align = np.array([[1, 0, 0, 0],
-            #                         [0, 1, 0, 0],
-            #                         [0, 0, 1, 0],
-            #                         [0, 0, 0, 1],]
-            # )
-            # Trans = np.linalg.inv(_pose2Rotation(pose)).dot(Axis_align)
             Trans = _pose2Rotation(pose).dot(Axis_align) if not CAMPOSE_INVERSE else np.linalg.inv(_pose2Rotation(pose)).dot(Axis_align)
             pose = _rotation2Pose(Trans)
             framename = data[-1]
@@ -234,13 +226,11 @@ def load_reconstruction_result(filepath,
                 cam_object = bpy.data.objects[cam_name]
                 cam_object.location = pose[0]
                 cam_object.rotation_quaternion = pose[1]
-            else:
+            elif perfix + "_rgb.png" in os.listdir(rgb_path) and perfix + "_depth.png" in os.listdir(depth_path):
                 cam_data = bpy.data.cameras.new(cam_name)
                 cam_data.lens = bpy.context.scene.configuration[config_id].lens
                 f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2
                 cam_data.sensor_width = cam_data.lens * bpy.context.scene.configuration[config_id].resX/f
-                # cam_data.shift_x = cam_data.lens * (bpy.context.scene.configuration[config_id].cx - bpy.context.scene.configuration[config_id].resX/2)/f
-                # cam_data.shift_y = cam_data.lens * (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/f
                 cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX/2 - bpy.context.scene.configuration[config_id].cx)/bpy.context.scene.configuration[config_id].resX
                 ### divide resX not resY
                 cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/bpy.context.scene.configuration[config_id].resX
@@ -277,34 +267,7 @@ def load_reconstruction_result(filepath,
                 cam_object["depth"] = bpy.data.images[depth_name]
                 cam_object["rgb"] = bpy.data.images[rgb_name]
                 cam_object["type"] = "camera"         
-            
-            # framename = data[-1]
-            # framepath = os.path.join(imagesrc, framename)
-
-            # ## create a new camera, specify its parameters
-            # ## the lens could be define by yourself, and the sensor size could be calculate from intrinsic
-            # camera_data = bpy.data.cameras.new(name="view" + perfix)
-            # camera_data.lens = bpy.context.scene.configuration.lens  # realsense L515
-            # f = (bpy.context.scene.configuration.fx + bpy.context.scene.configuration.fy)/2
-            # camera_data.sensor_width = camera_data.lens * bpy.context.scene.configuration.resX/f
-            # # camera_data.shift_x = (bpy.context.scene.configuration.px - bpy.context.scene.configuration.resX/2) * camera_data.sensor_width / bpy.context.scene.configuration.resX
-            # # camera_data.shift_y = (bpy.context.scene.configuration.py - bpy.context.scene.configuration.resY/2) * camera_data.sensor_width / bpy.context.scene.configuration.resX
-            # camera_data.display_size = camera_display_scale
-            # camera_object = bpy.data.objects.new("view" + perfix, camera_data)
-            # bpy.data.collections["Camera"].objects.link(camera_object)
-            # camera_object.rotation_mode = 'QUATERNION'
-            # camera_object.location = pose[0]
-            # camera_object.rotation_quaternion = pose[1]
-
-            # ## create new image
-            # bpy.ops.image.open(filepath=framepath, 
-            #                     directory=imagesrc, 
-            #                     files=[{"name":framename}], 
-            #                     relative_path=True, show_multiview=False)
-            # bpy.data.images[framename].name = "view" + perfix  
-            # camera_object["image"] = bpy.data.images["view" + perfix]
-            # camera_object["type"] = "camera"
-
+    
 
 
 def create_workspace(path, name, 
@@ -357,29 +320,8 @@ def setting_init(name, collection, path):
         print(name.split(":")[0] + " is currently in the Blender")
     return setting
 
-# def setting_config_init(setting, config):
-#     ## automatically allocate the variable in configuration file to setting
-#     for attr in dir(config):
-#         if attr not in ['bl_rna', 'rna_type']:
-#             if not attr.startswith("__") or not attr.endswith("__"):
-#                 setting[attr] = config.__getattribute__(attr) 
-
-#     setting['name'] = setting.name.split(':')[0]
 
 def config_from_file(config, configuration):
-    # config.projectname = configuration['projectname']
-    # config.modelsrc = configuration['environment']['modelsrc']
-    # config.modelposesrc = configuration['environment']['modelposesrc']
-    # config.reconstructionsrc = configuration['environment']['reconstructionsrc']
-    # config.imagesrc = configuration['environment']['imagesrc']
-
-    # config.resX = configuration['camera']['resolution'][0]
-    # config.resY = configuration['camera']['resolution'][1]
-    # config.fx = configuration['camera']['intrinsic'][0][0]
-    # config.fy = configuration['camera']['intrinsic'][1][1]
-    # config.px = configuration['camera']['intrinsic'][0][2]
-    # config.py = configuration['camera']['intrinsic'][1][2]
-    # config.lens = configuration['camera']['lens']
     for item in config_json_dict:
         value = decode_dict(configuration, config_json_dict[item])
         setattr(config, item, value)
@@ -424,4 +366,6 @@ def removeworkspace(name):
         if img.name.split(":")[0] == name:
             bpy.data.images.remove(img)         
     return 
+
+
 

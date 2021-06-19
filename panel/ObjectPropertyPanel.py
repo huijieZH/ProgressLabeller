@@ -20,13 +20,22 @@ class ObjectPropertyPanel(bpy.types.Panel):
             if object_type == "model":
                 layout = self.layout
                 scene = context.scene
+                layout.label(text="Align model to reconstruction:")
                 row = layout.row()
                 row.operator("object_property.modelicp")
             elif object_type == "reconstruction":
+                workspace_name = current_object.split(":")[0]   
+                config_id = bpy.data.objects[workspace_name + ":Setting"]['config_id']
+
                 layout = self.layout
                 scene = context.scene
+                layout.label(text="Set reconstruction scale:")
+                row = layout.row()
+                row.prop(scene.configuration[config_id], 'reconstructionscale')
+                layout.label(text="Align plane in reconstruction to X-Y:")
                 row = layout.row()
                 row.operator("object_property.planealignment")
+
             elif object_type == "camera":
                 layout = self.layout
                 scene = context.scene

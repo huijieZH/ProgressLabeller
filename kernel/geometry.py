@@ -1,5 +1,6 @@
 import numpy as np
 import open3d as o3d
+from PIL import Image
 
 def _pose2Rotation(pose):
     x, y, z = pose[0]
@@ -96,7 +97,7 @@ def _loadModel(modelPath):
 
 def plane_alignment(filepath, scale, alignT, threshold, n, iteration):
     pcd = o3d.io.read_point_cloud(filepath)
-    scaled_xyz = (alignT[:3, :3].dot(np.asarray(pcd.points).T) + alignT[:3, [3]]).T* scale
+    scaled_xyz = (alignT[:3, :3].dot(np.asarray(pcd.points).T * scale) + alignT[:3, [3]]).T 
     scaled_pcd = o3d.geometry.PointCloud()
     scaled_pcd.points = o3d.utility.Vector3dVector(scaled_xyz)
     plane_model, inliers = scaled_pcd.segment_plane(distance_threshold=threshold,
@@ -183,3 +184,41 @@ def _register_point_cloud_fpfh(source, target, source_fpfh, target_fpfh, distanc
         return np.identity(4)
     else:
         return result.transformation
+
+def align_scale(pc, cam_pose, filename,
+                depthscale,
+                intrinsic, rX, rY,
+                camposeinv = False):
+    if not camposeinv:
+        camT = np.linalg.inv(_pose2Rotation(cam_pose))
+    else:
+        camT = _pose2Rotation(cam_pose)
+
+    points_cam = camT[:3, :3].dot(pc.T) + camT[:3, [3]]
+
+    pixel_homo = intrinsic.dot(points_cam)
+    pixel = np.around(pixel_homo[:2]/pixel_homo[2]).astype(np.int32)
+    inside_mask = (pixel[0, :] >=0) * (pixel[0, :] <rX) * (pixel[1, :] >=0) * (pixel[1, :] <rY)
+
+    pixel_inframe = pixel[:, inside_mask]
+    point_inframe = points_cam[2, inside_mask]
+    transform = pixel_inframe[0] * rY + pixel_inframe[1]
+
+    d = np.bincount(transform, point_inframe)
+    num = np.bincount(transform)
+    
+    max_density = num.max()
+    dp = np.divide(d, num, out=np.zeros_like(d), where=num > max_density*0.5)
+    depth = np.concatenate((dp, np.zeros(rX*rY - dp.shape[0])), axis = 0)
+
+    depth_im = depth.reshape((rX, rY)).T
+
+    real_depth = np.asarray(Image.open(filename)) * depthscale
+    depth_mask = (real_depth > 0) * (depth_im > 0) * (real_depth < 1.5)
+    real = real_depth[depth_mask]
+    render = depth_im[depth_mask]
+    if real.shape[0] > 0 and render.shape[0] > 0:
+        scale = np.mean(real/render)
+        return (True, scale)
+    else:
+        return (False, None)

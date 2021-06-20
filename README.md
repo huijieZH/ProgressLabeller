@@ -237,7 +237,15 @@ Then click the ``Import Model`` under the object properties of setting object to
 <img src='doc/fig/importcolmaprecon.png' width="300"/>
 
 ### Tools for better alignment
-We prepare several tips for a better alignment.
+We prepare several tricks for a better alignment.
+
+#### Plane Alignment
+
+The ``Plane Alignment`` button under the object properties of reconstruction object.
+
+#### Camera and Image Align
+
+#### Object Alignment
 
 
 

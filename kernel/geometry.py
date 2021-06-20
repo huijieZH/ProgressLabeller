@@ -199,6 +199,9 @@ def align_scale(pc, cam_pose, filename,
     pixel_homo = intrinsic.dot(points_cam)
     pixel = np.around(pixel_homo[:2]/pixel_homo[2]).astype(np.int32)
     inside_mask = (pixel[0, :] >=0) * (pixel[0, :] <rX) * (pixel[1, :] >=0) * (pixel[1, :] <rY)
+    if np.sum(inside_mask) == 0:
+        ## maybe the camera intrinsic is set wrong
+        return (False, None)
     pixel_inframe = pixel[:, inside_mask]
     point_inframe = points_cam[2, inside_mask]
     transform = pixel_inframe[0] * rY + pixel_inframe[1]

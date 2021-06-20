@@ -206,7 +206,15 @@ We create new collections in blender for a better arrangement for our pipline, i
 
 ### Reconstruction from build-in KinectFusion
 
-Create a new workspace ``File > New > ProgressLabeller Create New Workspace`` in blender, correctly link each path 
+Create a new workspace ``File > New > ProgressLabeller Create New Workspace`` in blender, correctly link each path and camera intrinsic under the setting object. The model package and data package should contain datas [introduced before](#dataset) while reconstruction package could be empty.
+
+<img src='doc/fig/setparas.png' width="1000"/>
+
+Then click the ``Import RGB & Depth`` to load RGB, depth images and cameras into your worksapce. Don't forget to do this before starting reconstruction.
+
+<img src='doc/fig/loadrgbdepth.png' width="1000"/>
+
+Then click the `` ``, select the reconstruction method as KinectFusion. Follow the guidance of (#kinectfusion-setting) to set the parameters, then start reconstruction. The process of the reconstruction would shown in the terminal.
 
 ### Reconstruction from COLMAP
 

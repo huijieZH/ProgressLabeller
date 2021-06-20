@@ -214,7 +214,10 @@ Then click the ``Import RGB & Depth`` to load RGB, depth images and cameras into
 
 <img src='doc/fig/loadrgbdepth.png' width="1000"/>
 
-Then click the `` ``, select the reconstruction method as KinectFusion. Follow the guidance of (#kinectfusion-setting) to set the parameters, then start reconstruction. The process of the reconstruction would shown in the terminal.
+Then click the ``3D Reconstruction from data (Depth, RGB or both)``, select the reconstruction method as KinectFusion. Follow the guidance of (#kinectfusion-setting) to set the parameters, then start reconstruction. The process of the reconstruction would shown in the terminal.
+After successful reconstruction, you would see the point cloud and cameras with registered poses.
+
+<img src='doc/fig/kinectfusionrecon.png' width="1000"/>
 
 ### Reconstruction from COLMAP
 

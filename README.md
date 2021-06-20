@@ -85,7 +85,8 @@ To prepare a new dataset, please follow the structure below. We also provide a *
     |-- label_pose.yaml        # Name should be the same. Object poses file, stored labelled objects poses, 
                                # generated from our pipline.
     ...
-|-- output                     # Stored output labelled objects poses and segmentation per frame, generated from our pipline.
+|-- output                     # Stored output labelled objects poses and segmentation per frame, 
+                               # generated from our pipline.
     |-- object1        
         |-- pose
             |--0.txt
@@ -126,7 +127,7 @@ The object name in Object pose file should be the same as the package and file n
 
 #### Camera poses file
 
-Object pose file is a ``.txt`` file stored camera poses for each image in ```PATH/TO/DATASET/data```. It could be generated from our pipeline (right now we use kinect fusion) or from other projects like .We present a demo in the given demo dataset ```PATH/TO/DEMODATASET/COLMAP_recon/extracted_campose.txt```, it should be aranged as:
+Object pose file is a ``.txt`` file stored camera poses for each image in ```PATH/TO/DATASET/data```. It could be generated from our pipeline (right now we use kinect fusion) or from other projects like [COLMAP](https://colmap.github.io/). We present a demo in the given demo dataset ```PATH/TO/DEMODATASET/COLMAP_recon/extracted_campose.txt```, it should be aranged as:
 
 ```bash
 # IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME
@@ -137,30 +138,37 @@ Object pose file is a ``.txt`` file stored camera poses for each image in ```PAT
 
 ### Configuration
 
-You could design your own configuration in a ``.json`` file, we present a demo in ```path/to/repo/configuration.json```
+You could design your own configuration in a ``.json`` file, we present a demo in ```PATH/TO/DEMODATASET/configuration.json```
 ```python
 {
+    "projectname": "Demo",
     "environment":{
-        "modelsrc":
-        ## path for the model used to label pose
-            "/path/to/dataset/model/",
+        "modelsrc": 
+        ## path for the model
+            "PATH/TO/DEMODATASET/model/",
         "modelposesrc": 
-        ## path for the files containing per-object labelled pose
-            "/path/to/dataset/COLMAP_recon/",
+        ## path for the Object poses file
+            "PATH/TO/DEMODATASET/COLMAP_recon/",
         "reconstructionsrc":
-        ## path for the reconstruction output
-            "/path/to/dataset/",
-        "imagesrc":
-        ## path for the rgb data used for reconstruction
-            "/path/to/dataset/data/rgb/"
+        ## path for the reconstruction package 
+            "PATH/TO/DEMODATASET/COLMAP_recon/",
+        "datasrc":
+        ## path for the data(rgb and depth)
+            "PATH/TO/DEMODATASET/data/"
         },
     "camera":{
         "resolution": [1280, 720],
-        "intrinsic": [[904.572, 0, 635.981],
-                      [0, 905.295, 353.060],
+        "intrinsic": [[915.869, 0, 635.981],
+                      [0, 915.869, 353.060],
                       [0, 0, 1]],
-        "lens": 25   # could be random number, no physical meaning
-    }
+        "lens": 0.025 # could be random number, no physical meaning
+    },
+    "reconstruction": {
+       "scale": 1.0,  # scale for the reconstruction, for depth-based method, it would be 1; 
+                      # for rgb-based method, we use depth information to auto-align the scale
+       "cameradisplayscale": 0.1
+                      # display size for the camera
+      }
 }
 ```
 
@@ -171,17 +179,21 @@ We create new collections in blender for a better arrangement for our pipline, i
 ```bash
 
 |-- Scene Collection              # root cocllection in blender
-    |-- Reconstruction            # collection for reconstruction result
-        |-- PointCloud  
-            |-- reconstruction
-        |-- Camera
-            |-- view0001
-            |-- view0002
+    |-- <Your project name>       # collection for your project workspace name, is same as 
+                                  # the projectname in the configuration.json file
+        |-- <Your project name>:Model                     
+            |-- <Your project name>:object1                # model object
+            |-- <Your project name>:object2
             ...
-    |-- Model                     # collection for object model
-        |-- object1      
-        |-- object2
-        ...
+        |-- <Your project name>:Reconstruction  
+            |-- <Your project name>:Pointcloud
+                |-- <Your project name>:reconstruction     # point cloud object
+            |-- <Your project name>:Camera
+                |-- <Your project name>:view0              # camera object 
+                |-- <Your project name>:view1
+                ...
+        |-- <Your project name>:Setting                    # setting object 
+    ...
 ```
 
 <img src='doc/fig/collection.png' width="300"/>

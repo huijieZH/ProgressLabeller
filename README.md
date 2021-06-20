@@ -210,6 +210,10 @@ Create a new workspace ``File > New > ProgressLabeller Create New Workspace`` in
 
 <img src='doc/fig/setparas.png' width="1000"/>
 
+#### Load Workspace
+
+You could also load a saved workspace from ``File > Import > ProgressLabeller Configuration (.json)``
+
 #### Load images
 
 Then click the ``Import RGB & Depth`` under the object properties of setting object to load RGB, depth images and cameras into your worksapce. Don't forget to do this before starting reconstruction.
@@ -239,15 +243,25 @@ Then click the ``Import Model`` under the object properties of setting object to
 ### Tools for better alignment
 We prepare several tricks for a better alignment.
 
+
+
 #### Plane Alignment
 
-The ``Plane Alignment`` button under the object properties of reconstruction object.
+The ``Plane Alignment`` button under the object properties of reconstruction object using RANSAC algorithm to find plane in the point cloud and transform it to X-Y plane. It accelerates the process of model dragging. 
+
+<img src='doc/fig/planealignment.png' width="700"/>
 
 #### Camera and Image Align
 
+When click on the camera object, the 3D scene would automatically align to camera pose. You could change ``View Mode`` between RGB and depth. ``Show Float Screen`` would create a float screen at the left-bottom corner of the screen displaying the image corresponding to the camera. ``Align the float screen and camera view`` would be useful to see the segmentation of your labelled poses. It is actively, user-friendly to adjust the pose from the segmentation. ``Show pairwise image in background`` would add the corresponding image as the background of the camera view. It is convenient to see the accuracy of the pose.
+
+<img src='doc/fig/camera.png' width="1000"/>
+
 #### Object Alignment
 
+The ``Model Alignment`` button under the object properties of camera object using ICP algorithm for locally aligning the model and reconstruction. When aligning the model, first drag it to an approximate pose and than use ``Model Alignment`` for local alignment.
 
+<img src='doc/fig/modelalignment.png' width="700"/>
 
 
 

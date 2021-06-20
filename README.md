@@ -18,8 +18,7 @@
   * [Quick Start](#quick-start)
     * [Reconstruction from build-in KinectFusion](#reconstruction-from-build-in-kinectfusion)
     * [Reconstruction from COLMAP](#reconstruction-from-colmap)
-    * [Import](#import)
-    * [Collection-wise property](#collection-wise-property)
+    * [Tools for better alignment](#tools-for-better-alignment)
   * [Reference](#references)
 ------
 
@@ -206,56 +205,40 @@ We create new collections in blender for a better arrangement for our pipline, i
 
 ### Reconstruction from build-in KinectFusion
 
-Create a new workspace ``File > New > ProgressLabeller Create New Workspace`` in blender, correctly link each path and camera intrinsic under the setting object. The model package and data package should contain datas [introduced before](#dataset) while reconstruction package could be empty.
+#### Create Workspace
+Create a new workspace ``File > New > ProgressLabeller Create New Workspace`` in blender, correctly link each path and camera intrinsic under the object properties of setting object. The model package and data package should contain datas [introduced before](#dataset) while reconstruction package could be empty.
 
 <img src='doc/fig/setparas.png' width="1000"/>
 
-Then click the ``Import RGB & Depth`` to load RGB, depth images and cameras into your worksapce. Don't forget to do this before starting reconstruction.
+#### Load images
+
+Then click the ``Import RGB & Depth`` under the object properties of setting object to load RGB, depth images and cameras into your worksapce. Don't forget to do this before starting reconstruction.
 
 <img src='doc/fig/loadrgbdepth.png' width="1000"/>
 
-Then click the ``3D Reconstruction from data (Depth, RGB or both)``, select the reconstruction method as KinectFusion. Follow the guidance of (#kinectfusion-setting) to set the parameters, then start reconstruction. The process of the reconstruction would shown in the terminal.
-After successful reconstruction, you would see the point cloud and cameras with registered poses.
+#### Reconstruct
+
+Then click the ``3D Reconstruction from data (Depth, RGB or both)`` under the object properties of setting object, select the reconstruction method as KinectFusion. Follow the guidance of (#kinectfusion-setting) to set the parameters, then start reconstruction. The process of the reconstruction would shown in the terminal.
+
+After successful reconstruction, you would see the point cloud under the `` <Your project name>:Reconstruction`` collection and cameras with registered poses under the `` <Your project name>:Camera`` collection.
 
 <img src='doc/fig/kinectfusionrecon.png' width="1000"/>
 
+#### Align model
+
+Then click the ``Import Model`` under the object properties of setting object to import obejct for labelling and drag models to algin the point cloud.
+
 ### Reconstruction from COLMAP
 
-### Import
+Instead of [load images](#load-images) and [reconstruct](#reconstruct) in our add-on, it is also supported to load other projects' reconstructions result. Just follow the [guidance](#dataset) to prepare the dataset, especially the [camera poses file](#camera-poses-file) and [reconstruction package](#dataset).
 
-#### Import Configuration
+Then click the ``Import Model`` under the object properties of setting object to import cameras and reconstruction. It should be mentioned that COLMAP gives the inverse of the camera poses (world pose under the camera coordinate system), while build-in kinectfusion gives camera poses under the world system. When loading COLMAP result, please select ``Inverse Camera Pose``.
 
-``File > Import > ProgressLabeller Configuration(.json)`` would load [configuration file](#configuration), which provides environment path and load some basic parameters for our pipeline.
+<img src='doc/fig/importcolmaprecon.png' width="500"/>
 
-#### Import object model
+### Tools for better alignment
+We prepare several tips for a better alignment.
 
-``File > Import > ProgressLabeller Model(.obj)`` would load single object model (right now only support .obj file) into [Model collection](#collection)
-
-``File > Import > ProgressLabeller Model from pose file(.yaml)`` would load multiple object models mentioned in [object pose file](#object-poses-file) into [Model collection](#collection), automatically search in the environment(please load configuration before use this function). The function is designed not for first time labeling, but to make it convenient to reload the model after the first time. 
-
-#### Import reconstruction result
-
-``File > Import > ProgressLabeller Load Reconstruction Result(package)`` would read a [reconstruction package](#dataset) (right now we only support COLMAP results). It loads merged point cloud to [PointCloud collection](#collection) and loads pair-wise pose-aligned camera and rgb image mentioned in [camera poses file](#camera-pose-file) to [Camera collection](#collection)
-
-
-
-### Collection-wise property
-
-Collection-wise properties are all added as panels in ``Object Properties``, you could find them when you click any object instance.
-
-<img src='doc/fig/objproperty2.png' width="300"/>
-<img src='doc/fig/objproperty1.png' width="300"/>
-
-#### PointCloud Collection
-
-Plane Alignment: We would use RANSAC to search the plane in the point cloud and align the plane to X-Y plane. 
-
-#### Camera Collection
-
-View Mode: For object instances in Camera collection, we could change the cooresponding rgb image display mode in the ``UV Editing`` workspace. When selecting ``Origin``, it would display the original image, when selecting ``Segment``, it would render the Silhouettes of each model in Model collection and show the segment on the image.
-
-
-<img src='doc/fig/render.png' width="1000"/>
 
 
 

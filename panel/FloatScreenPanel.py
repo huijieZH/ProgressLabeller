@@ -169,4 +169,4 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(FloatScreenProperty)
-    bpy.types.SpaceView3D.draw_handler_remove(floatscreen_handler)
+    bpy.types.SpaceView3D.draw_handler_remove(floatscreen_handler, 'WINDOW')

@@ -12,12 +12,12 @@
     * [Install add-on in blender](#install-add-on-in-blender)
     * [Install denpencies](#install-denpencies)
   * [Data structure](#data-structure)
+    * [Dataset](#dataset)
     * [Configuration](#configuration)
-    * [Object pose file](#object-pose-file)
-    * [Reconstruction package](#reconstruction-package)
+    * [Collection](#collection)
   * [Quick Start](#what-we-have-achieved)
     * [Import](#import)
-    * [Cameras and images](#cameras-and-images)
+    * [Collection-wise property](#collection-wise-property)
   * [Reference](#references)
 ------
 
@@ -44,7 +44,10 @@ Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/Progr
 
 Our add-on depends on the following libraries:
 
-* open3d >= 0.12.0
+* open3d
+* Pillow
+* pycuda
+* scipy
 
 It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, pip install command shoudld be 
 ```bash
@@ -55,11 +58,12 @@ pip3 install --target /PATH/TO/BLENDER/2.92/python/lib/python3.7/site-packages o
 
 ### Dataset
 
-To prepare a new dataset, please follow the structure below. We also provide a **demo dataset** [here](https://www.dropbox.com/s/04ogfvubpgar695/ProgressLabellerData.zip?dl=0)
+To prepare a new dataset, please follow the structure below. We also provide a **demo dataset** [here](https://www.dropbox.com/s/qrgare7rg579m48/ProgressLabellerDemoDateset.zip?dl=0)
 
 ```bash
 <dataset>
-|-- data              # pairwise rgb and depth images
+|-- data              # pairwise rgb and depth images, no need for the name, just pairwise rgb and depth images 
+                      # should have the same name
     |-- rgb
         |-- 0.png        
         |-- 1.png
@@ -69,22 +73,42 @@ To prepare a new dataset, please follow the structure below. We also provide a *
         |-- 1.png
         ...
 |-- model
-    |-- object1        # model for pose labelling 
+    |-- object1        # model for pose labelling, should have the same package structure
         |-- object1.obj
     |-- object2
         |-- object2.obj
     ...
-|-- reconstruction package     # reconstruction result(right now only support COLMAP)
-    |-- extracted_campose.txt  # Camera poses file, stored camera pose for each images
-    |-- fused.ply              # reconstructed point clound
-    |-- label_pose.yaml        # Object pose file, stored labelled object poses
+|-- reconstruction package     # reconstruction result, the package name could be random, its files could either 
+                               # be generated from our pipline or created from other methods.
+    |-- campose.txt            # Name should be the same. Camera poses file, stored camera pose for each images
+    |-- fused.ply              # Name should be the same. Reconstructed point clound
+    |-- label_pose.yaml        # Name should be the same. Object poses file, stored labelled objects poses, 
+                               # generated from our pipline.
     ...
+|-- output                     # Stored output labelled objects poses and segmentation per frame, generated from our pipline.
+    |-- object1        
+        |-- pose
+            |--0.txt
+            |--1.txt
+            ...
+        |-- rgb
+            |--0.png
+            |--1.png
+            ...       
+    |-- object2
+        |-- pose
+            |--0.txt
+            |--1.txt
+            ...
+        |-- rgb
+            |--0.png
+            |--1.png
+            ...   
+     ...
 ```
-
-
 #### Object poses file
 
-Object pose file is a ``.yaml`` file stored all labelled pose. It makes it more convenient for you to re-load your labelled results. We present a demo in the given demo dataset ```path/to/demodataset/COLMAP_recon/label_pose.yaml```, it should be aranged as:
+Object pose file is a ``.yaml`` file stored all labelled pose in world coordinate. It makes it more convenient for you to re-load your labelled results. We present a demo in the given demo dataset ```PATH/TO/DEMODATASET/COLMAP_recon/label_pose.yaml```, it should be aranged as:
 
 ```bash
 object1:
@@ -98,12 +122,11 @@ object2:
 ...   
 ```
 
-The object name in Object pose file should be the same as the package/file name for models in ```path/to/dataset/model```, [using object pose file to import objects](#Import-object-model) would automatically search objects in ```path/to/dataset/model``` from names in object pose file.
+The object name in Object pose file should be the same as the package and file name for models in ```PATH/TO/DATASET/model```, [using object pose file to import objects](#Import-object-model) would automatically search objects in ```PATH/TO/DATASET/model``` from names in object pose file.
 
 #### Camera poses file
 
-
-Object pose file is a ``.txt`` file stored camera poses for each image in ```path/to/dataset/data/rgb```. It is an output from [COLMAP](https://colmap.github.io/). We present a demo in the given demo dataset ```path/to/demodataset/COLMAP_recon/extracted_campose.txt```, it should be aranged as:
+Object pose file is a ``.txt`` file stored camera poses for each image in ```PATH/TO/DATASET/data```. It could be generated from our pipeline (right now we use kinect fusion) or from other projects like .We present a demo in the given demo dataset ```PATH/TO/DEMODATASET/COLMAP_recon/extracted_campose.txt```, it should be aranged as:
 
 ```bash
 # IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME

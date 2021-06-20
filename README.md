@@ -15,7 +15,9 @@
     * [Dataset](#dataset)
     * [Configuration](#configuration)
     * [Collection](#collection)
-  * [Quick Start](#what-we-have-achieved)
+  * [Quick Start](#quick-start)
+    * [Reconstruction from build-in KinectFusion](#reconstruction-from-build-in-kinectfusion)
+    * [Reconstruction from COLMAP](#reconstruction-from-colmap)
     * [Import](#import)
     * [Collection-wise property](#collection-wise-property)
   * [Reference](#references)
@@ -200,7 +202,13 @@ We create new collections in blender for a better arrangement for our pipline, i
 
 
 
-## What we have achieved
+## Quick Start
+
+### Reconstruction from build-in KinectFusion
+
+Create a new workspace ``File > New > ProgressLabeller Create New Workspace`` in blender, correctly link each path 
+
+### Reconstruction from COLMAP
 
 ### Import
 

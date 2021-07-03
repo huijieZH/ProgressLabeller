@@ -65,13 +65,13 @@ To prepare a new dataset, please follow the structure below. We also provide a *
 <dataset>
 |-- data              # pairwise rgb and depth images, no need for the name, just pairwise rgb and depth images 
                       # should have the same name
-    |-- rgb
-        |-- 0.png        
-        |-- 1.png
+    |-- rgb           # <perfix>_rgb.png
+        |-- 0_rgb.png        
+        |-- 1_rgb.png
         ...
-    |-- depth
-        |-- 0.png        
-        |-- 1.png
+    |-- depth         # <perfix>_depth.png
+        |-- 0_depth.png        
+        |-- 1_depth.png
         ...
 |-- model
     |-- object1        # model for pose labelling, should have the same package structure

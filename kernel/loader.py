@@ -128,8 +128,8 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
         "INFO", "Loading camera, rgb and depth images", None
     )
     for rgb in tqdm(rgb_files):
-        perfix = rgb.split("_")[0]
-        if perfix + "_depth.png" in depth_files:
+        perfix = rgb.split(".")[0]
+        if perfix + ".png" in depth_files:
             cam_name = workspace_name + ":view" + perfix
             if cam_name not in bpy.data.objects:
                 cam_data = bpy.data.cameras.new(cam_name)
@@ -154,21 +154,21 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
             ## load rgb
             rgb_name = workspace_name + ":rgb" + perfix
             if rgb_name not in bpy.data.images:
-                bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + "_rgb.png"), 
+                bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), 
                                     directory=rgb_path, 
-                                    files=[{"name":perfix + "_rgb.png"}], 
+                                    files=[{"name":perfix + ".png"}], 
                                     relative_path=True, show_multiview=False)
-                bpy.data.images[perfix + "_rgb.png"].name = rgb_name
+                bpy.data.images[perfix + ".png"].name = rgb_name
             bpy.data.images[rgb_name]["UPDATEALPHA"] = True
             bpy.data.images[rgb_name]["alpha"] = [0.5]
             ## load depth
             depth_name = workspace_name + ":depth" + perfix
             if depth_name not in bpy.data.images:
-                bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + "_depth.png"), 
+                bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + ".png"), 
                                     directory=depth_path, 
-                                    files=[{"name":perfix + "_depth.png"}], 
+                                    files=[{"name":perfix + ".png"}], 
                                     relative_path=True, show_multiview=False)
-                bpy.data.images[perfix + "_depth.png"].name = depth_name
+                bpy.data.images[perfix + ".png"].name = depth_name
                 ## change transparency
             bpy.data.images[depth_name]["UPDATEALPHA"] = True
             bpy.data.images[depth_name]["alpha"] = [0.5]

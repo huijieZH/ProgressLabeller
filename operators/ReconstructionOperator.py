@@ -33,7 +33,7 @@ class Reconstruction(Operator):
     def execute(self, context):
         scene = context.scene
         config_id = context.object["config_id"]
-        config = bpy.context.scene.configuration[config_id]       
+        config = bpy.context.scene.configuration[config_id]    
         if self.ReconstructionType == "KinectFusion":
             KinectfusionRecon(
                 data_folder = config.datasrc,
@@ -69,9 +69,9 @@ class Reconstruction(Operator):
         for obj in bpy.data.objects:
             if obj.name.startswith(workspace_name) and obj['type'] == "camera":
                 perfix = (obj.name.split(":")[1]).replace("view", "")
-                if (workspace_name + ":" + "depth" + perfix in bpy.data.images) and (workspace_name + ":" + "rgb" + perfix in bpy.data.images):
+                if (workspace_name + ":" + "depth" + perfix in bpy.data.images) and (workspace_name + ":" + "rgb" + perfix in bpy.data.images) and (perfix not in self.PerfixList):
                     self.PerfixList.append(perfix)
-        self.PerfixList.sort()
+        self.PerfixList.sort(key = lambda x:int(x))
         if len(self.PerfixList) == 0:
             log_report(
                 "Error", "You should upload the rgb and depth data before doing reconstruction", None

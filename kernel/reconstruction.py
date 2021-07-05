@@ -21,8 +21,8 @@ def KinectfusionRecon(
 
 
     for idx, prefix in enumerate(tqdm(prefix_list)):
-        color_im_path = os.path.join(color_path, prefix + '_rgb.png')
-        depth_im_path = os.path.join(depth_path, prefix + '_depth.png')
+        color_im_path = os.path.join(color_path, prefix + '.png')
+        depth_im_path = os.path.join(depth_path, prefix + '.png')
         
         color_im = np.asarray(Image.open(color_im_path))
         depth_im = np.asarray(Image.open(depth_im_path)).astype(np.float32) * depth_scale

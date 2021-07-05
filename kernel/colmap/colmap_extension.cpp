@@ -1,21 +1,4 @@
-#include <iostream>
-
-
-#include "colmap/base/database.h"
-#include "colmap/base/camera_models.h"
-#include "colmap/base/image_reader.h"
-#include "colmap/base/reconstruction_manager.h"
-#include "colmap/base/reconstruction.h"
-
-#include "colmap/controllers/incremental_mapper.h"
-
-#include "colmap/feature/sift.h"
-#include "colmap/feature/extraction.h"
-#include "colmap/feature/matching.h"
-
-#include "colmap/util/misc.h"
-
-#include <pybind11/pybind11.h>
+#include <colmap_extension.h>
 
 
 void colmap_reconstruction( std::string database_path, std::string image_path, std::string camera_params, std::string output_path){
@@ -28,7 +11,7 @@ void colmap_reconstruction( std::string database_path, std::string image_path, s
     reader_options.image_path = image_path;
     reader_options.database_path = database_path;
     reader_options.single_camera = true;
-    reader_options.camera_model = "SIMPLE_PINHOLE";
+    reader_options.camera_model = "PINHOLE";
     reader_options.camera_params = camera_params;
     reader_options.default_focal_length_factor = 1.0;
 
@@ -78,6 +61,49 @@ void colmap_reconstruction( std::string database_path, std::string image_path, s
 
     mapper.Start();
     mapper.Wait();
+
+    colmap::Reconstruction reconstruction;
+    reconstruction.Read(output_path + "0/");
+    reconstruction.ExportPLY(output_path + "fused.ply");
+    reconstruction.WriteText(output_path);
+    _camfile_transform(output_path + "images.txt", output_path + "campose.txt");
+
+}
+
+bool _is_number(const std::string& s)
+{
+    return !s.empty() && std::find_if(s.begin(), 
+        s.end(), [](unsigned char c) { return !std::isdigit(c); }) == s.end();
+}
+
+bool _start_with_int(const std::string& text){
+    std::string first_word = "";
+    for (int index = 0; index < text.length(); index ++){
+        if (text[index] != ' '){
+            first_word.push_back(text[index]);
+        } else{
+            break;
+        }
+    }
+    return _is_number(first_word);
+    
+}
+
+void _camfile_transform(const std::string& ifile, const std::string& outfile){
+    std::string line;
+    std::ifstream infile(ifile);
+    std::ofstream out(outfile);
+
+    out << "# IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME" << std::endl;
+    out << " " << std::endl;
+    
+    while (std::getline(infile, line))
+    {
+        std::istringstream iss(line);
+        if(_start_with_int(line)){
+            out << line << std::endl;
+        }
+    }
 }
 
 PYBIND11_MODULE(colmap_extension, m) {

@@ -5,9 +5,7 @@ project(colmap_extension)
 find_package(COLMAP REQUIRED)
 find_package(pybind11 REQUIRED)
 
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-
-include_directories(${COLMAP_INCLUDE_DIRS})
+include_directories(${COLMAP_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
 link_directories(${COLMAP_LINK_DIRS})
 
 set(CMAKE_CXX_STANDARD 14)

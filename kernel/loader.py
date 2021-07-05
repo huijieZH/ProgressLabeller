@@ -209,7 +209,6 @@ def load_reconstruction_result(filepath,
     for l in tqdm(lines):
         data = l.split(" ")
         if data[0].isnumeric():
-            perfix = "{:04d}".format(int(data[0]))
             pose = [[float(data[5]) * pointcloudscale, float(data[6]) * pointcloudscale, float(data[7]) * pointcloudscale], 
                     [float(data[1]), float(data[2]), float(data[3]), float(data[4])]]
             Axis_align = np.array([[1, 0, 0, 0],
@@ -220,14 +219,14 @@ def load_reconstruction_result(filepath,
             Trans = _pose2Rotation(pose).dot(Axis_align) if not CAMPOSE_INVERSE else np.linalg.inv(_pose2Rotation(pose)).dot(Axis_align)
             pose = _rotation2Pose(Trans)
             framename = data[-1]
-            perfix = framename.split("_")[0]
+            perfix = framename.split(".")[0]
 
             cam_name = workspace_name + ":view" + perfix
             if cam_name in bpy.data.objects:
                 cam_object = bpy.data.objects[cam_name]
                 cam_object.location = pose[0]
                 cam_object.rotation_quaternion = pose[1]
-            elif perfix + "_rgb.png" in os.listdir(rgb_path) and perfix + "_depth.png" in os.listdir(depth_path):
+            elif perfix + ".png" in os.listdir(rgb_path) and perfix + ".png" in os.listdir(depth_path):
                 cam_data = bpy.data.cameras.new(cam_name)
                 cam_data.lens = bpy.context.scene.configuration[config_id].lens
                 f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2
@@ -247,21 +246,21 @@ def load_reconstruction_result(filepath,
                 ## load rgb
                 rgb_name = workspace_name + ":rgb" + perfix
                 if rgb_name not in bpy.data.images:
-                    bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + "_rgb.png"), 
+                    bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), 
                                         directory=rgb_path, 
-                                        files=[{"name":perfix + "_rgb.png"}], 
+                                        files=[{"name":perfix + ".png"}], 
                                         relative_path=True, show_multiview=False)
-                    bpy.data.images[perfix + "_rgb.png"].name = rgb_name
+                    bpy.data.images[perfix + ".png"].name = rgb_name
                 bpy.data.images[rgb_name]["UPDATEALPHA"] = True
                 bpy.data.images[rgb_name]["alpha"] = [0.5]
                 ## load depth
                 depth_name = workspace_name + ":depth" + perfix
                 if depth_name not in bpy.data.images:
-                    bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + "_depth.png"), 
+                    bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + ".png"), 
                                         directory=depth_path, 
-                                        files=[{"name":perfix + "_depth.png"}], 
+                                        files=[{"name":perfix + ".png"}], 
                                         relative_path=True, show_multiview=False)
-                    bpy.data.images[perfix + "_depth.png"].name = depth_name
+                    bpy.data.images[perfix + ".png"].name = depth_name
                 bpy.data.images[depth_name]["UPDATEALPHA"] = True
                 bpy.data.images[depth_name]["alpha"] = [0.5]
 

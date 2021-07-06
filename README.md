@@ -84,13 +84,13 @@ To prepare a new dataset, please follow the structure below. We also provide a *
                       # should have the same name
                       # the perfix sequential should follow the view sequential. 
                       # We use .sort() function to sort filenames
-    |-- rgb           # <perfix>_rgb.png
-        |-- 0_rgb.png        
-        |-- 1_rgb.png
+    |-- rgb           
+        |-- 0.png        
+        |-- 1.png
         ...
-    |-- depth         # <perfix>_depth.png
-        |-- 0_depth.png        
-        |-- 1_depth.png
+    |-- depth         # 
+        |-- 0.png        
+        |-- 1.png
         ...
 |-- model
     |-- object1        # model for pose labelling, should have the same package structure
@@ -286,4 +286,3 @@ The ``Model Alignment`` button under the object properties of camera object usin
 
 ## References
 [1] Marion, Pat, Peter R. Florence, Lucas Manuelli, and Russ Tedrake. **"Label fusion: A pipeline for generating ground truth labels for real rgbd data of cluttered scenes."** In 2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 3235-3242. IEEE, 2018.
-

@@ -43,17 +43,34 @@ Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/Progr
 
 ### Install denpencies
 
-Our add-on depends on the following libraries:
+Our add-on depends on the following python libraries:
 
 * open3d
 * Pillow
-* pycuda
+* pycuda (only needed when you want to use build-in kinectfustion)
+* pybind11 (only needed when you want to use COLMAP)
 * scipy
 
 It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, pip install command shoudld be 
 ```bash
-pip3 install --target /PATH/TO/BLENDER/2.92/python/lib/python3.7/site-packages open3d Pillow pycuda scipy
+pip3 install --target /PATH/TO/BLENDER/2.92/python/lib/python3.7/site-packages open3d Pillow pycuda scipy pybind11
 ```
+
+More details about pybind11 is available [here](https://pybind11.readthedocs.io/en/stable/installing.html), it should also be installed by your blender's python.
+
+To enableing [COLMAP reconstruction](https://colmap.github.io/), please also following its official guidance to install COLMAP. 
+
+### Build COLMAP_extension(only needed when you want to use COLMAP)
+
+We use pybind to transform COLMAP C++ code to python interface， so after installing COLMAP and pybind, we should build the library.
+```bash
+cd PATH/TO/REPO/kernel/colmap
+mkdir build
+cd build
+cmake ..
+make
+```
+
 
 ## Data structure
 
@@ -65,6 +82,8 @@ To prepare a new dataset, please follow the structure below. We also provide a *
 <dataset>
 |-- data              # pairwise rgb and depth images, no need for the name, just pairwise rgb and depth images 
                       # should have the same name
+                      # the perfix sequential should follow the view sequential. 
+                      # We use .sort() function to sort filenames
     |-- rgb           # <perfix>_rgb.png
         |-- 0_rgb.png        
         |-- 1_rgb.png

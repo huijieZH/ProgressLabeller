@@ -37,6 +37,11 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 row = layout.row()
                 row.operator("object_property.planealignment")
 
+                layout.label(text="Align all models:")
+                row = layout.row()
+                row.operator("object_property.allmodelsicp")
+                
+
             elif object_type == "camera":
                 layout = self.layout
                 scene = context.scene
@@ -44,10 +49,6 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 box = layout.box() 
                 row = box.row(align=True)
                 row.prop(scene.floatscreenproperty, "viewimage_mode")
-                # row = box.row(align=True)
-                # row.operator("object_property.viewimage")
-                # row.prop(scene.floatscreenproperty, "empty_alpha")
-                # row.prop(scene.floatscreenproperty, "segment_alpha")
                 row = box.row()
                 row.prop(scene.floatscreenproperty, "DISPLAY")
                 row = box.row()
@@ -71,25 +72,25 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 layout = self.layout
                 layout.label(text="Set Workspace Name:")
                 row = layout.row()
-                row.prop(scene.configuration[object["config_id"]], 'projectname')
+                row.prop(config, 'projectname')
                 row.operator("object_property.workspacerename")
                 layout.label(text="Set Environment:")
 
                 row = layout.row()
-                row.prop(scene.configuration[object["config_id"]], 'modelsrc')
+                row.prop(config, 'modelsrc')
                 row.operator("import_data.model")
 
                 row = layout.row()
-                row.prop(scene.configuration[object["config_id"]], 'modelposesrc')
+                row.prop(config, 'modelposesrc')
                 row.operator("import_data.modelfrompose")
                 row.operator("export_data.objectposes")
 
                 row = layout.row()
-                row.prop(scene.configuration[object["config_id"]], 'datasrc')
+                row.prop(config, 'datasrc')
                 row.operator("object_property.importcamrgbdepth")
 
                 row = layout.row()
-                row.prop(scene.configuration[object["config_id"]], 'reconstructionsrc')
+                row.prop(config, 'reconstructionsrc')
                 row.operator("object_property.importreconresult")
 
 
@@ -124,9 +125,6 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 box = layout.box() 
                 row = box.row(align=True)
                 row.operator("export_data.dataoutput")  
-                              
-                # row = box.row()
-                # row.operator("default.intrinsic")
 
 def register():
     bpy.utils.register_class(ObjectPropertyPanel)

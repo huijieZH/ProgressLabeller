@@ -1,6 +1,8 @@
 import numpy as np
 import open3d as o3d
 from PIL import Image
+import tqdm
+import os
 
 def _pose2Rotation(pose):
     x, y, z = pose[0]
@@ -225,3 +227,29 @@ def align_scale(pc, cam_pose, filename,
         return (True, scale)
     else:
         return (False, None)
+
+def align_scale_among_depths(camera_rgb_file, depth_path,
+                             pc, depthscale,
+                             intrinsic, rX, rY,
+                             camposeinv = False):
+        file = open(camera_rgb_file, "r")
+        lines = file.read().split("\n")
+        scales = []
+        for l in tqdm.tqdm(lines):
+            data = l.split(" ")
+            if data[0].isnumeric():
+                framename = data[-1]
+                perfix = framename.split(".")[0]
+                pose = [[float(data[5]), float(data[6]), float(data[7])], 
+                        [float(data[1]), float(data[2]), float(data[3]), float(data[4])]]
+                depthfile = os.path.join(depth_path, perfix + ".png")
+                if os.path.exists(depthfile):
+
+                    SUCCESS, scale = align_scale(pc, pose, depthfile,
+                                        depthscale,
+                                        intrinsic, rX, rY, 
+                                        camposeinv = camposeinv)
+                    if SUCCESS:
+                        scales.append(scale)  
+        return scales 
+

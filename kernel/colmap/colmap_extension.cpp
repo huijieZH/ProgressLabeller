@@ -63,10 +63,10 @@ void colmap_reconstruction( std::string database_path, std::string image_path, s
     mapper.Wait();
 
     colmap::Reconstruction reconstruction;
-    reconstruction.Read(output_path + "0/");
-    reconstruction.ExportPLY(output_path + "fused.ply");
+    reconstruction.Read(colmap::JoinPaths(output_path, "0"));
+    reconstruction.ExportPLY(colmap::JoinPaths(output_path, "fused.ply"));
     reconstruction.WriteText(output_path);
-    _camfile_transform(output_path + "images.txt", output_path + "campose.txt");
+    _camfile_transform(colmap::JoinPaths(output_path, "images.txt"), colmap::JoinPaths(output_path, "campose.txt"));
 
 }
 

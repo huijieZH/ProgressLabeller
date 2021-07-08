@@ -90,7 +90,7 @@ def load_pc(filepath, pointcloudscale, config_id):
     if workspace_name + ":" + 'reconstruction' not in bpy.data.objects:
         points = PointDataFileHandler.parse_point_data_file(filepath)
         draw_points(points = points, 
-                    point_size = 5, 
+                    point_size = 3, 
                     add_points_to_point_cloud_handle = True, 
                     reconstruction_collection = bpy.data.collections[workspace_name + ":" + "Pointcloud"], 
                     object_anchor_handle_name=workspace_name + ":" + "reconstruction", op=None)
@@ -293,6 +293,19 @@ def create_workspace(path, name,
                                       parent_collection = recon_collection)
     cam_collection = create_collection(name + ":Camera", 
                                        parent_collection = recon_collection)
+
+def init_package(path, config):
+    create_packages(path, ["model", "recon", "data"])
+    config.modelsrc = os.path.join(path, "model")
+    config.modelposesrc = os.path.join(path, "recon")
+    config.datasrc = os.path.join(path, "data")
+    config.reconstructionsrc = os.path.join(path, "recon")
+
+def create_packages(path, packages):
+    for package in packages:
+        dir = os.path.join(path, package)
+        if not os.path.exists(dir):
+            os.mkdir(dir)
 
 
 def create_collection(new_name, parent_collection = None):

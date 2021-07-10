@@ -1,0 +1,3 @@
+/home/huijiezhang/ProgressLabeller/kernel/colmap/build/CMakeFiles/rebuild_cache.dir
+/home/huijiezhang/ProgressLabeller/kernel/colmap/build/CMakeFiles/colmap_extension.dir
+/home/huijiezhang/ProgressLabeller/kernel/colmap/build/CMakeFiles/edit_cache.dir

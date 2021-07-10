@@ -98,7 +98,7 @@ To prepare a new dataset, please follow the structure below. We also provide a *
     |-- object2
         |-- object2.obj
     ...
-|-- reconstruction package     # reconstruction result, the package name could be random, its files could either 
+|-- recon                      # reconstruction result, its files could either 
                                # be generated from our pipline or created from other methods.
     |-- campose.txt            # Name should be the same. Camera poses file, stored camera pose for each images
     |-- fused.ply              # Name should be the same. Reconstructed point clound

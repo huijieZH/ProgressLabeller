@@ -39,8 +39,17 @@ def data_export(config, target_dir):
             log_report(
                 "INFO", "Starting prepare the dataset for {0} model in {1} workspace"\
                     .format(model.name.split(":")[1], model.name.split(":")[0]), None
-            )   
-            modelPC = _loadModel(model["path"])
+            )
+
+            ## split render model and visual model
+            visual_model_path = model["path"]
+            model_dir = os.path.dirname(visual_model_path)
+            model_name = os.path.basename(visual_model_path)
+            render_model_path = os.path.join(model_dir, model_name.split(".")[0] + "_render.obj")
+            
+            print(render_model_path)
+            #modelPC = _loadModel(model["path"])
+            modelPC = _loadModel(render_model_path)
             modelT = _pose2Rotation([list(model.location), list(model.rotation_quaternion)])
 
             modelPath = os.path.join(target_dir, model.name.split(":")[1])

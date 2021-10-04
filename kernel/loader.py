@@ -80,6 +80,7 @@ def load_model_from_pose(filepath, config_id):
                     bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
                     bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
                 else:
+                    print()
                     load_model(os.path.join(bpy.context.scene.configuration[config_id].modelsrc, objname, objname + ".obj" ), config_id)
                     bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
                     bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])

@@ -50,10 +50,12 @@ Our add-on depends on the following python libraries:
 * pycuda (only needed when you want to use build-in kinectfustion)
 * pybind11 (only needed when you want to use COLMAP)
 * scipy
+* pyyaml
+* tqdm
 
 It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, pip install command shoudld be 
 ```bash
-pip3 install --target /PATH/TO/BLENDER/2.92/python/lib/python3.7/site-packages open3d Pillow pycuda scipy pybind11
+pip3 install --target /PATH/TO/BLENDER/2.92/python/lib/python3.7/site-packages open3d Pillow scipy pyyaml tqdm
 ```
 
 More details about pybind11 is available [here](https://pybind11.readthedocs.io/en/stable/installing.html), it should also be installed by your blender's python.
@@ -98,7 +100,7 @@ To prepare a new dataset, please follow the structure below. We also provide a *
     |-- object2
         |-- object2.obj
     ...
-|-- recon                      # reconstruction result, its files could either 
+|-- reconstruction package     # reconstruction result, the package name could be random, its files could either 
                                # be generated from our pipline or created from other methods.
     |-- campose.txt            # Name should be the same. Camera poses file, stored camera pose for each images
     |-- fused.ply              # Name should be the same. Reconstructed point clound
@@ -286,3 +288,4 @@ The ``Model Alignment`` button under the object properties of camera object usin
 
 ## References
 [1] Marion, Pat, Peter R. Florence, Lucas Manuelli, and Russ Tedrake. **"Label fusion: A pipeline for generating ground truth labels for real rgbd data of cluttered scenes."** In 2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 3235-3242. IEEE, 2018.
+

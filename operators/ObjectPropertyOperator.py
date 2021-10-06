@@ -16,7 +16,8 @@ from kernel.logging_utility import log_report
 from kernel.loader import load_cam_img_depth, load_reconstruction_result, updateprojectname, removeworkspace
 from kernel.blender_utility import \
     _get_configuration, _get_reconstruction_insameworkspace, _get_obj_insameworkspace, _get_workspace_name, _apply_trans2obj, \
-    _align_reconstruction
+    _align_reconstruction, _trans2transstring
+from registeration.init_configuration import config
 
 
 class PlaneAlignment(Operator):
@@ -56,7 +57,11 @@ class PlaneAlignment(Operator):
         for obj in obj_lists:
             _apply_trans2obj(obj, trans)
         recon["alignT"] = trans.tolist()
-        
+
+
+        _, config = _get_configuration(context.object)
+        config.recon_trans = _trans2transstring(trans)
+
         return {'FINISHED'}
 
     def invoke(self, context, event):

@@ -16,6 +16,8 @@ from kernel.ply_importer.utility import(
 
 from kernel.logging_utility import log_report
 from registeration.init_configuration import config_json_dict, decode_dict
+from kernel.blender_utility import \
+    _get_configuration, _get_obj_insameworkspace, _apply_trans2obj,  _transstring2trans
 
 import time
 
@@ -80,7 +82,6 @@ def load_model_from_pose(filepath, config_id):
                     bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
                     bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
                 else:
-                    print()
                     load_model(os.path.join(bpy.context.scene.configuration[config_id].modelsrc, objname, objname + ".obj" ), config_id)
                     bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
                     bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
@@ -267,7 +268,13 @@ def load_reconstruction_result(filepath,
 
                 cam_object["depth"] = bpy.data.images[depth_name]
                 cam_object["rgb"] = bpy.data.images[rgb_name]
-                cam_object["type"] = "camera"         
+                cam_object["type"] = "camera" 
+    
+    obj_lists = _get_obj_insameworkspace(cam_object, ["reconstruction", "camera"])
+    _, config = _get_configuration(cam_object)
+    trans = _transstring2trans(config.recon_trans)
+    for obj in obj_lists:
+        _apply_trans2obj(obj, trans)        
     
 
 

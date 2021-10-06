@@ -76,6 +76,24 @@ def _apply_trans2obj(obj, trans):
     obj.location = after_align_pose[0]
     obj.rotation_quaternion = after_align_pose[1]/np.linalg.norm(after_align_pose[1])
 
+
+def _transstring2trans(transstring):
+    vectorstring = transstring.split(';')[:-1]
+    vectorstring = [v.split(',') for v in vectorstring]
+    return np.array(vectorstring).astype(np.float32)
+
+def _trans2transstring(trans):
+    trans_u1 = trans.astype(dtype='<U8')
+    transstring = ''
+    for i in range(trans_u1.shape[0]):
+        for j in range(trans_u1.shape[1]):
+            transstring+=trans_u1[i, j]
+            if j == trans_u1.shape[1] - 1:
+                transstring+=';'
+            else:
+                transstring+=','
+    return transstring
+
 # def _align_reconstruction(config, scene):
 #     datasrc = config.datasrc
 #     filepath = config.reconstructionsrc

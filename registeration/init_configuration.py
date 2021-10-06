@@ -20,6 +20,7 @@ config_json_dict = {
     'lens':[['camera', 'lens']],
     'reconstructionscale': [['reconstruction', 'scale']],
     'cameradisplayscale': [['reconstruction', 'cameradisplayscale']],
+    'recon_trans': [['reconstruction', 'recon_trans']]
 }
 
 def decode_dict(configuration, code):
@@ -50,6 +51,7 @@ def encode_dict(configuration):
         'reconstruction':{
         "scale": configuration.reconstructionscale,
         "cameradisplayscale": configuration.cameradisplayscale,
+        "recon_trans": configuration.recon_trans
         }
     }
     return output_dict
@@ -81,6 +83,7 @@ class config(bpy.types.PropertyGroup):
     lens: bpy.props.FloatProperty(name="lens", description="camera lens length", 
         min=0.000, max=1.000, step=3, precision=3, default = 0.025)
     
+    recon_trans: bpy.props.StringProperty(name = "recon_trans", default = "1,0,0,0;0,1,0,0;0,0,1,0;0,0,0,1;")
 
     def scale_update(self, context):
         
@@ -103,15 +106,10 @@ class config(bpy.types.PropertyGroup):
                         obj.scale = Vector((new_scale, new_scale, new_scale))
                     if obj["type"] == "camera":
                         current_location = np.asarray(obj.location).reshape((3, 1))
-                        # print("old:", old_scale)
-                        # print("new:", new_scale)
                         origin_location = np.linalg.inv(alignT[:3, :3]).dot(current_location - alignT[:3, [3]])/old_scale
-                        # print("original:", origin_location)
                         scaled_location = origin_location * new_scale
                         current_scaled_location = (alignT[:3, :3].dot(scaled_location) + alignT[:3, [3]]).reshape((3, ))
-                        # print(current_scaled_location)
                         obj.location = Vector(current_scaled_location)
-                        # obj.data.display_size = obj.data.display_size * new_scale/old_scale
                         
             recon["scale"] = self.reconstructionscale   
 

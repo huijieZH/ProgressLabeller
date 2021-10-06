@@ -11,7 +11,7 @@ import tqdm
 
 
 from kernel.render import save_img
-from kernel.geometry import plane_alignment, transform_from_plane, align_scale_among_depths, _pose2Rotation, _rotation2Pose, modelICP, globalRegisteration, align_scale
+from kernel.geometry import plane_alignment, transform_from_plane, _pose2Rotation, _rotation2Pose, modelICP, globalRegisteration
 from kernel.logging_utility import log_report
 from kernel.loader import load_cam_img_depth, load_reconstruction_result, updateprojectname, removeworkspace
 from kernel.blender_utility import \

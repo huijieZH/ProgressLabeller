@@ -23,6 +23,10 @@
 
 void colmap_reconstruction( std::string database_path, std::string image_path, std::string camera_params, std::string output_path);
 
+
+void parseReconstruction(std::string output_path);
+
+
 bool _is_number(const std::string& s);
 
 bool _start_with_int(const std::string& text);

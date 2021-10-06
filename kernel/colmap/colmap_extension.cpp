@@ -61,14 +61,16 @@ void colmap_reconstruction( std::string database_path, std::string image_path, s
 
     mapper.Start();
     mapper.Wait();
+}
 
+void parseReconstruction(std::string output_path){
     colmap::Reconstruction reconstruction;
     reconstruction.Read(colmap::JoinPaths(output_path, "0"));
     reconstruction.ExportPLY(colmap::JoinPaths(output_path, "fused.ply"));
     reconstruction.WriteText(output_path);
     _camfile_transform(colmap::JoinPaths(output_path, "images.txt"), colmap::JoinPaths(output_path, "campose.txt"));
-
 }
+
 
 bool _is_number(const std::string& s)
 {
@@ -86,7 +88,11 @@ bool _start_with_int(const std::string& text){
         }
     }
     return _is_number(first_word);
-    
+}
+
+bool _end_with_png(const std::string& text){
+    bool state = text.substr(text.length()- 4) == ".png";
+    return state;
 }
 
 void _camfile_transform(const std::string& ifile, const std::string& outfile){
@@ -100,7 +106,7 @@ void _camfile_transform(const std::string& ifile, const std::string& outfile){
     while (std::getline(infile, line))
     {
         std::istringstream iss(line);
-        if(_start_with_int(line)){
+        if(_start_with_int(line) && _end_with_png(line)){
             out << line << std::endl;
         }
     }
@@ -109,4 +115,5 @@ void _camfile_transform(const std::string& ifile, const std::string& outfile){
 PYBIND11_MODULE(colmap_extension, m) {
     m.doc() = "colmap reconstruction extension to python"; // optional module docstring
     m.def("colmap_reconstruction", &colmap_reconstruction, "Reconstruction from colmap");
+    m.def("parseReconstruction", &parseReconstruction, "parse reconstruction result");
 }

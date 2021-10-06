@@ -6,7 +6,6 @@ import os
 from kernel.logging_utility import log_report
 from kernel.loader import load_reconstruction_result
 from kernel.blender_utility import _get_configuration, _align_reconstruction
-from kernel.geometry import align_scale_among_depths
 
 class Reconstruction(Operator):
     """This appears in the tooltip of the operator and in the generated docs"""
@@ -82,6 +81,8 @@ class Reconstruction(Operator):
                     f"{config.fx}, {config.fy}, {config.cx}, {config.cy}",
                     config.reconstructionsrc
                 )
+
+                colmap_extension.parseReconstruction(config.reconstructionsrc)
 
                 scale = _align_reconstruction(config, scene)
                 config.reconstructionscale = scale

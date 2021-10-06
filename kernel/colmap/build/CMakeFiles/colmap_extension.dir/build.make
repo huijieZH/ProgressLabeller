@@ -90,14 +90,14 @@ colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libQ
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libboost_filesystem.so.1.71.0
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libboost_program_options.so.1.71.0
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libboost_system.so.1.71.0
-colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/local/cuda/lib64/libcudart_static.a
+colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/local/cuda-11.4/lib64/libcudart_static.a
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/librt.so
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libgmp.so
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libfreeimage.so
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libGL.so
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libGLU.so
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libGLEW.so
-colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/local/cuda/lib64/libcudart_static.a
+colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/local/cuda-11.4/lib64/libcudart_static.a
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libgmp.so
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libglog.so
 colmap_extension.cpython-37m-x86_64-linux-gnu.so: /usr/lib/x86_64-linux-gnu/libgflags.so.2.2.2

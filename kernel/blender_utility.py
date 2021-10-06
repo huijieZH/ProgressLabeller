@@ -2,9 +2,12 @@ import bpy
 import numpy as np
 import open3d as o3d
 import os
+import tqdm
+from PIL import Image
 
 from kernel.logging_utility import log_report
-from kernel.geometry import _pose2Rotation, _rotation2Pose, align_scale_among_depths
+from kernel.geometry import _pose2Rotation, _rotation2Pose
+from kernel.scale import _parseImagesFile, _parsePoints3D, _scaleFordepth, _calculateDepth
 
 def _is_progresslabeller_object(obj):
     if "type" in obj:
@@ -73,21 +76,51 @@ def _apply_trans2obj(obj, trans):
     obj.location = after_align_pose[0]
     obj.rotation_quaternion = after_align_pose[1]/np.linalg.norm(after_align_pose[1])
 
-def _align_reconstruction(config, scene):
-    datasrc = config.datasrc
+# def _align_reconstruction(config, scene):
+#     datasrc = config.datasrc
+#     filepath = config.reconstructionsrc
+
+#     camera_rgb_file = os.path.join(filepath, "campose.txt")
+#     reconstruction_path = os.path.join(filepath, "fused.ply")
+#     depth_path = os.path.join(datasrc, "depth")
+
+#     pcd = o3d.io.read_point_cloud(reconstruction_path)
+#     _, inliers = pcd.segment_plane(distance_threshold=scene.planalignmentparas.threshold,
+#                                                 ransac_n=scene.planalignmentparas.n,
+#                                                 num_iterations=scene.planalignmentparas.iteration)
+    
+#     plane_pcd = pcd.select_by_index(inliers)
+#     points = np.asarray(plane_pcd.points)
+
+#     intrinsic = np.array([
+#         [config.fx, 0, config.cx],
+#         [0, config.fy, config.cy],
+#         [0, 0, 1],
+#     ])
+
+#     scales = align_scale_among_depths(camera_rgb_file, depth_path,
+#                                         points, scene.loadreconparas.depth_scale,
+#                                         intrinsic, config.resX, config.resY, 
+#                                         camposeinv = scene.loadreconparas.CAMPOSE_INVERSE)            
+    
+#     if len(scales) != 0:
+#         scale = np.mean(scales)
+#         log_report(
+#         "INFO", "The aligning scale is {0}".format(scale), None
+#         )   
+#     else:
+#         scale = 1.0
+#         log_report(
+#         "ERROR", "Failed finding the scale, maybe there is not a plane in your ", None
+#         )  
+#     return scale
+
+def _align_reconstruction(config, scene, THRESHOLD = 0.0001, NUM_THRESHOLD = 8):
     filepath = config.reconstructionsrc
 
-    camera_rgb_file = os.path.join(filepath, "campose.txt")
-    reconstruction_path = os.path.join(filepath, "fused.ply")
-    depth_path = os.path.join(datasrc, "depth")
-
-    pcd = o3d.io.read_point_cloud(reconstruction_path)
-    _, inliers = pcd.segment_plane(distance_threshold=scene.planalignmentparas.threshold,
-                                                ransac_n=scene.planalignmentparas.n,
-                                                num_iterations=scene.planalignmentparas.iteration)
-    
-    plane_pcd = pcd.select_by_index(inliers)
-    points = np.asarray(plane_pcd.points)
+    imagefilepath = os.path.join(filepath, "images.txt")
+    points3Dpath = os.path.join(filepath, "points3D.txt")
+    datapath = config.datasrc  
 
     intrinsic = np.array([
         [config.fx, 0, config.cx],
@@ -95,19 +128,19 @@ def _align_reconstruction(config, scene):
         [0, 0, 1],
     ])
 
-    scales = align_scale_among_depths(camera_rgb_file, depth_path,
-                                        points, scene.loadreconparas.depth_scale,
-                                        intrinsic, config.resX, config.resY, 
-                                        camposeinv = scene.loadreconparas.CAMPOSE_INVERSE)            
-    
-    if len(scales) != 0:
-        scale = np.mean(scales)
-        log_report(
-        "INFO", "The aligning scale is {0}".format(scale), None
-        )   
-    else:
-        scale = 1.0
-        log_report(
-        "ERROR", "Failed finding the scale, maybe there is not a plane in your ", None
-        )  
+    depth_scale = scene.loadreconparas.depth_scale
+
+    Camera_dict = {}
+    PointsDict = {}
+    PointsDepth = {}
+    _parseImagesFile(imagefilepath, Camera_dict, PointsDict)
+    _parsePoints3D(points3Dpath, PointsDict)
+    for camera_idx in tqdm.tqdm(Camera_dict):
+            rgb_name = Camera_dict[camera_idx]["name"]
+            with Image.open(os.path.join(datapath, "depth", rgb_name)) as im:
+                depth = np.array(im) * depth_scale
+                _scaleFordepth(depth, camera_idx, intrinsic, Camera_dict, PointsDict, PointsDepth)
+        
+    scale = _calculateDepth(THRESHOLD = 0.005, NUM_THRESHOLD = 3, PointsDepth = PointsDepth)
+
     return scale

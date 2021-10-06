@@ -266,7 +266,7 @@ CUDA_BUILD_CUBIN:BOOL=OFF
 CUDA_BUILD_EMULATION:BOOL=OFF
 
 //"cudart" library
-CUDA_CUDART_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libcudart.so
+CUDA_CUDART_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libcudart.so
 
 //"cuda" library (older versions only).
 CUDA_CUDA_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libcuda.so
@@ -282,7 +282,7 @@ CUDA_HOST_COMPILATION_CPP:BOOL=ON
 CUDA_HOST_COMPILER:FILEPATH=/usr/bin/cc
 
 //Path to a program.
-CUDA_NVCC_EXECUTABLE:FILEPATH=/usr/local/cuda/bin/nvcc
+CUDA_NVCC_EXECUTABLE:FILEPATH=/usr/local/cuda-11.4/bin/nvcc
 
 //Semi-colon delimit multiple arguments. during all build types.
 CUDA_NVCC_FLAGS:STRING=
@@ -301,7 +301,7 @@ CUDA_NVCC_FLAGS_RELEASE:STRING=
 CUDA_NVCC_FLAGS_RELWITHDEBINFO:STRING=
 
 //"OpenCL" library
-CUDA_OpenCL_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libOpenCL.so
+CUDA_OpenCL_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libOpenCL.so
 
 //Propagate C/CXX_FLAGS and friends to the host compiler via -Xcompile
 CUDA_PROPAGATE_HOST_FLAGS:BOOL=ON
@@ -314,10 +314,10 @@ CUDA_SDK_ROOT_DIR:PATH=CUDA_SDK_ROOT_DIR-NOTFOUND
 CUDA_SEPARABLE_COMPILATION:BOOL=OFF
 
 //Path to a file.
-CUDA_TOOLKIT_INCLUDE:PATH=/usr/local/cuda/include
+CUDA_TOOLKIT_INCLUDE:PATH=/usr/local/cuda-11.4/include
 
 //Toolkit location.
-CUDA_TOOLKIT_ROOT_DIR:PATH=/usr/local/cuda
+CUDA_TOOLKIT_ROOT_DIR:PATH=/usr/local/cuda-11.4
 
 //Use the static version of the CUDA runtime library if available
 CUDA_USE_STATIC_CUDA_RUNTIME:BOOL=ON
@@ -332,67 +332,67 @@ CUDA_VERBOSE_BUILD:BOOL=OFF
 CUDA_VERSION:STRING=11.4
 
 //"cublas" library
-CUDA_cublas_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libcublas.so
+CUDA_cublas_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libcublas.so
 
 //"cudadevrt" library
-CUDA_cudadevrt_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libcudadevrt.a
+CUDA_cudadevrt_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libcudadevrt.a
 
 //static CUDA runtime library
-CUDA_cudart_static_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libcudart_static.a
+CUDA_cudart_static_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libcudart_static.a
 
 //"cufft" library
-CUDA_cufft_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libcufft.so
+CUDA_cufft_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libcufft.so
 
 //"cupti" library
-CUDA_cupti_LIBRARY:FILEPATH=/usr/local/cuda/extras/CUPTI/lib64/libcupti.so
+CUDA_cupti_LIBRARY:FILEPATH=/usr/local/cuda-11.4/extras/CUPTI/lib64/libcupti.so
 
 //"curand" library
-CUDA_curand_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libcurand.so
+CUDA_curand_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libcurand.so
 
 //"cusolver" library
-CUDA_cusolver_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libcusolver.so
+CUDA_cusolver_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libcusolver.so
 
 //"cusparse" library
-CUDA_cusparse_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libcusparse.so
+CUDA_cusparse_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libcusparse.so
 
 //"nppc" library
-CUDA_nppc_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnppc.so
+CUDA_nppc_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnppc.so
 
 //"nppial" library
-CUDA_nppial_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnppial.so
+CUDA_nppial_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnppial.so
 
 //"nppicc" library
-CUDA_nppicc_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnppicc.so
+CUDA_nppicc_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnppicc.so
 
 //"nppicom" library
 CUDA_nppicom_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libnppicom.so
 
 //"nppidei" library
-CUDA_nppidei_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnppidei.so
+CUDA_nppidei_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnppidei.so
 
 //"nppif" library
-CUDA_nppif_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnppif.so
+CUDA_nppif_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnppif.so
 
 //"nppig" library
-CUDA_nppig_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnppig.so
+CUDA_nppig_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnppig.so
 
 //"nppim" library
-CUDA_nppim_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnppim.so
+CUDA_nppim_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnppim.so
 
 //"nppist" library
-CUDA_nppist_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnppist.so
+CUDA_nppist_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnppist.so
 
 //"nppisu" library
-CUDA_nppisu_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnppisu.so
+CUDA_nppisu_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnppisu.so
 
 //"nppitc" library
-CUDA_nppitc_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnppitc.so
+CUDA_nppitc_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnppitc.so
 
 //"npps" library
-CUDA_npps_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnpps.so
+CUDA_npps_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnpps.so
 
 //"nvToolsExt" library
-CUDA_nvToolsExt_LIBRARY:FILEPATH=/usr/local/cuda/lib64/libnvToolsExt.so
+CUDA_nvToolsExt_LIBRARY:FILEPATH=/usr/local/cuda-11.4/lib64/libnvToolsExt.so
 
 //Path to a library.
 CUDA_rt_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/librt.so
@@ -555,7 +555,7 @@ boost_unit_test_framework_DIR:PATH=/usr/lib/x86_64-linux-gnu/cmake/boost_unit_te
 colmap_extension_BINARY_DIR:STATIC=/home/huijie/research/progresslabeller/ProgressLabeller/kernel/colmap/build
 
 //Dependencies for the target
-colmap_extension_LIB_DEPENDS:STATIC=general;colmap;general;flann;general;graclus;general;lsd;general;pba;general;poisson_recon;general;sqlite3;general;sift_gpu;general;vlfeat;general;colmap_cuda;general;dl;general;/usr/lib/x86_64-linux-gnu/libglog.so;general;/usr/lib/x86_64-linux-gnu/libfreeimage.so;general;Ceres::ceres;general;/usr/lib/x86_64-linux-gnu/libGL.so;general;/usr/lib/x86_64-linux-gnu/libGLU.so;general;/usr/lib/x86_64-linux-gnu/libGLEW.so;general;Qt5::Core;general;Qt5::OpenGL;general;Qt5::Widgets;general;Boost::filesystem;general;Boost::program_options;general;Boost::system;general;pthread;general;/usr/local/cuda/lib64/libcudart_static.a;general;-lpthread;general;dl;general;/usr/lib/x86_64-linux-gnu/librt.so;general;/usr/lib/x86_64-linux-gnu/libgmp.so;
+colmap_extension_LIB_DEPENDS:STATIC=general;colmap;general;flann;general;graclus;general;lsd;general;pba;general;poisson_recon;general;sqlite3;general;sift_gpu;general;vlfeat;general;colmap_cuda;general;dl;general;/usr/lib/x86_64-linux-gnu/libglog.so;general;/usr/lib/x86_64-linux-gnu/libfreeimage.so;general;Ceres::ceres;general;/usr/lib/x86_64-linux-gnu/libGL.so;general;/usr/lib/x86_64-linux-gnu/libGLU.so;general;/usr/lib/x86_64-linux-gnu/libGLEW.so;general;Qt5::Core;general;Qt5::OpenGL;general;Qt5::Widgets;general;Boost::filesystem;general;Boost::program_options;general;Boost::system;general;pthread;general;/usr/local/cuda-11.4/lib64/libcudart_static.a;general;-lpthread;general;dl;general;/usr/lib/x86_64-linux-gnu/librt.so;general;/usr/lib/x86_64-linux-gnu/libgmp.so;
 
 //Value Computed by CMake
 colmap_extension_SOURCE_DIR:STATIC=/home/huijie/research/progresslabeller/ProgressLabeller/kernel/colmap
@@ -772,10 +772,10 @@ CUDA_SEPARABLE_COMPILATION-ADVANCED:INTERNAL=1
 CUDA_TOOLKIT_INCLUDE-ADVANCED:INTERNAL=1
 //This is the value of the last time CUDA_TOOLKIT_ROOT_DIR was
 // set successfully.
-CUDA_TOOLKIT_ROOT_DIR_INTERNAL:INTERNAL=/usr/local/cuda
+CUDA_TOOLKIT_ROOT_DIR_INTERNAL:INTERNAL=/usr/local/cuda-11.4
 //This is the value of the last time CUDA_TOOLKIT_TARGET_DIR was
 // set successfully.
-CUDA_TOOLKIT_TARGET_DIR_INTERNAL:INTERNAL=/usr/local/cuda
+CUDA_TOOLKIT_TARGET_DIR_INTERNAL:INTERNAL=/usr/local/cuda-11.4
 //ADVANCED property for variable: CUDA_VERBOSE_BUILD
 CUDA_VERBOSE_BUILD-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_VERSION

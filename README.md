@@ -50,10 +50,14 @@ Our add-on depends on the following python libraries:
 * pycuda (only needed when you want to use build-in kinectfustion)
 * pybind11 (only needed when you want to use COLMAP)
 * scipy
+* pyyaml
+* tqdm
+* pyrender
+* trimesh
 
 It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, pip install command shoudld be 
 ```bash
-pip3 install --target /PATH/TO/BLENDER/2.92/python/lib/python3.7/site-packages open3d Pillow pycuda scipy pybind11
+python3.7 -m pip install --target /PATH/TO/BLENDER/2.92/python/lib/python3.7/site-packages open3d Pillow scipy pyyaml tqdm trimesh pyrender
 ```
 
 More details about pybind11 is available [here](https://pybind11.readthedocs.io/en/stable/installing.html), it should also be installed by your blender's python.

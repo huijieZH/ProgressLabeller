@@ -80,6 +80,7 @@ def load_model_from_pose(filepath, config_id):
                     bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
                     bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
                 else:
+                    print()
                     load_model(os.path.join(bpy.context.scene.configuration[config_id].modelsrc, objname, objname + ".obj" ), config_id)
                     bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
                     bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
@@ -90,7 +91,7 @@ def load_pc(filepath, pointcloudscale, config_id):
     if workspace_name + ":" + 'reconstruction' not in bpy.data.objects:
         points = PointDataFileHandler.parse_point_data_file(filepath)
         draw_points(points = points, 
-                    point_size = 5, 
+                    point_size = 3, 
                     add_points_to_point_cloud_handle = True, 
                     reconstruction_collection = bpy.data.collections[workspace_name + ":" + "Pointcloud"], 
                     object_anchor_handle_name=workspace_name + ":" + "reconstruction", op=None)
@@ -128,8 +129,8 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
         "INFO", "Loading camera, rgb and depth images", None
     )
     for rgb in tqdm(rgb_files):
-        perfix = rgb.split("_")[0]
-        if perfix + "_depth.png" in depth_files:
+        perfix = rgb.split(".")[0]
+        if perfix + ".png" in depth_files:
             cam_name = workspace_name + ":view" + perfix
             if cam_name not in bpy.data.objects:
                 cam_data = bpy.data.cameras.new(cam_name)
@@ -139,7 +140,7 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
                 cam_data.display_size = camera_display_scale
                 
                 cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX/2 - bpy.context.scene.configuration[config_id].cx)/bpy.context.scene.configuration[config_id].resX
-                cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/bpy.context.scene.configuration[config_id].resY
+                cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/bpy.context.scene.configuration[config_id].resX
                 ## allow background display
                 cam_data.background_images.new()
                 
@@ -154,21 +155,21 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
             ## load rgb
             rgb_name = workspace_name + ":rgb" + perfix
             if rgb_name not in bpy.data.images:
-                bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + "_rgb.png"), 
+                bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), 
                                     directory=rgb_path, 
-                                    files=[{"name":perfix + "_rgb.png"}], 
+                                    files=[{"name":perfix + ".png"}], 
                                     relative_path=True, show_multiview=False)
-                bpy.data.images[perfix + "_rgb.png"].name = rgb_name
+                bpy.data.images[perfix + ".png"].name = rgb_name
             bpy.data.images[rgb_name]["UPDATEALPHA"] = True
             bpy.data.images[rgb_name]["alpha"] = [0.5]
             ## load depth
             depth_name = workspace_name + ":depth" + perfix
             if depth_name not in bpy.data.images:
-                bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + "_depth.png"), 
+                bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + ".png"), 
                                     directory=depth_path, 
-                                    files=[{"name":perfix + "_depth.png"}], 
+                                    files=[{"name":perfix + ".png"}], 
                                     relative_path=True, show_multiview=False)
-                bpy.data.images[perfix + "_depth.png"].name = depth_name
+                bpy.data.images[perfix + ".png"].name = depth_name
                 ## change transparency
             bpy.data.images[depth_name]["UPDATEALPHA"] = True
             bpy.data.images[depth_name]["alpha"] = [0.5]
@@ -209,7 +210,6 @@ def load_reconstruction_result(filepath,
     for l in tqdm(lines):
         data = l.split(" ")
         if data[0].isnumeric():
-            perfix = "{:04d}".format(int(data[0]))
             pose = [[float(data[5]) * pointcloudscale, float(data[6]) * pointcloudscale, float(data[7]) * pointcloudscale], 
                     [float(data[1]), float(data[2]), float(data[3]), float(data[4])]]
             Axis_align = np.array([[1, 0, 0, 0],
@@ -220,14 +220,14 @@ def load_reconstruction_result(filepath,
             Trans = _pose2Rotation(pose).dot(Axis_align) if not CAMPOSE_INVERSE else np.linalg.inv(_pose2Rotation(pose)).dot(Axis_align)
             pose = _rotation2Pose(Trans)
             framename = data[-1]
-            perfix = framename.split("_")[0]
+            perfix = framename.split(".")[0]
 
             cam_name = workspace_name + ":view" + perfix
             if cam_name in bpy.data.objects:
                 cam_object = bpy.data.objects[cam_name]
                 cam_object.location = pose[0]
                 cam_object.rotation_quaternion = pose[1]
-            elif perfix + "_rgb.png" in os.listdir(rgb_path) and perfix + "_depth.png" in os.listdir(depth_path):
+            elif perfix + ".png" in os.listdir(rgb_path) and perfix + ".png" in os.listdir(depth_path):
                 cam_data = bpy.data.cameras.new(cam_name)
                 cam_data.lens = bpy.context.scene.configuration[config_id].lens
                 f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2
@@ -247,21 +247,21 @@ def load_reconstruction_result(filepath,
                 ## load rgb
                 rgb_name = workspace_name + ":rgb" + perfix
                 if rgb_name not in bpy.data.images:
-                    bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + "_rgb.png"), 
+                    bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), 
                                         directory=rgb_path, 
-                                        files=[{"name":perfix + "_rgb.png"}], 
+                                        files=[{"name":perfix + ".png"}], 
                                         relative_path=True, show_multiview=False)
-                    bpy.data.images[perfix + "_rgb.png"].name = rgb_name
+                    bpy.data.images[perfix + ".png"].name = rgb_name
                 bpy.data.images[rgb_name]["UPDATEALPHA"] = True
                 bpy.data.images[rgb_name]["alpha"] = [0.5]
                 ## load depth
                 depth_name = workspace_name + ":depth" + perfix
                 if depth_name not in bpy.data.images:
-                    bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + "_depth.png"), 
+                    bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + ".png"), 
                                         directory=depth_path, 
-                                        files=[{"name":perfix + "_depth.png"}], 
+                                        files=[{"name":perfix + ".png"}], 
                                         relative_path=True, show_multiview=False)
-                    bpy.data.images[perfix + "_depth.png"].name = depth_name
+                    bpy.data.images[perfix + ".png"].name = depth_name
                 bpy.data.images[depth_name]["UPDATEALPHA"] = True
                 bpy.data.images[depth_name]["alpha"] = [0.5]
 
@@ -294,6 +294,19 @@ def create_workspace(path, name,
                                       parent_collection = recon_collection)
     cam_collection = create_collection(name + ":Camera", 
                                        parent_collection = recon_collection)
+
+def init_package(path, config):
+    create_packages(path, ["model", "recon", "data"])
+    config.modelsrc = os.path.join(path, "model")
+    config.modelposesrc = os.path.join(path, "recon")
+    config.datasrc = os.path.join(path, "data")
+    config.reconstructionsrc = os.path.join(path, "recon")
+
+def create_packages(path, packages):
+    for package in packages:
+        dir = os.path.join(path, package)
+        if not os.path.exists(dir):
+            os.mkdir(dir)
 
 
 def create_collection(new_name, parent_collection = None):

@@ -2,7 +2,8 @@ import bpy
 from bpy_extras.io_utils import ExportHelper
 from bpy.props import StringProperty, BoolProperty, EnumProperty
 from bpy.types import Operator
-from kernel.loader import create_workspace
+from kernel.loader import create_workspace, init_package
+from kernel.blender_utility import _get_configuration
 import os
 
 class CreateNewWorkspace(Operator, ExportHelper):
@@ -22,6 +23,9 @@ class CreateNewWorkspace(Operator, ExportHelper):
     def execute(self, context):
         path, name = os.path.split(self.filepath)
         create_workspace(path, name)
+        _, config = _get_configuration(bpy.data.objects[name + ":Setting"])
+        init_package(path, config)
+        
         return {'FINISHED'}
 
     # def invoke(self, context, event):

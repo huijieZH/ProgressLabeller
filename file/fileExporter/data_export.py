@@ -30,6 +30,7 @@ class DataOutput(Operator, ExportHelper):
         path = context.object['dir']
         config = bpy.context.scene.configuration[config_id]
         data_export(config, self.filepath)
+        print('hi')
         return {'FINISHED'}
 
     def invoke(self, context, event):

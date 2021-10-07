@@ -16,8 +16,9 @@ from kernel.logging_utility import log_report
 from kernel.loader import load_cam_img_depth, load_reconstruction_result, updateprojectname, removeworkspace
 from kernel.blender_utility import \
     _get_configuration, _get_reconstruction_insameworkspace, _get_obj_insameworkspace, _get_workspace_name, _apply_trans2obj, \
-    _align_reconstruction, _trans2transstring
+    _align_reconstruction
 from registeration.init_configuration import config
+from kernel.utility import _trans2transstring
 
 
 class PlaneAlignment(Operator):
@@ -56,7 +57,7 @@ class PlaneAlignment(Operator):
         
         for obj in obj_lists:
             _apply_trans2obj(obj, trans)
-        recon["alignT"] = trans.tolist()
+        recon["alignT"] = (trans.dot(np.array(recon["alignT"]))).tolist()
 
 
         _, config = _get_configuration(context.object)
@@ -124,8 +125,21 @@ class ImportCamRGBDepth(Operator):
             )   
             return {'FINISHED'}      
         else:   
-            load_cam_img_depth(packagepath, config_id, camera_display_scale = 0.1)
+            load_cam_img_depth(packagepath, config_id, camera_display_scale = 0.1, sample_rate=config.sample_rate)
         return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width = 400)
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        config_id, config = _get_configuration(context.object)
+        layout.label(text="Set Sample Rate for RGB to reconstruct:")
+        box = layout.box() 
+        row = box.row()
+        row.prop(config, "sample_rate") 
+
 
 class ImportReconResult(Operator):
     """This appears in the tooltip of the operator and in the generated docs"""
@@ -317,8 +331,7 @@ def register():
     bpy.utils.register_class(ImportCamRGBDepth)
     bpy.utils.register_class(ImportReconResult)
     bpy.utils.register_class(LoadRecon)
-    bpy.types.Scene.loadreconparas = bpy.props.PointerProperty(type=LoadRecon)   
-    
+    bpy.types.Scene.loadreconparas = bpy.props.PointerProperty(type=LoadRecon)  
     
     bpy.utils.register_class(ModelICP)
     bpy.utils.register_class(AllModelsICP)

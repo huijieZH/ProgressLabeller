@@ -78,6 +78,7 @@ class Reconstruction(Operator):
                 colmap_extension.colmap_reconstruction(
                     os.path.join(config.reconstructionsrc, "reconstruction.db"),
                     os.path.join(config.datasrc, "rgb"),
+                    os.path.join(config.reconstructionsrc, "image-list.txt"),
                     f"{config.fx}, {config.fy}, {config.cx}, {config.cy}",
                     config.reconstructionsrc
                 )

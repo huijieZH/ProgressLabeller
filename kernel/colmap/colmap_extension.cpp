@@ -1,7 +1,7 @@
 #include <colmap_extension.h>
 
 
-void colmap_reconstruction( std::string database_path, std::string image_path, std::string camera_params, std::string output_path){
+void colmap_reconstruction(std::string database_path, std::string image_path, std::string image_list_path, std::string camera_params, std::string output_path){
     colmap::CreateDirIfNotExists(output_path);     
     // create database
     colmap::Database database(database_path);
@@ -14,6 +14,7 @@ void colmap_reconstruction( std::string database_path, std::string image_path, s
     reader_options.camera_model = "PINHOLE";
     reader_options.camera_params = camera_params;
     reader_options.default_focal_length_factor = 1.0;
+    reader_options.image_list = colmap::ReadTextFileLines(image_list_path);
 
     colmap::SiftExtractionOptions sift_extraction;
 

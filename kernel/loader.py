@@ -13,12 +13,13 @@ from kernel.ply_importer.point_data_file_handler import(
 from kernel.ply_importer.utility import(
     draw_points
 )
+from kernel.utility import _transstring2trans
 
 from kernel.logging_utility import log_report
 from registeration.init_configuration import config_json_dict, decode_dict
 from kernel.blender_utility import \
-    _get_configuration, _get_obj_insameworkspace, _apply_trans2obj,  _transstring2trans
-
+    _get_configuration, _get_obj_insameworkspace, _apply_trans2obj
+from kernel.utility import _select_sample_files, _generate_image_list
 import time
 
 
@@ -109,7 +110,7 @@ def load_pc(filepath, pointcloudscale, config_id):
                                                                               [0., 0., 1., 0.], 
                                                                               [0., 0., 0., 1.]]
 
-def load_cam_img_depth(packagepath, config_id, camera_display_scale):
+def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate):
 
     workspace_name = bpy.context.scene.configuration[config_id].projectname
 
@@ -126,10 +127,13 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
     rgb_files = os.listdir(rgb_path)
     depth_files = os.listdir(depth_path)
 
+    rgb_files.sort()
+    rgb_sample_files = _select_sample_files(rgb_files, sample_rate)
+    _generate_image_list(bpy.context.scene.configuration[config_id].reconstructionsrc, rgb_sample_files)
     log_report(
         "INFO", "Loading camera, rgb and depth images", None
     )
-    for rgb in tqdm(rgb_files):
+    for rgb in tqdm(rgb_sample_files):
         perfix = rgb.split(".")[0]
         if perfix + ".png" in depth_files:
             cam_name = workspace_name + ":view" + perfix
@@ -177,6 +181,8 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
             cam_object["depth"] = bpy.data.images[depth_name]
             cam_object["rgb"] = bpy.data.images[rgb_name]
             cam_object["type"] = "camera"
+
+
 
 def load_reconstruction_result(filepath, 
                                pointcloudscale, 
@@ -272,9 +278,12 @@ def load_reconstruction_result(filepath,
     
     obj_lists = _get_obj_insameworkspace(cam_object, ["reconstruction", "camera"])
     _, config = _get_configuration(cam_object)
+
     trans = _transstring2trans(config.recon_trans)
     for obj in obj_lists:
-        _apply_trans2obj(obj, trans)        
+        _apply_trans2obj(obj, trans)  
+        if obj['type'] == 'reconstruction':
+            obj["alignT"] = trans.tolist()      
     
 
 

@@ -20,7 +20,8 @@ config_json_dict = {
     'lens':[['camera', 'lens']],
     'reconstructionscale': [['reconstruction', 'scale']],
     'cameradisplayscale': [['reconstruction', 'cameradisplayscale']],
-    'recon_trans': [['reconstruction', 'recon_trans']]
+    'recon_trans': [['reconstruction', 'recon_trans']],
+    'sample_rate': [['data', 'sample_rate']]
 }
 
 def decode_dict(configuration, code):
@@ -52,6 +53,9 @@ def encode_dict(configuration):
         "scale": configuration.reconstructionscale,
         "cameradisplayscale": configuration.cameradisplayscale,
         "recon_trans": configuration.recon_trans
+        },
+        'data':{
+        "sample_rate": configuration.sample_rate
         }
     }
     return output_dict
@@ -84,6 +88,14 @@ class config(bpy.types.PropertyGroup):
         min=0.000, max=1.000, step=3, precision=3, default = 0.025)
     
     recon_trans: bpy.props.StringProperty(name = "recon_trans", default = "1,0,0,0;0,1,0,0;0,0,1,0;0,0,0,1;")
+    
+    sample_rate: bpy.props.FloatProperty(name="Sample Rate", 
+                                        description="Sample rate for choosing RGB to reconstruct", 
+                                        default=0.10, 
+                                        min=0.00, 
+                                        max=1.00, 
+                                        step=0.01, 
+                                        precision=2)
 
     def scale_update(self, context):
         

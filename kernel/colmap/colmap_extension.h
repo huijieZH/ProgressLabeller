@@ -21,7 +21,7 @@
 
 #include <pybind11/pybind11.h>
 
-void colmap_reconstruction( std::string database_path, std::string image_path, std::string camera_params, std::string output_path);
+void colmap_reconstruction( std::string database_path, std::string image_path, std::string image_list_path, std::string camera_params, std::string output_path);
 
 
 void parseReconstruction(std::string output_path);

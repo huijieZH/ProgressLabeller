@@ -1,17 +1,24 @@
 
 import json
+import yaml
 import numpy as np
+import os
+
+
 from kernel.utility import _transstring2trans
+from kernel.geometry import _pose2Rotation, _rotation2Pose
 
 class offlineParam:
     def __init__(self, config_path) -> None:
         f = open(config_path)
         configuration = json.load(f)
         self.config = configuration
+        self.dir = os.path.dirname(config_path)
         self.parsecamera()
         self.parseenv()
         self.parsereconpara()
         self.parsedatapara()
+        self.parseobj()
 
 
     def parsecamera(self):
@@ -34,6 +41,16 @@ class offlineParam:
 
     def parsedatapara(self):
         self.data = {}
-        self.data.sample_scale = self.config['data']['sample_scale']
-
+        self.data['sample_rate'] = self.config['data']['sample_rate']
+    
+    def parseobj(self):
+        self.objs = {}
+        f = open(os.path.join(self.modelposesrc, "label_pose.yaml"))
+        poses = yaml.safe_load(f)
+        model_dir = os.listdir(self.modelsrc)
+        for objname in poses:
+            if objname in model_dir:
+                self.objs[objname] = {}
+                self.objs[objname]['type'] = poses[objname]['type']
+                self.objs[objname]['trans'] = _pose2Rotation(poses[objname]['pose'])
 

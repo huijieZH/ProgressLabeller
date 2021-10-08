@@ -64,6 +64,14 @@ def load_model(filepath, config_id):
         create_collection(workspace_name + ":Model", parent_collection = workspace_name)
 
         bpy.data.collections[workspace_name + ":Model"].objects.link(bpy.data.objects[objName])
+
+        ### check whether the object is normal, split or URDF
+        files = os.listdir(os.path.dirname(filepath))
+        if 'split' in files:
+            bpy.data.objects[objName]["modeltype"] = "split"
+        else:
+            bpy.data.objects[objName]["modeltype"] = "normal"
+
     
 
 def load_model_from_pose(filepath, config_id):

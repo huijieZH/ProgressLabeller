@@ -57,11 +57,13 @@ class PlaneAlignment(Operator):
         
         for obj in obj_lists:
             _apply_trans2obj(obj, trans)
+
+
+        
         recon["alignT"] = (trans.dot(np.array(recon["alignT"]))).tolist()
 
-
         _, config = _get_configuration(context.object)
-        config.recon_trans = _trans2transstring(trans)
+        config.recon_trans = _trans2transstring(np.array(recon["alignT"]))
 
         return {'FINISHED'}
 

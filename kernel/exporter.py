@@ -11,6 +11,7 @@ import pyrender
 from registeration.init_configuration import config_json_dict, encode_dict
 from kernel.logging_utility import log_report
 from kernel.geometry import _loadModel, _pose2Rotation, _render
+from kernel.blender_utility import _is_progresslabeller_object
 
 
 def configuration_export(config, path):
@@ -22,8 +23,8 @@ def configuration_export(config, path):
 def objectposes_export(name, path):
     pose = {}
     for obj in bpy.data.objects:
-        if obj["type"] == "model" and obj.name.split(":")[0] == name:
-            pose[obj.name.split(":")[1]] = {'pose': [list(obj.location), list(obj.rotation_quaternion)]}
+        if _is_progresslabeller_object(obj) and obj["type"] == "model" and obj.name.split(":")[0] == name:
+            pose[obj.name.split(":")[1]] = {'pose': [list(obj.location), list(obj.rotation_quaternion)], 'type':obj["modeltype"]}
     with open(path, 'w') as file:
         documents = yaml.dump(pose, file)
 

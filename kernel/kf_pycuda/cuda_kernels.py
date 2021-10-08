@@ -13,7 +13,6 @@ source_module = SourceModule(
     #define _X (threadIdx.x + blockDim.x * blockIdx.x)
     #define _Y (threadIdx.y + blockDim.y * blockIdx.y)
     #define _Z (threadIdx.z + blockDim.z * blockIdx.z)
-
     #define _ColorConst 65536
 
     __device__

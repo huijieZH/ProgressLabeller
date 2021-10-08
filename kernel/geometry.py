@@ -3,6 +3,7 @@ import open3d as o3d
 from PIL import Image
 import tqdm
 import os
+from scipy.spatial.transform import Rotation as R
 
 def _pose2Rotation(pose):
     x, y, z = pose[0]

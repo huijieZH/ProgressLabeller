@@ -21,7 +21,8 @@ config_json_dict = {
     'reconstructionscale': [['reconstruction', 'scale']],
     'cameradisplayscale': [['reconstruction', 'cameradisplayscale']],
     'recon_trans': [['reconstruction', 'recon_trans']],
-    'sample_rate': [['data', 'sample_rate']]
+    'sample_rate': [['data', 'sample_rate']],
+    'depth_scale': [['data', 'depth_scale']],
 }
 
 def decode_dict(configuration, code):
@@ -55,7 +56,8 @@ def encode_dict(configuration):
         "recon_trans": configuration.recon_trans
         },
         'data':{
-        "sample_rate": configuration.sample_rate
+        "sample_rate": configuration.sample_rate,
+        "depth_scale": configuration.depth_scale,
         }
     }
     return output_dict
@@ -96,6 +98,14 @@ class config(bpy.types.PropertyGroup):
                                         max=1.00, 
                                         step=0.01, 
                                         precision=2)
+                        
+    depth_scale: bpy.props.FloatProperty(name="Depth Scale", 
+                                        description="Scale for depth image", 
+                                        default=0.00025, 
+                                        min=0.000000, 
+                                        max=1.000000, 
+                                        step=6, 
+                                        precision=6)           
 
     def scale_update(self, context):
         

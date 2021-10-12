@@ -47,7 +47,7 @@ class KinectFusion:
         vol_bnds = np.zeros((3, 2), dtype=np.float32)
         vol_bnds[:, 0] = transformed_pts.min(0)
         vol_bnds[:, 1] = transformed_pts.max(0)
-        print(vol_bnds)
+        # print(vol_bnds)
         # vol_bnds[2] = [-0.01, 0.25]
 
         if visualize:
@@ -160,7 +160,7 @@ class KinectFusion:
             line = str(index) + " " + str(pose[1][0]) + " " + str(pose[1][1])\
                     + " " + str(pose[1][2]) + " " + str(pose[1][3])\
                     + " " + str(pose[0][0]) + " " + str(pose[0][1]) + " " + str(pose[0][2])\
-                    + " " + "1" + " " + prefix + "_rgb.png\n"
+                    + " " + "1" + " " + prefix + ".png\n"
             camout.writelines(line)
         camout.close()
         # np.savez_compressed(os.path.join(output_folder, 'kf_results.npz'),

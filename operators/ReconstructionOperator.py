@@ -54,7 +54,7 @@ class Reconstruction(Operator):
                     tsdf_voxel_size = scene.kinectfusionparas.tsdf_voxel_size, 
                     tsdf_trunc_margin = scene.kinectfusionparas.tsdf_trunc_margin, 
                     pcd_voxel_size = scene.kinectfusionparas.pcd_voxel_size, 
-                    depth_scale = scene.kinectfusionparas.depth_scale, 
+                    depth_scale = config.depth_scale, 
                     depth_ignore = scene.kinectfusionparas.depth_ignore, 
                     DISPLAY = scene.kinectfusionparas.DISPLAY,  
                     frame_per_display = scene.kinectfusionparas.frame_per_display, 
@@ -143,7 +143,7 @@ class Reconstruction(Operator):
             row.prop(config, "resY")
             layout.label(text="Set KinectFusion Parameters:")
             row = layout.row() 
-            row.prop(scene.kinectfusionparas, "depth_scale")
+            row.prop(config, "depth_scale")
             row = layout.row() 
             row.prop(scene.kinectfusionparas, "tsdf_voxel_size")
             row = layout.row() 
@@ -183,19 +183,20 @@ class Reconstruction(Operator):
             box.label(text="Point Cloud Scale:")
             row = box.row()
             row = box.row()
-            row.prop(scene.loadreconparas, "depth_scale")
+            # row.prop(scene.loadreconparas, "depth_scale")
+            row.prop(config, "depth_scale")
             row = layout.row()
             row.prop(config, "cameradisplayscale")
 
 class KinectfusionConfig(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.
-    depth_scale: bpy.props.FloatProperty(name="Depth Scale", 
-                                        description="Scale for depth image", 
-                                        default=0.00025, 
-                                        min=0.000000, 
-                                        max=1.000000, 
-                                        step=6, 
-                                        precision=6)
+    # depth_scale: bpy.props.FloatProperty(name="Depth Scale", 
+    #                                     description="Scale for depth image", 
+    #                                     default=0.00025, 
+    #                                     min=0.000000, 
+    #                                     max=1.000000, 
+    #                                     step=6, 
+    #                                     precision=6)
 
     tsdf_voxel_size: bpy.props.FloatProperty(name="TSDF Voxel Size (m)", 
                                             description="Voxel size for truncated signed distance function, in meter", 

@@ -9,8 +9,10 @@ from PIL import Image
 from tqdm import tqdm
 
 class offlineRender:
-    def __init__(self, param, outputdir) -> None:
+    def __init__(self, param, outputdir, interpolation_type) -> None:
+        print("Start offline rendering")
         self.param = param
+        self.interpolation_type = interpolation_type
         self.outputpath = os.path.join(self.param.dir, outputdir)
         self.modelsrc = self.param.modelsrc
         self.reconstructionsrc = self.param.reconstructionsrc
@@ -19,7 +21,7 @@ class offlineRender:
         self.objects = self.param.objs
         self._prepare_scene()
         self._parsecamfile()
-        self._applytrans2cam()
+        # self._applytrans2cam()
         self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
         self._createallpkgs()
         self.renderAll()
@@ -62,7 +64,7 @@ class offlineRender:
     
     def _parsecamfile(self):
         self.camposes = {}
-        f = open(os.path.join(self.reconstructionsrc, "campose.txt"))
+        f = open(os.path.join(self.reconstructionsrc, "campose_all_{0}.txt".format(self.interpolation_type)))
         lines = f.readlines()
         for l in lines:
             datas = l.split(" ")
@@ -122,11 +124,11 @@ class offlineRender:
     
     def renderAll(self):
         ## generate whole output dataset
-        Axis_align = np.array([[1, 0, 0, 0],
-                        [0, -1, 0, 0],
-                        [0, 0, -1, 0],
-                        [0, 0, 0, 1],]
-                        )
+        # Axis_align = np.array([[1, 0, 0, 0],
+        #                 [0, -1, 0, 0],
+        #                 [0, 0, -1, 0],
+        #                 [0, 0, 0, 1],]
+        #                 )
         for cam in tqdm(self.camposes):
             camT = self.camposes[cam]
             segment = self._render(camT, self.scene)
@@ -137,7 +139,8 @@ class offlineRender:
                 posepath = os.path.join(self.outputpath, self.objectmap[node]["name"], "pose")
                 rgbpath = os.path.join(self.outputpath, self.objectmap[node]["name"], "rgb")
                 modelT = self.objectmap[node]["trans"]
-                model_camT = np.linalg.inv(camT.dot(Axis_align)).dot(modelT)
+                # model_camT = np.linalg.inv(camT.dot(Axis_align)).dot(modelT)
+                model_camT = np.linalg.inv(camT).dot(modelT)
                 self._createpose(posepath, perfix, model_camT)
                 self._createrbg(inputrgb, segment, os.path.join(rgbpath, cam), self.objectmap[node]["index"] + 1)
 

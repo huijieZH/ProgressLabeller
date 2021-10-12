@@ -37,7 +37,7 @@ def data_export(config, target_dir):
     intrinsic = np.array([[config.fx, 0, config.cx],
                           [0, config.fy, config.cy],
                           [0, 0, 1]])
-    print(intrinsic)
+    # print(intrinsic)
     for model in bpy.data.objects:
         if model.name.split(":")[0] == name and model["type"] == "model":
             log_report(
@@ -51,7 +51,7 @@ def data_export(config, target_dir):
             model_name = os.path.basename(visual_model_path)
             render_model_path = os.path.join(model_dir, model_name.split(".")[0] + "_render.obj")
             
-            print(render_model_path)
+            # print(render_model_path)
             #modelPC = _loadModel(model["path"])
             modelPC = _loadModel(render_model_path)
             modelT = _pose2Rotation([list(model.location), list(model.rotation_quaternion)])

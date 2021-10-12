@@ -35,10 +35,10 @@ class TSDFVolume:
         self._vol_bnds[:,1] = self._vol_bnds[:,0] + self._vol_dim*self._voxel_size
         self._vol_origin = self._vol_bnds[:,0].copy(order='C').astype(np.float32)
 
-        print("Voxel volume size: {} x {} x {} - # points: {:,}".format(
-            self._vol_dim[0], self._vol_dim[1], self._vol_dim[2],
-            self._vol_dim[0]*self._vol_dim[1]*self._vol_dim[2])
-        )
+        # print("Voxel volume size: {} x {} x {} - # points: {:,}".format(
+        #     self._vol_dim[0], self._vol_dim[1], self._vol_dim[2],
+        #     self._vol_dim[0]*self._vol_dim[1]*self._vol_dim[2])
+        # )
 
         # Copy voxel volumes to GPU
         self.block_x, self.block_y, self.block_z = 8, 8, 16  # block_x * block_y * block_z must equal to 1024

@@ -1,10 +1,13 @@
 import os
 import numpy as np
-from kernel.geometry import _pose2Rotation
+from tqdm import tqdm
+from PIL import Image
+from kernel.geometry import _pose2Rotation, _rotation2Pose
 from kernel.utility import _select_sample_files
 
 class offlineRecon:
-    def __init__(self, param) -> None:
+    def __init__(self, param, interpolation_type = "KF_forward") -> None:
+        print("Start offline reconstruction interpolation")
         self.param = param
         self.datasrc = self.param.datasrc
         self.reconstructionsrc = self.param.reconstructionsrc
@@ -14,8 +17,11 @@ class offlineRecon:
         self._parsecamfile()
         self._applytrans2cam()
         self._parsewholeimg()
-        self._interpolation(type = "KF_forward")
-        pass
+        self.rgb_path = os.path.join(self.datasrc, "rgb")
+        self.depth_path = os.path.join(self.datasrc, "depth")
+        self.depth_scale = self.param.data['depth_scale']
+        self._interpolation(type = interpolation_type)
+        self._savecampose("campose_all_{0}.txt".format(interpolation_type))
     
     def _parsewholeimg(self):
         imagefiles = os.listdir(os.path.join(self.datasrc, "rgb"))
@@ -64,16 +70,47 @@ class offlineRecon:
     
     def _interpolation(self, type):
         assert type in ["KF_forward"]
-        for keypair in self.wholemap:
+        for keypair in tqdm(self.wholemap):
             if type == "KF_forward":
                 self._interpolationKFForward(keypair, self.wholemap[keypair])
 
     def _interpolationKFForward(self, keypair, imglists):
         try: 
-            from kernel.reconstruction import KinectfusionRecon
+            from kernel.kf_pycuda.kinect_fusion import KinectFusion
+            from kernel.kf_pycuda.config import set_config
         except:
             print(
                 "Error", "Please successfully install pycuda", None
             )        
         else:  
-            pass 
+            config = set_config(resX = self.param.camera["resolution"][0], 
+                                resY = self.param.camera["resolution"][0], 
+                                fx = self.param.camera["intrinsic"][0, 0], 
+                                fy = self.param.camera["intrinsic"][1, 1], 
+                                cx = self.param.camera["intrinsic"][0, 2], 
+                                cy = self.param.camera["intrinsic"][1, 2], 
+                                tsdf_voxel_size = 0.0025, 
+                                tsdf_trunc_margin = 0.015, 
+                                pcd_voxel_size = 0.005) 
+            kf = KinectFusion(cfg=config)
+
+            for imgname in [keypair[0]] + imglists + [keypair[1]]:
+                color_im_path = os.path.join(self.rgb_path, imgname)
+                depth_im_path = os.path.join(self.depth_path, imgname)
+                color_im = np.array(Image.open(color_im_path))
+                depth_im = np.array(Image.open(depth_im_path)).astype(np.float32) * self.depth_scale
+                depth_im[depth_im > 1.5] = 0
+                kf.update(color_im, depth_im)
+            trans = self.keyposes[keypair[0]].dot(np.linalg.inv(kf.cam_poses[0]))
+
+            for idx, prefix in enumerate(imglists):
+                self.wholecam[prefix] = trans.dot(kf.cam_poses[idx + 1])
+    
+    def _savecampose(self, campose_filename):
+        with open(os.path.join(self.reconstructionsrc, campose_filename), 'w') as f:
+            f.write('# IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME\n')
+            f.write('\n')
+            for idx, cam in enumerate(self.wholecam.keys()):
+                pose = _rotation2Pose(self.wholecam[cam])
+                f.write(str(idx) + " {0} {1} {2} {3} {4} {5} {6} 1 \n".format(*pose[1], *pose[0])+ cam)
+

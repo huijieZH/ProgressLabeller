@@ -131,7 +131,7 @@ def _align_reconstruction(config, scene, THRESHOLD = 0.0001, NUM_THRESHOLD = 8):
         [0, 0, 1],
     ])
 
-    depth_scale = scene.loadreconparas.depth_scale
+    depth_scale = config.depth_scale
 
     Camera_dict = {}
     PointsDict = {}

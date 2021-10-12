@@ -42,6 +42,7 @@ class offlineParam:
     def parsedatapara(self):
         self.data = {}
         self.data['sample_rate'] = self.config['data']['sample_rate']
+        self.data['depth_scale'] = self.config['data']['depth_scale']
     
     def parseobj(self):
         self.objs = {}

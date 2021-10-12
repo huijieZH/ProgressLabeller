@@ -231,7 +231,7 @@ class ImportReconResult(Operator):
             row.prop(scene.loadreconparas, "pointcloud_scale")
         else:
             row = box.row()
-            row.prop(scene.loadreconparas, "depth_scale")
+            row.prop(config, "depth_scale")
         row = layout.row()
         row.prop(config, "cameradisplayscale")
         row = layout.row()
@@ -249,9 +249,9 @@ class LoadRecon(bpy.types.PropertyGroup):
     AUTOALIGN: bpy.props.BoolProperty(name="Auto Align Point Cloud Scale", 
                                       description="Algin the Point Clound from Depth Information", 
                                       default=True)      
-    depth_scale: bpy.props.FloatProperty(name="Depth Data Scale", 
-                                            description="Scale for depth", 
-                                            default=0.00025)  
+    # depth_scale: bpy.props.FloatProperty(name="Depth Data Scale", 
+    #                                         description="Scale for depth", 
+    #                                         default=0.00025)  
                                         
     CAMPOSE_INVERSE: bpy.props.BoolProperty(
         name="Inverse Camera Pose",

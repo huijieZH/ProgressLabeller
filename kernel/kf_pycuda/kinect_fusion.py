@@ -141,6 +141,71 @@ class KinectFusion:
         else:
             self.cam_poses.append(np.eye(4))
 
+    def interpolation_update(self, color_im, depth_im, accurate_pose = None):
+        if accurate_pose is None:
+            self.update(color_im, depth_im)
+        else:
+            if self.tsdf_volume is None:
+                assert(accurate_pose is not None)
+                self.initialize_tsdf_volume_withaccuratepose(color_im, depth_im, accurate_pose, None)
+                return True
+            else:
+                cam_pose = accurate_pose
+                curr_pcd = utils.create_pcd(depth_im, self.cfg['cam_intr'])
+                self.transformation = la.inv(cam_pose)
+                self.prev_observation = curr_pcd                
+                self.cam_poses.append(cam_pose)
+                self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], cam_pose, weight=1)            
+    
+
+    def initialize_tsdf_volume_withaccuratepose(self, color_im, depth_im, accurate_pose = None, visualize=False):
+        pcd = utils.create_pcd(depth_im, self.cfg['cam_intr'], color_im)
+        
+        cam_pose = accurate_pose
+        transformed_pcd = copy.deepcopy(pcd).transform(cam_pose)
+        transformed_pts = np.asarray(transformed_pcd.points)
+
+        vol_bnds = np.zeros((3, 2), dtype=np.float32)
+        vol_bnds[:, 0] = transformed_pts.min(0)
+        vol_bnds[:, 1] = transformed_pts.max(0)
+        # print(vol_bnds)
+        # vol_bnds[2] = [-0.01, 0.25]
+
+        if visualize:
+            vol_box = o3d.geometry.OrientedBoundingBox()
+            vol_box.center = vol_bnds.mean(1)
+            vol_box.extent = vol_bnds[:, 1] - vol_bnds[:, 0]
+            o3d.visualization.draw_geometries([vol_box, transformed_pcd])
+
+        self.init_transformation = la.inv(cam_pose.copy())
+        self.transformation = la.inv(cam_pose.copy())
+        self.tsdf_volume = TSDFVolume(vol_bnds=vol_bnds,
+                                      voxel_size=self.cfg['tsdf_voxel_size'],
+                                      trunc_margin=self.cfg['tsdf_trunc_margin'])
+        self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], cam_pose)
+        self.prev_pcd = pcd
+        self.cam_poses.append(cam_pose)
+
+    def F2FPoseEstimation(self, color_im, depth_im, accurate_pose = None):
+        if accurate_pose is None:
+            curr_pcd = utils.create_pcd(depth_im, self.cfg['cam_intr'])
+            # #------------------------------ frame to frame ICP (open loop) ------------------------------
+            result_icp = self.multiscale_icp(self.prev_pcd, curr_pcd,
+                                             voxel_size_list=[0.025, 0.01, 0.005],
+                                             max_iter_list=[10, 10, 10], init=np.eye(4))
+            if result_icp is not None:
+                self.transformation = result_icp.transformation @ self.transformation
+            self.prev_pcd = curr_pcd
+            cam_pose = la.inv(self.transformation)
+            return cam_pose
+        else:
+            cam_pose = accurate_pose
+            curr_pcd = utils.create_pcd(depth_im, self.cfg['cam_intr'])
+            self.transformation = la.inv(cam_pose)
+            self.prev_pcd = curr_pcd   
+            return True
+
+
     def save(self, output_folder, prefix_list):
         # if os.path.exists(output_folder):
         #     key = input(f"{output_folder} exists. Do you want to overwrite? (y/n)")

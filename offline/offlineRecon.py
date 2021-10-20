@@ -11,6 +11,7 @@ class offlineRecon:
         self.param = param
         self.datasrc = self.param.datasrc
         self.reconstructionsrc = self.param.reconstructionsrc
+        self.CAM_INVERSE = self.param.camera["inverse_pose"]
         self.wholemap = {} ## mapping the keyframe pair to frame under estimation
         self.wholecam = {} ## mapping all frames to their poses
         self.keyposes = {} ## mapping all key frames to their poses
@@ -41,7 +42,7 @@ class offlineRecon:
                 self.wholemap[key_pair].append(current_image_name)
             index_whole += 1
         for img in imagefiles:
-            self.wholecam[img] = {}
+            self.wholecam[img] = np.empty((0, 0))
             if img in self.keyposes:
                 self.wholecam[img] = self.keyposes[img]
 
@@ -53,64 +54,113 @@ class offlineRecon:
             if datas[0].isnumeric():
                 self.keyposes[datas[-1].split("\n")[0]] = _pose2Rotation([[float(datas[5]), float(datas[6]), float(datas[7])],\
                                                         [float(datas[1]), float(datas[2]), float(datas[3]), float(datas[4])]])
+                pass
 
     def _applytrans2cam(self):
-        Axis_align = np.array([[1, 0, 0, 0],
-                              [0, -1, 0, 0],
-                              [0, 0, -1, 0],
-                              [0, 0, 0, 1],]
-            )
+        # Axis_align = np.array([[1, 0, 0, 0],
+        #                       [0, -1, 0, 0],
+        #                       [0, 0, -1, 0],
+        #                       [0, 0, 0, 1],]
+        #     )
         scale = self.param.recon["scale"]
         trans = self.param.recon["trans"]
         for cam in self.keyposes:
             origin_pose = self.keyposes[cam]
             origin_pose[:3, 3] = origin_pose[:3, 3] * scale
-            origin_pose = np.linalg.inv(origin_pose).dot(Axis_align)
+            # origin_pose = np.linalg.inv(origin_pose).dot(Axis_align)
+            if self.CAM_INVERSE:
+                origin_pose = np.linalg.inv(origin_pose)
             self.keyposes[cam] = trans.dot(origin_pose)
     
     def _interpolation(self, type):
-        assert type in ["KF_forward"]
-        for keypair in tqdm(self.wholemap):
-            if type == "KF_forward":
-                self._interpolationKFForward(keypair, self.wholemap[keypair])
+        assert type in ["KF_forward_m2f", "KF_forward_f2f", "all"]
+        if type == "all":
+            ## don't need do anything
+            pass
+        if type == "KF_forward_m2f":
+            try: 
+                from kernel.kf_pycuda.kinect_fusion import KinectFusion
+                from kernel.kf_pycuda.config import set_config
+            except:
+                print(
+                    "Error", "Please successfully install pycuda", None
+                )        
+            else:  
+                
+                config = set_config(resX = self.param.camera["resolution"][0], 
+                    resY = self.param.camera["resolution"][0], 
+                    fx = self.param.camera["intrinsic"][0, 0], 
+                    fy = self.param.camera["intrinsic"][1, 1], 
+                    cx = self.param.camera["intrinsic"][0, 2], 
+                    cy = self.param.camera["intrinsic"][1, 2], 
+                    tsdf_voxel_size = 0.0025, 
+                    tsdf_trunc_margin = 0.015, 
+                    pcd_voxel_size = 0.005) 
+                self.kf = KinectFusion(cfg=config)
+                for keypair in tqdm(self.wholemap):
+                    self._interpolationKFForwardM2F(keypair, self.wholemap[keypair])
+                for idx, prefix in enumerate(self.wholecam.keys()):
+                    if idx < len(self.kf.cam_poses):
+                        self.wholecam[prefix] = self.kf.cam_poses[idx]
+        if type == "KF_forward_f2f":
+            try: 
+                from kernel.kf_pycuda.kinect_fusion import KinectFusion
+                from kernel.kf_pycuda.config import set_config
+            except:
+                print(
+                    "Error", "Please successfully install pycuda", None
+                )        
+            else:  
+                
+                config = set_config(resX = self.param.camera["resolution"][0], 
+                    resY = self.param.camera["resolution"][0], 
+                    fx = self.param.camera["intrinsic"][0, 0], 
+                    fy = self.param.camera["intrinsic"][1, 1], 
+                    cx = self.param.camera["intrinsic"][0, 2], 
+                    cy = self.param.camera["intrinsic"][1, 2], 
+                    tsdf_voxel_size = 0.0025, 
+                    tsdf_trunc_margin = 0.015, 
+                    pcd_voxel_size = 0.005) 
+                self.kf = KinectFusion(cfg=config)
+                for keypair in tqdm(self.wholemap):
+                    self._interpolationKFForwardF2F(keypair, self.wholemap[keypair])
+                for idx, prefix in enumerate(self.wholecam.keys()):
+                    if idx < len(self.kf.cam_poses):
+                        self.wholecam[prefix] = self.kf.cam_poses[idx]
 
-    def _interpolationKFForward(self, keypair, imglists):
-        try: 
-            from kernel.kf_pycuda.kinect_fusion import KinectFusion
-            from kernel.kf_pycuda.config import set_config
-        except:
-            print(
-                "Error", "Please successfully install pycuda", None
-            )        
-        else:  
-            config = set_config(resX = self.param.camera["resolution"][0], 
-                                resY = self.param.camera["resolution"][0], 
-                                fx = self.param.camera["intrinsic"][0, 0], 
-                                fy = self.param.camera["intrinsic"][1, 1], 
-                                cx = self.param.camera["intrinsic"][0, 2], 
-                                cy = self.param.camera["intrinsic"][1, 2], 
-                                tsdf_voxel_size = 0.0025, 
-                                tsdf_trunc_margin = 0.015, 
-                                pcd_voxel_size = 0.005) 
-            kf = KinectFusion(cfg=config)
+    def _interpolationKFForwardM2F(self, keypair, imglists):
+        for imgname in [keypair[0]] + imglists:
+            color_im_path = os.path.join(self.rgb_path, imgname)
+            depth_im_path = os.path.join(self.depth_path, imgname)
+            color_im = np.array(Image.open(color_im_path))
+            depth_im = np.array(Image.open(depth_im_path)).astype(np.float32) * self.depth_scale
+            depth_im[depth_im > 1.5] = 0
+            if imgname == keypair[0]:
+                self.kf.interpolation_update(color_im, depth_im, self.keyposes[keypair[0]])
+            else:
+                self.kf.interpolation_update(color_im, depth_im, None)
 
-            for imgname in [keypair[0]] + imglists + [keypair[1]]:
-                color_im_path = os.path.join(self.rgb_path, imgname)
-                depth_im_path = os.path.join(self.depth_path, imgname)
-                color_im = np.array(Image.open(color_im_path))
-                depth_im = np.array(Image.open(depth_im_path)).astype(np.float32) * self.depth_scale
-                depth_im[depth_im > 1.5] = 0
-                kf.update(color_im, depth_im)
-            trans = self.keyposes[keypair[0]].dot(np.linalg.inv(kf.cam_poses[0]))
-
-            for idx, prefix in enumerate(imglists):
-                self.wholecam[prefix] = trans.dot(kf.cam_poses[idx + 1])
+    def _interpolationKFForwardF2F(self, keypair, imglists):
+        for imgname in [keypair[0]] + imglists[:int(len(imglists)/2)] + (imglists[int(len(imglists)/2):] + [keypair[1]])[::-1]:
+            color_im_path = os.path.join(self.rgb_path, imgname)
+            depth_im_path = os.path.join(self.depth_path, imgname)
+            color_im = np.array(Image.open(color_im_path))
+            depth_im = np.array(Image.open(depth_im_path)).astype(np.float32) * self.depth_scale
+            depth_im[depth_im > 1.5] = 0
+            if imgname == keypair[0]:
+                self.kf.F2FPoseEstimation(color_im, depth_im, self.keyposes[keypair[0]])
+            else:
+                pose = self.kf.F2FPoseEstimation(color_im, depth_im, None)
+                self.wholecam[imgname] = pose
+              
+            
     
     def _savecampose(self, campose_filename):
         with open(os.path.join(self.reconstructionsrc, campose_filename), 'w') as f:
             f.write('# IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME\n')
             f.write('\n')
             for idx, cam in enumerate(self.wholecam.keys()):
-                pose = _rotation2Pose(self.wholecam[cam])
-                f.write(str(idx) + " {0} {1} {2} {3} {4} {5} {6} 1 \n".format(*pose[1], *pose[0])+ cam)
+                if self.wholecam[cam].any():
+                    pose = _rotation2Pose(self.wholecam[cam])
+                    f.write(str(idx) + " {0} {1} {2} {3} {4} {5} {6} 1 ".format(*pose[1], *pose[0])+ cam + "\n")
 

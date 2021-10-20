@@ -162,7 +162,7 @@ class ImportReconResult(Operator):
                                         datasrc = datasrc,
                                         config_id = config_id,
                                         camera_display_scale = config.cameradisplayscale,
-                                        CAMPOSE_INVERSE = scene.loadreconparas.CAMPOSE_INVERSE
+                                        CAMPOSE_INVERSE = config.inverse_pose
                                         )
         else:
             log_report(
@@ -177,7 +177,7 @@ class ImportReconResult(Operator):
                                         datasrc = datasrc,
                                         config_id = config_id,
                                         camera_display_scale = config.cameradisplayscale,
-                                        CAMPOSE_INVERSE = scene.loadreconparas.CAMPOSE_INVERSE
+                                        CAMPOSE_INVERSE = config.inverse_pose
                                         )
             
         return {'FINISHED'}
@@ -235,7 +235,7 @@ class ImportReconResult(Operator):
         row = layout.row()
         row.prop(config, "cameradisplayscale")
         row = layout.row()
-        row.prop(scene.loadreconparas, "CAMPOSE_INVERSE")       
+        row.prop(config, "inverse_pose")       
             
 class LoadRecon(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.
@@ -253,11 +253,11 @@ class LoadRecon(bpy.types.PropertyGroup):
     #                                         description="Scale for depth", 
     #                                         default=0.00025)  
                                         
-    CAMPOSE_INVERSE: bpy.props.BoolProperty(
-        name="Inverse Camera Pose",
-        description="Need when given poses are from world to camera",
-        default=False,
-    )       
+    # CAMPOSE_INVERSE: bpy.props.BoolProperty(
+    #     name="Inverse Camera Pose",
+    #     description="Need when given poses are from world to camera",
+    #     default=False,
+    # )       
   
 
 

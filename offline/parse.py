@@ -25,7 +25,7 @@ class offlineParam:
         self.camera = {}
         self.camera["resolution"] = self.config["camera"]["resolution"]
         self.camera["intrinsic"] = np.array(self.config["camera"]["intrinsic"])
-
+        self.camera["inverse_pose"] = self.config["camera"]["inverse_pose"]
 
     def parseenv(self):
         self.modelsrc = self.config["environment"]["modelsrc"]

@@ -65,6 +65,7 @@ class offlineRender:
     def _parsecamfile(self):
         self.camposes = {}
         f = open(os.path.join(self.reconstructionsrc, "campose_all_{0}.txt".format(self.interpolation_type)))
+        # f = open(os.path.join(self.reconstructionsrc, "campose.txt"))
         lines = f.readlines()
         for l in lines:
             datas = l.split(" ")
@@ -83,7 +84,10 @@ class offlineRender:
         for cam in self.camposes:
             origin_pose = self.camposes[cam]
             origin_pose[:3, 3] = origin_pose[:3, 3] * scale
-            origin_pose = np.linalg.inv(origin_pose).dot(Axis_align)
+            if self.CAM_INVERSE:
+                origin_pose = np.linalg.inv(origin_pose).dot(Axis_align)
+            else:
+                origin_pose = origin_pose.dot(Axis_align)
             self.camposes[cam] = trans.dot(origin_pose)
 
     def _render(self, cam_pose, scene):
@@ -124,13 +128,13 @@ class offlineRender:
     
     def renderAll(self):
         ## generate whole output dataset
-        # Axis_align = np.array([[1, 0, 0, 0],
-        #                 [0, -1, 0, 0],
-        #                 [0, 0, -1, 0],
-        #                 [0, 0, 0, 1],]
-        #                 )
+        Axis_align = np.array([[1, 0, 0, 0],
+                               [0, -1, 0, 0],
+                               [0, 0, -1, 0],
+                               [0, 0, 0, 1],]
+                                )
         for cam in tqdm(self.camposes):
-            camT = self.camposes[cam]
+            camT = self.camposes[cam].dot(Axis_align)
             segment = self._render(camT, self.scene)
             perfix = cam.split(".")[0]
             inputrgb = np.array(Image.open(os.path.join(self.datasrc, "rgb", cam)))

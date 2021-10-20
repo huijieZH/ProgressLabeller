@@ -18,11 +18,13 @@ config_json_dict = {
     'cx':[['camera', 'intrinsic'], ['0', '2']],    
     'cy':[['camera', 'intrinsic'], ['1', '2']],    
     'lens':[['camera', 'lens']],
+    'inverse_pose':[['camera', 'inverse_pose']],
     'reconstructionscale': [['reconstruction', 'scale']],
     'cameradisplayscale': [['reconstruction', 'cameradisplayscale']],
     'recon_trans': [['reconstruction', 'recon_trans']],
     'sample_rate': [['data', 'sample_rate']],
     'depth_scale': [['data', 'depth_scale']],
+
 }
 
 def decode_dict(configuration, code):
@@ -48,6 +50,7 @@ def encode_dict(configuration):
         "intrinsic": [[configuration.fx, 0, configuration.cx],
                       [0, configuration.fy, configuration.cy],
                       [0, 0, 1]],
+        "inverse_pose": configuration.inverse_pose,
         "lens": configuration.lens, 
         },
         'reconstruction':{
@@ -88,6 +91,12 @@ class config(bpy.types.PropertyGroup):
         min=0.00, max=1000.00, step=10, precision=2)
     lens: bpy.props.FloatProperty(name="lens", description="camera lens length", 
         min=0.000, max=1.000, step=3, precision=3, default = 0.025)
+
+    inverse_pose: bpy.props.BoolProperty(
+        name="Inverse Camera Pose",
+        description="Need when given poses are from world to camera",
+        default=False,
+    )       
     
     recon_trans: bpy.props.StringProperty(name = "recon_trans", default = "1,0,0,0;0,1,0,0;0,0,1,0;0,0,0,1;")
     
@@ -105,7 +114,23 @@ class config(bpy.types.PropertyGroup):
                                         min=0.000000, 
                                         max=1.000000, 
                                         step=6, 
-                                        precision=6)           
+                                        precision=6)  
+
+    reconstructionscale: bpy.props.FloatProperty(name="reconstruction scale", 
+                                        description="reconstruction scale for the fused.ply", 
+                                        default=1.00, 
+                                        min=0.00, 
+                                        max=2.00, 
+                                        step=0.01, 
+                                        precision=2)      
+
+    cameradisplayscale: bpy.props.FloatProperty(name="reconstruction scale", 
+                                        description="reconstruction scale for the fused.ply", 
+                                        default=0.1, 
+                                        min=0.00, 
+                                        max=1.00, 
+                                        step=0.01, 
+                                        precision=2)    
 
     def scale_update(self, context):
         

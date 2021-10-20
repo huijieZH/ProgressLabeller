@@ -59,13 +59,13 @@ class Reconstruction(Operator):
                     DISPLAY = scene.kinectfusionparas.DISPLAY,  
                     frame_per_display = scene.kinectfusionparas.frame_per_display, 
                 )
-            
+                config.inverse_pose = False
                 load_reconstruction_result(filepath = config.reconstructionsrc, 
                                     pointcloudscale = 1.0, 
                                     datasrc = config.datasrc,
                                     config_id = config_id,
                                     camera_display_scale = config.cameradisplayscale,
-                                    CAMPOSE_INVERSE= False
+                                    CAMPOSE_INVERSE= config.inverse_pose
                                     )
         elif self.ReconstructionType == "COLMAP":
             try: 
@@ -84,7 +84,7 @@ class Reconstruction(Operator):
                 )
 
                 colmap_extension.parseReconstruction(config.reconstructionsrc)
-
+                config.inverse_pose = True
                 scale = _align_reconstruction(config, scene)
                 config.reconstructionscale = scale
                 load_reconstruction_result(filepath = config.reconstructionsrc, 
@@ -92,7 +92,7 @@ class Reconstruction(Operator):
                                     datasrc = config.datasrc,
                                     config_id = config_id,
                                     camera_display_scale = config.cameradisplayscale,
-                                    CAMPOSE_INVERSE= True
+                                    CAMPOSE_INVERSE= config.inverse_pose
                                     )
         return {'FINISHED'}
 

@@ -55,6 +55,7 @@ Our add-on depends on the following python libraries:
 * pyrender
 * trimesh
 * scikit-image
+* pyntcloud
 
 It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, pip install command shoudld be 
 ```bash

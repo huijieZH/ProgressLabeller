@@ -162,6 +162,7 @@ class ImportReconResult(Operator):
                                         datasrc = datasrc,
                                         config_id = config_id,
                                         camera_display_scale = config.cameradisplayscale,
+                                        IMPORT_RATIO = scene.loadreconparas.Import_ratio,
                                         CAMPOSE_INVERSE = config.inverse_pose
                                         )
         else:
@@ -177,6 +178,7 @@ class ImportReconResult(Operator):
                                         datasrc = datasrc,
                                         config_id = config_id,
                                         camera_display_scale = config.cameradisplayscale,
+                                        IMPORT_RATIO = scene.loadreconparas.Import_ratio,
                                         CAMPOSE_INVERSE = config.inverse_pose
                                         )
             
@@ -235,7 +237,9 @@ class ImportReconResult(Operator):
         row = layout.row()
         row.prop(config, "cameradisplayscale")
         row = layout.row()
-        row.prop(config, "inverse_pose")       
+        row.prop(config, "inverse_pose")  
+        row = layout.row()
+        row.prop(scene.loadreconparas, "Import_ratio")     
             
 class LoadRecon(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.
@@ -248,7 +252,16 @@ class LoadRecon(bpy.types.PropertyGroup):
                                             precision=2)  
     AUTOALIGN: bpy.props.BoolProperty(name="Auto Align Point Cloud Scale", 
                                       description="Algin the Point Clound from Depth Information", 
-                                      default=True)      
+                                      default=False)      
+
+    Import_ratio: bpy.props.FloatProperty(name="Import Ratio", 
+                                          description="Ratio to import images from campose.txt", 
+                                          default=0.1, 
+                                          min=0.00, 
+                                          max=1.00, 
+                                          step=2, 
+                                          precision=2)   
+                                                      
     # depth_scale: bpy.props.FloatProperty(name="Depth Data Scale", 
     #                                         description="Scale for depth", 
     #                                         default=0.00025)  

@@ -13,7 +13,8 @@ class offlineRender:
         print("Start offline rendering")
         self.param = param
         self.interpolation_type = interpolation_type
-        self.outputpath = os.path.join(self.param.dir, outputdir)
+        # self.outputpath = os.path.join(self.param.dir, outputdir)
+        self.outputpath = outputdir
         self.modelsrc = self.param.modelsrc
         self.reconstructionsrc = self.param.reconstructionsrc
         self.datasrc = self.param.datasrc

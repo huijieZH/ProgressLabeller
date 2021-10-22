@@ -7,6 +7,8 @@ from PIL import Image
 from tqdm import tqdm
 import trimesh
 import pyrender
+import multiprocessing
+import subprocess
 
 from registeration.init_configuration import config_json_dict, encode_dict
 from kernel.logging_utility import log_report
@@ -29,61 +31,65 @@ def objectposes_export(name, path):
         documents = yaml.dump(pose, file)
 
 
+def data_export(config_path, target_dir):
+    source = os.path.dirname(os.path.dirname(__file__))
+    code_path = os.path.join(source, "offline", "main.py")
+    subprocess.call("conda activate progresslabeler; python {0} {1} {2}".format(code_path, config_path, target_dir), shell=True)
 
-def data_export(config, target_dir):
-    if not os.path.exists(target_dir):
-        os.mkdir(target_dir)
-    name = config.projectname
-    intrinsic = np.array([[config.fx, 0, config.cx],
-                          [0, config.fy, config.cy],
-                          [0, 0, 1]])
-    # print(intrinsic)
-    for model in bpy.data.objects:
-        if model.name.split(":")[0] == name and model["type"] == "model":
-            log_report(
-                "INFO", "Starting prepare the dataset for {0} model in {1} workspace"\
-                    .format(model.name.split(":")[1], model.name.split(":")[0]), None
-            )
+# def data_export(config, target_dir):
+#     if not os.path.exists(target_dir):
+#         os.mkdir(target_dir)
+#     name = config.projectname
+#     intrinsic = np.array([[config.fx, 0, config.cx],
+#                           [0, config.fy, config.cy],
+#                           [0, 0, 1]])
+#     # print(intrinsic)
+#     for model in bpy.data.objects:
+#         if model.name.split(":")[0] == name and model["type"] == "model":
+#             log_report(
+#                 "INFO", "Starting prepare the dataset for {0} model in {1} workspace"\
+#                     .format(model.name.split(":")[1], model.name.split(":")[0]), None
+#             )
 
-            ## split render model and visual model
-            visual_model_path = model["path"]
-            model_dir = os.path.dirname(visual_model_path)
-            model_name = os.path.basename(visual_model_path)
-            render_model_path = os.path.join(model_dir, model_name.split(".")[0] + "_render.obj")
+#             ## split render model and visual model
+#             visual_model_path = model["path"]
+#             model_dir = os.path.dirname(visual_model_path)
+#             model_name = os.path.basename(visual_model_path)
+#             render_model_path = os.path.join(model_dir, model_name.split(".")[0] + "_render.obj")
             
-            # print(render_model_path)
-            #modelPC = _loadModel(model["path"])
-            modelPC = _loadModel(render_model_path)
-            modelT = _pose2Rotation([list(model.location), list(model.rotation_quaternion)])
+#             # print(render_model_path)
+#             #modelPC = _loadModel(model["path"])
+#             modelPC = _loadModel(render_model_path)
+#             modelT = _pose2Rotation([list(model.location), list(model.rotation_quaternion)])
 
-            modelPath = os.path.join(target_dir, model.name.split(":")[1])
-            if not os.path.exists(modelPath):
-                os.mkdir(modelPath)
+#             modelPath = os.path.join(target_dir, model.name.split(":")[1])
+#             if not os.path.exists(modelPath):
+#                 os.mkdir(modelPath)
 
-            posepath = os.path.join(modelPath, "pose")            
-            if not os.path.exists(posepath):
-                os.mkdir(posepath)
-            rgbpath = os.path.join(modelPath, "rgb")            
-            if not os.path.exists(rgbpath):
-                os.mkdir(rgbpath)
-            for cam in tqdm(bpy.data.objects):     
-                if cam.name.split(":")[0] == name and "type" in cam and cam["type"] == "camera":
-                    image = np.array(Image.open(cam["rgb"].filepath))
-                    cameraT = _pose2Rotation([list(cam.location), list(cam.rotation_quaternion)])
-                    # model_camT = np.linalg.inv(cameraT).dot(modelT)
-                    # model_camT = np.linalg.inv(cameraT.dot(np.linalg.inv(modelT)))
-                    Axis_align = np.array([[1, 0, 0, 0],
-                                           [0, -1, 0, 0],
-                                           [0, 0, -1, 0],
-                                           [0, 0, 0, 1],]
-                                            )
+#             posepath = os.path.join(modelPath, "pose")            
+#             if not os.path.exists(posepath):
+#                 os.mkdir(posepath)
+#             rgbpath = os.path.join(modelPath, "rgb")            
+#             if not os.path.exists(rgbpath):
+#                 os.mkdir(rgbpath)
+#             for cam in tqdm(bpy.data.objects):     
+#                 if cam.name.split(":")[0] == name and "type" in cam and cam["type"] == "camera":
+#                     image = np.array(Image.open(cam["rgb"].filepath))
+#                     cameraT = _pose2Rotation([list(cam.location), list(cam.rotation_quaternion)])
+#                     # model_camT = np.linalg.inv(cameraT).dot(modelT)
+#                     # model_camT = np.linalg.inv(cameraT.dot(np.linalg.inv(modelT)))
+#                     Axis_align = np.array([[1, 0, 0, 0],
+#                                            [0, -1, 0, 0],
+#                                            [0, 0, -1, 0],
+#                                            [0, 0, 0, 1],]
+#                                             )
 
 
-                    model_camT = np.linalg.inv(cameraT.dot(Axis_align)).dot(modelT)
-                    # model_camT = modelT.dot(np.linalg.inv(cameraT))
-                    perfix = cam.name.split(":")[1].replace("view", "")
-                    _createpose(posepath, perfix, model_camT)
-                    _createrbg(image, modelPC, rgbpath, perfix, model_camT, intrinsic)
+#                     model_camT = np.linalg.inv(cameraT.dot(Axis_align)).dot(modelT)
+#                     # model_camT = modelT.dot(np.linalg.inv(cameraT))
+#                     perfix = cam.name.split(":")[1].replace("view", "")
+#                     _createpose(posepath, perfix, model_camT)
+#                     _createrbg(image, modelPC, rgbpath, perfix, model_camT, intrinsic)
 
 # def data_export(config, target_dir):
 #     if not os.path.exists(target_dir):

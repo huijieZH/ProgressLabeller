@@ -2,6 +2,8 @@ import bpy
 from bpy.props import StringProperty, EnumProperty, FloatProperty
 from bpy.types import Operator
 import os
+import multiprocessing
+import subprocess
 
 from kernel.logging_utility import log_report
 from kernel.loader import load_reconstruction_result
@@ -20,8 +22,9 @@ class Reconstruction(Operator):
         items=(
             ('KinectFusion', "KinectFusion", "Need depth & rgb data information"),
             ('COLMAP', "COLMAP", "Need depth & rgb data information"),
+            ('ORB_SLAM2', "ORB_SLAM2", "Need depth & rgb data information")
         ),
-        default='KinectFusion',
+        default='ORB_SLAM2',
     )
 
     PerfixList = list()
@@ -92,8 +95,64 @@ class Reconstruction(Operator):
                                     datasrc = config.datasrc,
                                     config_id = config_id,
                                     camera_display_scale = config.cameradisplayscale,
+                                    IMPORT_RATIO = 1.0,
                                     CAMPOSE_INVERSE= config.inverse_pose
                                     )
+        elif self.ReconstructionType == "ORB_SLAM2":
+            try: 
+                from kernel.orb_slam.build import orb_extension
+                from kernel.orb_slam.build.orbslam_utility import orbslam_yaml, orbslam_associatefile
+            except:
+                log_report(
+                    "Error", "Please successfully install ORB_SLAM2, pybind11 and complie orb_extension", None
+                )            
+            else:
+                orbslam_yaml(os.path.join(config.reconstructionsrc, "orb_slam.yaml"), 
+                             config.fx, config.fy, config.cx, config.cy, 
+                             config.resX, config.resY, config.depth_scale, 
+                             scene.orbslamparas.timestampfrenquency)
+                orbslam_associatefile(os.path.join(config.reconstructionsrc, "associate.txt"), 
+                                      config.datasrc, 
+                                      scene.orbslamparas.timestampfrenquency)
+                source = os.path.dirname(os.path.dirname(__file__))
+                code_path = os.path.join(source, "kernel", "orb_slam", "orb_slam.py")
+                subprocess.call("conda init bash; conda activate progresslabeler; python {0} {1} {2} {3} {4} {5} {6}".format(code_path, 
+                                                                                                            scene.orbslamparas.orb_vocabularysrc, 
+                                                                                                            os.path.join(config.reconstructionsrc,"orb_slam.yaml"),
+                                                                                                            config.datasrc,
+                                                                                                            os.path.join(config.reconstructionsrc, "associate.txt"),
+                                                                                                            config.reconstructionsrc,
+                                                                                                            scene.orbslamparas.timestampfrenquency
+                                                                                                            ), shell=True)
+                # p = multiprocessing.Process(target=orb_extension.orb_slam_recon, 
+                #                             args=(
+                #                                     scene.orbslamparas.orb_vocabularysrc,
+                #                                     os.path.join(config.reconstructionsrc, "orb_slam.yaml"),
+                #                                     config.datasrc,
+                #                                     os.path.join(config.reconstructionsrc, "associate.txt"),
+                #                                     config.reconstructionsrc,
+                #                                     scene.orbslamparas.timestampfrenquency
+                #                                 ))
+                # p.start()
+                # orb_extension.orb_slam_recon(
+                #     scene.orbslamparas.orb_vocabularysrc,
+                #     os.path.join(config.reconstructionsrc, "orb_slam.yaml"),
+                #     config.datasrc,
+                #     os.path.join(config.reconstructionsrc, "associate.txt"),
+                #     config.reconstructionsrc,
+                #     scene.orbslamparas.timestampfrenquency
+                # )
+                config.inverse_pose = False
+                scale = _align_reconstruction(config, scene)
+                config.reconstructionscale = scale
+                load_reconstruction_result(filepath = config.reconstructionsrc, 
+                                           pointcloudscale = scale, 
+                                           datasrc = config.datasrc,
+                                           config_id = config_id,
+                                           camera_display_scale = config.cameradisplayscale,
+                                           IMPORT_RATIO = config.sample_rate,
+                                           CAMPOSE_INVERSE= config.inverse_pose
+                                           )
         return {'FINISHED'}
 
 
@@ -187,6 +246,40 @@ class Reconstruction(Operator):
             row.prop(config, "depth_scale")
             row = layout.row()
             row.prop(config, "cameradisplayscale")
+        
+        elif self.ReconstructionType == "ORB_SLAM2":
+            layout.label(text="Set Camera Parameters:")
+            box = layout.box() 
+            row = box.row(align=True)
+            row.prop(config, "fx")
+            row.prop(config, "fy")
+            row = box.row(align=True)
+            row.prop(config, "cx")
+            row.prop(config, "cy")
+            row = box.row(align=True)
+            row.prop(config, "resX")
+            row.prop(config, "resY")
+            layout.label(text="Set Reconstruction Loading Parameters:")        
+            layout.label(text="Set Plane Alignment (ICP) Parameters:")
+            box = layout.box() 
+            row = box.row()
+            row.prop(scene.planalignmentparas, "threshold") 
+            row = box.row()
+            row.prop(scene.planalignmentparas, "n") 
+            row = box.row()
+            row.prop(scene.planalignmentparas, "iteration") 
+            box = layout.box() 
+            box.label(text="Point Cloud Scale:")
+            row = box.row()
+            row.prop(config, "depth_scale")
+            row = layout.row()
+            row.prop(config, "cameradisplayscale")
+            layout.label(text="Set ORB_SLAM2 Parameters:")   
+            box = layout.box() 
+            row = box.row()
+            row.prop(scene.orbslamparas, "orb_vocabularysrc") 
+            row = box.row()
+            row.prop(scene.orbslamparas, "timestampfrenquency")             
 
 class KinectfusionConfig(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.
@@ -236,11 +329,23 @@ class KinectfusionConfig(bpy.types.PropertyGroup):
                                                 description="Frame interval between two displays", 
                                                 default=5)                                                                           
 
+class ORBSLAMConfig(bpy.types.PropertyGroup):
+    orb_vocabularysrc: bpy.props.StringProperty(name = "orb_vocabulary path", 
+                subtype = "FILE_PATH")  
+    timestampfrenquency: bpy.props.FloatProperty(name="Frequency for timestamp", 
+                                            description="Frequency of the images, realted to the speed of ORB-SLAM, set 20 for 1280X720 images and 30 for 640X480 ", 
+                                            default=20, 
+                                            min=0.0, 
+                                            max=100.0, 
+                                            step=1, 
+                                            precision=1)    
+
 def register():
     bpy.utils.register_class(Reconstruction)
     bpy.utils.register_class(KinectfusionConfig)
+    bpy.utils.register_class(ORBSLAMConfig)
     bpy.types.Scene.kinectfusionparas = bpy.props.PointerProperty(type=KinectfusionConfig)   
-
+    bpy.types.Scene.orbslamparas = bpy.props.PointerProperty(type=ORBSLAMConfig)   
 
 def unregister():
     bpy.utils.unregister_class(Reconstruction)

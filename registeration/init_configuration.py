@@ -101,7 +101,7 @@ class config(bpy.types.PropertyGroup):
     recon_trans: bpy.props.StringProperty(name = "recon_trans", default = "1,0,0,0;0,1,0,0;0,0,1,0;0,0,0,1;")
     
     sample_rate: bpy.props.FloatProperty(name="Sample Rate", 
-                                        description="Sample rate for choosing RGB to reconstruct", 
+                                        description="Sample rate for loading in blender for visualize", 
                                         default=0.10, 
                                         min=0.00, 
                                         max=1.00, 

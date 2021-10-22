@@ -2,7 +2,7 @@
 
 using namespace std;
 
-int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, string strAssociationFilename, string recon_path, int image_frequence)
+int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, string strAssociationFilename, string recon_path, float image_frequence)
 {
 
     // Retrieve paths to images
@@ -26,7 +26,8 @@ int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, s
     }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(ORBvoc_path, ORB_slam_config, ORB_SLAM2::System::RGBD, true);
+    
+    ORB_SLAM2::System SLAM(ORBvoc_path, ORB_slam_config, ORB_SLAM2::System::RGBD, false);
 
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
@@ -60,6 +61,7 @@ int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, s
         auto t1 = std::chrono::system_clock::now();
 
         // Pass the image to the SLAM system
+        cout << "Tracking " << vstrImageFilenamesRGB[ni] << " frame\n" << endl;
         SLAM.TrackRGBD(imRGB,imD,tframe);
 
         auto t2 = std::chrono::system_clock::now();

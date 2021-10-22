@@ -7,8 +7,10 @@ from offlineRecon import offlineRecon
 
 
 if __name__ == "__main__":
-    param = offlineParam("/home/huijie/Desktop/orb_slam_test/configuration.json")
+    config_path = sys.argv[1]
+    output_dir = sys.argv[2]
+    param = offlineParam(config_path)
     #["KF_forward_m2f", "KF_forward_f2f", "all"]
     interpolation_type = "all"
     offlineRecon(param, interpolation_type)
-    offlineRender(param, "output_" + interpolation_type, interpolation_type)
+    offlineRender(param, output_dir, interpolation_type)

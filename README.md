@@ -59,14 +59,10 @@ Our add-on depends on the following python libraries:
 
 It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, pip install command shoudld be 
 ```bash
-<<<<<<< HEAD
-python3.7 -m pip install --target /PATH/TO/BLENDER/2.92/python/lib/python3.7/site-packages open3d Pillow scipy pyyaml tqdm trimesh pyrender
-
-=======
 /PATH/TO/BLENDER/2.92/python/bin/python3.7 -m ensurepip
 /PATH/TO/BLENDER/2.92/python/bin/python3.7 -m pip install --target /PATH/TO/BLENDER/2.92/python/lib/python3.7/site-packages open3d Pillow scipy pyyaml tqdm trimesh pyrender scikit-image
 >>>>>>> v0.3
-```
+
 
 More details about pybind11 is available [here](https://pybind11.readthedocs.io/en/stable/installing.html), it should also be installed by your blender's python.
 

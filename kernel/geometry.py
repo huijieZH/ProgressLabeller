@@ -3,6 +3,7 @@ import open3d as o3d
 from PIL import Image
 import tqdm
 import os
+from scipy.spatial.transform import Rotation as R
 
 def _pose2Rotation(pose):
     x, y, z = pose[0]
@@ -187,69 +188,8 @@ def _register_point_cloud_fpfh(source, target, source_fpfh, target_fpfh, distanc
     else:
         return result.transformation
 
-# def align_scale(pc, cam_pose, filename,
-#                 depthscale,
-#                 intrinsic, rX, rY,
-#                 camposeinv = False):
-#     if not camposeinv:
-#         camT = np.linalg.inv(_pose2Rotation(cam_pose))
-#     else:
-#         camT = _pose2Rotation(cam_pose)
-
-#     points_cam = camT[:3, :3].dot(pc.T) + camT[:3, [3]]
-
-#     pixel_homo = intrinsic.dot(points_cam)
-#     pixel = np.around(pixel_homo[:2]/pixel_homo[2]).astype(np.int32)
-#     inside_mask = (pixel[0, :] >=0) * (pixel[0, :] <rX) * (pixel[1, :] >=0) * (pixel[1, :] <rY)
-#     if np.sum(inside_mask) == 0:
-#         ## maybe the camera intrinsic is set wrong
-#         return (False, None)
-#     pixel_inframe = pixel[:, inside_mask]
-#     point_inframe = points_cam[2, inside_mask]
-#     transform = pixel_inframe[0] * rY + pixel_inframe[1]
 
 
-#     d = np.bincount(transform, point_inframe)
-#     num = np.bincount(transform)
-    
-#     max_density = num.max()
-#     dp = np.divide(d, num, out=np.zeros_like(d), where=num > max_density*0.5)
-#     depth = np.concatenate((dp, np.zeros(rX*rY - dp.shape[0])), axis = 0)
 
-#     depth_im = depth.reshape((rX, rY)).T
 
-#     real_depth = np.asarray(Image.open(filename)) * depthscale
-#     depth_mask = (real_depth > 0) * (depth_im > 0) * (real_depth < 1.5)
-#     real = real_depth[depth_mask]
-#     render = depth_im[depth_mask]
-#     if real.shape[0] > 0 and render.shape[0] > 0:
-#         scale = np.mean(real/render)
-#         return (True, scale)
-#     else:
-#         return (False, None)
-
-# def align_scale_among_depths(camera_rgb_file, depth_path,
-#                              pc, depthscale,
-#                              intrinsic, rX, rY,
-#                              camposeinv = False):
-#         file = open(camera_rgb_file, "r")
-#         lines = file.read().split("\n")
-#         scales = []
-#         for l in tqdm.tqdm(lines):
-#             data = l.split(" ")
-#             if data[0].isnumeric():
-#                 framename = data[-1]
-#                 perfix = framename.split(".")[0]
-#                 pose = [[float(data[5]), float(data[6]), float(data[7])], 
-#                         [float(data[1]), float(data[2]), float(data[3]), float(data[4])]]
-#                 depthfile = os.path.join(depth_path, perfix + ".png")
-#                 if os.path.exists(depthfile):
-
-#                     SUCCESS, scale = align_scale(pc, pose, depthfile,
-#                                         depthscale,
-#                                         intrinsic, rX, rY, 
-#                                         camposeinv = camposeinv)
-#                     if SUCCESS:
-#                         scales.append(scale)  
-#         return scales 
 

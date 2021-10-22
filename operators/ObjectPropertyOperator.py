@@ -17,6 +17,8 @@ from kernel.loader import load_cam_img_depth, load_reconstruction_result, update
 from kernel.blender_utility import \
     _get_configuration, _get_reconstruction_insameworkspace, _get_obj_insameworkspace, _get_workspace_name, _apply_trans2obj, \
     _align_reconstruction
+from registeration.init_configuration import config
+from kernel.utility import _trans2transstring
 
 
 class PlaneAlignment(Operator):
@@ -55,8 +57,14 @@ class PlaneAlignment(Operator):
         
         for obj in obj_lists:
             _apply_trans2obj(obj, trans)
-        recon["alignT"] = trans.tolist()
+
+
         
+        recon["alignT"] = (trans.dot(np.array(recon["alignT"]))).tolist()
+
+        _, config = _get_configuration(context.object)
+        config.recon_trans = _trans2transstring(np.array(recon["alignT"]))
+
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -119,8 +127,21 @@ class ImportCamRGBDepth(Operator):
             )   
             return {'FINISHED'}      
         else:   
-            load_cam_img_depth(packagepath, config_id, camera_display_scale = 0.1)
+            load_cam_img_depth(packagepath, config_id, camera_display_scale = 0.1, sample_rate=config.sample_rate)
         return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width = 400)
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        config_id, config = _get_configuration(context.object)
+        layout.label(text="Set Sample Rate for RGB to reconstruct:")
+        box = layout.box() 
+        row = box.row()
+        row.prop(config, "sample_rate") 
+
 
 class ImportReconResult(Operator):
     """This appears in the tooltip of the operator and in the generated docs"""
@@ -141,7 +162,8 @@ class ImportReconResult(Operator):
                                         datasrc = datasrc,
                                         config_id = config_id,
                                         camera_display_scale = config.cameradisplayscale,
-                                        CAMPOSE_INVERSE = scene.loadreconparas.CAMPOSE_INVERSE
+                                        IMPORT_RATIO = scene.loadreconparas.Import_ratio,
+                                        CAMPOSE_INVERSE = config.inverse_pose
                                         )
         else:
             log_report(
@@ -156,7 +178,8 @@ class ImportReconResult(Operator):
                                         datasrc = datasrc,
                                         config_id = config_id,
                                         camera_display_scale = config.cameradisplayscale,
-                                        CAMPOSE_INVERSE = scene.loadreconparas.CAMPOSE_INVERSE
+                                        IMPORT_RATIO = scene.loadreconparas.Import_ratio,
+                                        CAMPOSE_INVERSE = config.inverse_pose
                                         )
             
         return {'FINISHED'}
@@ -210,11 +233,13 @@ class ImportReconResult(Operator):
             row.prop(scene.loadreconparas, "pointcloud_scale")
         else:
             row = box.row()
-            row.prop(scene.loadreconparas, "depth_scale")
+            row.prop(config, "depth_scale")
         row = layout.row()
         row.prop(config, "cameradisplayscale")
         row = layout.row()
-        row.prop(scene.loadreconparas, "CAMPOSE_INVERSE")       
+        row.prop(config, "inverse_pose")  
+        row = layout.row()
+        row.prop(scene.loadreconparas, "Import_ratio")     
             
 class LoadRecon(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.
@@ -227,16 +252,25 @@ class LoadRecon(bpy.types.PropertyGroup):
                                             precision=2)  
     AUTOALIGN: bpy.props.BoolProperty(name="Auto Align Point Cloud Scale", 
                                       description="Algin the Point Clound from Depth Information", 
-                                      default=True)      
-    depth_scale: bpy.props.FloatProperty(name="Depth Data Scale", 
-                                            description="Scale for depth", 
-                                            default=0.00025)  
+                                      default=False)      
+
+    Import_ratio: bpy.props.FloatProperty(name="Import Ratio", 
+                                          description="Ratio to import images from campose.txt", 
+                                          default=0.1, 
+                                          min=0.00, 
+                                          max=1.00, 
+                                          step=2, 
+                                          precision=2)   
+                                                      
+    # depth_scale: bpy.props.FloatProperty(name="Depth Data Scale", 
+    #                                         description="Scale for depth", 
+    #                                         default=0.00025)  
                                         
-    CAMPOSE_INVERSE: bpy.props.BoolProperty(
-        name="Inverse Camera Pose",
-        description="Need when given poses are from world to camera",
-        default=False,
-    )       
+    # CAMPOSE_INVERSE: bpy.props.BoolProperty(
+    #     name="Inverse Camera Pose",
+    #     description="Need when given poses are from world to camera",
+    #     default=False,
+    # )       
   
 
 
@@ -312,8 +346,7 @@ def register():
     bpy.utils.register_class(ImportCamRGBDepth)
     bpy.utils.register_class(ImportReconResult)
     bpy.utils.register_class(LoadRecon)
-    bpy.types.Scene.loadreconparas = bpy.props.PointerProperty(type=LoadRecon)   
-    
+    bpy.types.Scene.loadreconparas = bpy.props.PointerProperty(type=LoadRecon)  
     
     bpy.utils.register_class(ModelICP)
     bpy.utils.register_class(AllModelsICP)

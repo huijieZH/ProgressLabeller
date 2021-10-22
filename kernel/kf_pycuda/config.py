@@ -3,8 +3,8 @@ import numpy.linalg as la
 
 def get_config(camera='uw'):
     config = dict()
-    config['im_w'] = 640
-    config['im_h'] = 480
+    config['im_w'] = 1280
+    config['im_h'] = 720
     if camera == 'uw':
         config['cam_intr'] = np.array([ 
             [1066.778, 0, 312.9869],

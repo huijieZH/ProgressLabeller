@@ -76,6 +76,9 @@ def _apply_trans2obj(obj, trans):
     obj.location = after_align_pose[0]
     obj.rotation_quaternion = after_align_pose[1]/np.linalg.norm(after_align_pose[1])
 
+
+
+
 # def _align_reconstruction(config, scene):
 #     datasrc = config.datasrc
 #     filepath = config.reconstructionsrc
@@ -115,7 +118,7 @@ def _apply_trans2obj(obj, trans):
 #         )  
 #     return scale
 
-def _align_reconstruction(config, scene, THRESHOLD = 0.0001, NUM_THRESHOLD = 8):
+def _align_reconstruction(config, scene, THRESHOLD = 0.01, NUM_THRESHOLD = 8):
     filepath = config.reconstructionsrc
 
     imagefilepath = os.path.join(filepath, "images.txt")
@@ -128,7 +131,7 @@ def _align_reconstruction(config, scene, THRESHOLD = 0.0001, NUM_THRESHOLD = 8):
         [0, 0, 1],
     ])
 
-    depth_scale = scene.loadreconparas.depth_scale
+    depth_scale = config.depth_scale
 
     Camera_dict = {}
     PointsDict = {}
@@ -139,8 +142,8 @@ def _align_reconstruction(config, scene, THRESHOLD = 0.0001, NUM_THRESHOLD = 8):
             rgb_name = Camera_dict[camera_idx]["name"]
             with Image.open(os.path.join(datapath, "depth", rgb_name)) as im:
                 depth = np.array(im) * depth_scale
-                _scaleFordepth(depth, camera_idx, intrinsic, Camera_dict, PointsDict, PointsDepth)
+                _scaleFordepth(depth, camera_idx, intrinsic, Camera_dict, PointsDict, PointsDepth, POSE_INVERSE = config.inverse_pose)
         
-    scale = _calculateDepth(THRESHOLD = 0.005, NUM_THRESHOLD = 3, PointsDepth = PointsDepth)
+    scale = _calculateDepth(THRESHOLD = THRESHOLD, NUM_THRESHOLD = NUM_THRESHOLD, PointsDepth = PointsDepth)
 
     return scale

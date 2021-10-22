@@ -13,10 +13,13 @@ from kernel.ply_importer.point_data_file_handler import(
 from kernel.ply_importer.utility import(
     draw_points
 )
+from kernel.utility import _transstring2trans
 
 from kernel.logging_utility import log_report
 from registeration.init_configuration import config_json_dict, decode_dict
-
+from kernel.blender_utility import \
+    _get_configuration, _get_obj_insameworkspace, _apply_trans2obj
+from kernel.utility import _select_sample_files, _generate_image_list
 import time
 
 
@@ -61,6 +64,14 @@ def load_model(filepath, config_id):
         create_collection(workspace_name + ":Model", parent_collection = workspace_name)
 
         bpy.data.collections[workspace_name + ":Model"].objects.link(bpy.data.objects[objName])
+
+        ### check whether the object is normal, split or URDF
+        files = os.listdir(os.path.dirname(filepath))
+        if 'split' in files:
+            bpy.data.objects[objName]["modeltype"] = "split"
+        else:
+            bpy.data.objects[objName]["modeltype"] = "normal"
+
     
 
 def load_model_from_pose(filepath, config_id):
@@ -80,7 +91,6 @@ def load_model_from_pose(filepath, config_id):
                     bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
                     bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
                 else:
-                    print()
                     load_model(os.path.join(bpy.context.scene.configuration[config_id].modelsrc, objname, objname + ".obj" ), config_id)
                     bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
                     bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
@@ -108,7 +118,7 @@ def load_pc(filepath, pointcloudscale, config_id):
                                                                               [0., 0., 1., 0.], 
                                                                               [0., 0., 0., 1.]]
 
-def load_cam_img_depth(packagepath, config_id, camera_display_scale):
+def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate):
 
     workspace_name = bpy.context.scene.configuration[config_id].projectname
 
@@ -125,10 +135,13 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
     rgb_files = os.listdir(rgb_path)
     depth_files = os.listdir(depth_path)
 
+    rgb_files.sort()
+    rgb_sample_files = _select_sample_files(rgb_files, sample_rate)
+    _generate_image_list(bpy.context.scene.configuration[config_id].reconstructionsrc, rgb_sample_files)
     log_report(
         "INFO", "Loading camera, rgb and depth images", None
     )
-    for rgb in tqdm(rgb_files):
+    for rgb in tqdm(rgb_sample_files):
         perfix = rgb.split(".")[0]
         if perfix + ".png" in depth_files:
             cam_name = workspace_name + ":view" + perfix
@@ -155,13 +168,15 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
             ## load rgb
             rgb_name = workspace_name + ":rgb" + perfix
             if rgb_name not in bpy.data.images:
-                bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), 
-                                    directory=rgb_path, 
-                                    files=[{"name":perfix + ".png"}], 
-                                    relative_path=True, show_multiview=False)
+                # bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), 
+                #                     directory=rgb_path, 
+                #                     files=[{"name":perfix + ".png"}], 
+                #                     relative_path=True, show_multiview=False)
+                bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), show_multiview=False)
                 bpy.data.images[perfix + ".png"].name = rgb_name
             bpy.data.images[rgb_name]["UPDATEALPHA"] = True
             bpy.data.images[rgb_name]["alpha"] = [0.5]
+            # bpy.data.images[rgb_name].filepath = rgb_name
             ## load depth
             depth_name = workspace_name + ":depth" + perfix
             if depth_name not in bpy.data.images:
@@ -173,15 +188,19 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale):
                 ## change transparency
             bpy.data.images[depth_name]["UPDATEALPHA"] = True
             bpy.data.images[depth_name]["alpha"] = [0.5]
+            # bpy.data.images[depth_name].filepath = depth_name
             cam_object["depth"] = bpy.data.images[depth_name]
             cam_object["rgb"] = bpy.data.images[rgb_name]
             cam_object["type"] = "camera"
+
+
 
 def load_reconstruction_result(filepath, 
                                pointcloudscale, 
                                datasrc,
                                config_id,
                                camera_display_scale = 0.1,
+                               IMPORT_RATIO = 1.0,
                                CAMPOSE_INVERSE = False
                                ):
                             
@@ -203,11 +222,17 @@ def load_reconstruction_result(filepath,
     reconstruction_path = os.path.join(filepath, "fused.ply")
     load_pc(reconstruction_path, pointcloudscale, config_id)
     bpy.ops.object.select_all(action='DESELECT')
-
+    
     ## load camera and image result
+    camera_lines = []
     file = open(camera_rgb_file, "r")
     lines = file.read().split("\n")
-    for l in tqdm(lines):
+    for l in lines:
+        data = l.split(" ")
+        if data[0].isnumeric():
+            camera_lines.append(l)
+    camera_selected_lines = _select_sample_files(camera_lines, IMPORT_RATIO)
+    for l in tqdm(camera_selected_lines):
         data = l.split(" ")
         if data[0].isnumeric():
             pose = [[float(data[5]) * pointcloudscale, float(data[6]) * pointcloudscale, float(data[7]) * pointcloudscale], 
@@ -254,6 +279,7 @@ def load_reconstruction_result(filepath,
                     bpy.data.images[perfix + ".png"].name = rgb_name
                 bpy.data.images[rgb_name]["UPDATEALPHA"] = True
                 bpy.data.images[rgb_name]["alpha"] = [0.5]
+                # bpy.data.images[rgb_name].filepath = rgb_name
                 ## load depth
                 depth_name = workspace_name + ":depth" + perfix
                 if depth_name not in bpy.data.images:
@@ -264,10 +290,19 @@ def load_reconstruction_result(filepath,
                     bpy.data.images[perfix + ".png"].name = depth_name
                 bpy.data.images[depth_name]["UPDATEALPHA"] = True
                 bpy.data.images[depth_name]["alpha"] = [0.5]
-
+                # bpy.data.images[depth_name].filepath = depth_name
                 cam_object["depth"] = bpy.data.images[depth_name]
                 cam_object["rgb"] = bpy.data.images[rgb_name]
-                cam_object["type"] = "camera"         
+                cam_object["type"] = "camera" 
+    
+    obj_lists = _get_obj_insameworkspace(cam_object, ["reconstruction", "camera"])
+    _, config = _get_configuration(cam_object)
+
+    trans = _transstring2trans(config.recon_trans)
+    for obj in obj_lists:
+        _apply_trans2obj(obj, trans)  
+        if obj['type'] == 'reconstruction':
+            obj["alignT"] = trans.tolist()      
     
 
 

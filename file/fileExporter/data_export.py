@@ -1,14 +1,16 @@
 import bpy
 import json
+import os
 
 from kernel.exporter import data_export
+from kernel.utility import log_report
 
 # ImportHelper is a helper class, defines filename and
 # invoke() function which calls the file selector.
 from bpy_extras.io_utils import ExportHelper
 from bpy.props import StringProperty
 from bpy.types import Operator
-
+from kernel.exporter import configuration_export
 
 class DataOutput(Operator, ExportHelper):
     """This appears in the tooltip of the operator and in the generated docs"""
@@ -25,12 +27,25 @@ class DataOutput(Operator, ExportHelper):
     )
 
     def execute(self, context):
+
         assert context.object['type'] == 'setting'
         config_id = context.object['config_id']
         path = context.object['dir']
         config = bpy.context.scene.configuration[config_id]
-        data_export(config, self.filepath)
-        print('hi')
+
+        files = os.listdir(config.reconstructionsrc)
+        if "campose.txt" not in files:
+            log_report(
+                "Error", "Please do reconstruction first", None
+            )
+        elif "label_pose.yaml" not in files:
+            log_report(
+                "Error", "Please allocate the object in the scene and save object poses", None
+            )
+        else:
+            configuration_export(config, "/tmp/progresslabeler.json")
+            data_export("/tmp/progresslabeler.json", self.filepath)
+            os.remove("/tmp/progresslabeler.json")
         return {'FINISHED'}
 
     def invoke(self, context, event):

@@ -115,20 +115,20 @@ int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, s
     return 0;
 }
 
-void savePly(const string &strreconpath, const std::vector<cv::Mat> points){
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr newcloudPtr(new pcl::PointCloud<pcl::PointXYZRGB>);
-    for(auto p:points){
-        pcl::PointXYZRGB point;
-        point.x = p.at<float>(0);
-        point.y = p.at<float>(1);
-        point.z = p.at<float>(2);
-        std::uint32_t rgb = (static_cast<std::uint32_t>(255) << 16 |
-                static_cast<std::uint32_t>(0) << 8 | static_cast<std::uint32_t>(0));
-        point.rgb = *reinterpret_cast<float*>(&rgb);
-        newcloudPtr->points.push_back(point);        
+void savePly(const string &path, const std::vector<cv::Mat> points) {
+    ofstream f(path + "/fused.ply");
+    f << "ply\n"
+        << "format ascii 1.0\n"
+        << "element vertex " << points.size() << "\n"
+        << "property float x\n"
+        << "property float y\n"
+        << "property float z\n"
+        << "end_header\n";
+    for (auto p : points)
+    {
+        f << p.at<float>(0) << " " << p.at<float>(1) << " " << p.at<float>(2) << "\n";
     }
-    pcl::io::savePLYFileBinary(strreconpath + "/fused.ply", *newcloudPtr);
-    cout << "successfully save fused.ply" << endl;
+    f.close();
 }
 
 void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,

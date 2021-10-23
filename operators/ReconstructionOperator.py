@@ -101,7 +101,7 @@ class Reconstruction(Operator):
         elif self.ReconstructionType == "ORB_SLAM2":
             try: 
                 from kernel.orb_slam.build import orb_extension
-                from kernel.orb_slam.build.orbslam_utility import orbslam_yaml, orbslam_associatefile
+                from kernel.orb_slam.orbslam_utility import orbslam_yaml, orbslam_associatefile
             except:
                 log_report(
                     "Error", "Please successfully install ORB_SLAM2, pybind11 and complie orb_extension", None

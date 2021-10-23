@@ -101,7 +101,7 @@ class Reconstruction(Operator):
         elif self.ReconstructionType == "ORB_SLAM2":
             try: 
                 from kernel.orb_slam.build import orb_extension
-                from kernel.orb_slam.build.orbslam_utility import orbslam_yaml, orbslam_associatefile
+                from kernel.orb_slam.orbslam_utility import orbslam_yaml, orbslam_associatefile
             except:
                 log_report(
                     "Error", "Please successfully install ORB_SLAM2, pybind11 and complie orb_extension", None
@@ -116,14 +116,23 @@ class Reconstruction(Operator):
                                       scene.orbslamparas.timestampfrenquency)
                 source = os.path.dirname(os.path.dirname(__file__))
                 code_path = os.path.join(source, "kernel", "orb_slam", "orb_slam.py")
-                subprocess.call("conda init bash; conda activate progresslabeler; python {0} {1} {2} {3} {4} {5} {6}".format(code_path, 
-                                                                                                            scene.orbslamparas.orb_vocabularysrc, 
-                                                                                                            os.path.join(config.reconstructionsrc,"orb_slam.yaml"),
-                                                                                                            config.datasrc,
-                                                                                                            os.path.join(config.reconstructionsrc, "associate.txt"),
-                                                                                                            config.reconstructionsrc,
-                                                                                                            scene.orbslamparas.timestampfrenquency
-                                                                                                            ), shell=True)
+                # subprocess.call("conda init bash; conda activate progresslabeler; python {0} {1} {2} {3} {4} {5} {6}".format(code_path, 
+                #                                                                                             scene.orbslamparas.orb_vocabularysrc, 
+                #                                                                                             os.path.join(config.reconstructionsrc,"orb_slam.yaml"),
+                #                                                                                             config.datasrc,
+                #                                                                                             os.path.join(config.reconstructionsrc, "associate.txt"),
+                #                                                                                             config.reconstructionsrc,
+                #                                                                                             scene.orbslamparas.timestampfrenquency
+                #                                                                                             ), shell=True)
+                # os.system("eval \"$(command conda 'shell.bash' 'hook' 2> /dev/null)\"; conda activate progresslabeler ; python -V")
+                os.system("eval \"$(command conda 'shell.bash' 'hook' 2> /dev/null)\"; conda activate progresslabeler ; python {0} {1} {2} {3} {4} {5} {6}".format(code_path, 
+                                                                                                scene.orbslamparas.orb_vocabularysrc, 
+                                                                                                os.path.join(config.reconstructionsrc,"orb_slam.yaml"),
+                                                                                                config.datasrc,
+                                                                                                os.path.join(config.reconstructionsrc, "associate.txt"),
+                                                                                                config.reconstructionsrc,
+                                                                                                scene.orbslamparas.timestampfrenquency
+                                                                                                ))
                 # p = multiprocessing.Process(target=orb_extension.orb_slam_recon, 
                 #                             args=(
                 #                                     scene.orbslamparas.orb_vocabularysrc,
@@ -350,3 +359,4 @@ def register():
 def unregister():
     bpy.utils.unregister_class(Reconstruction)
     bpy.utils.unregister_class(KinectfusionConfig)
+    bpy.utils.unregister_class(ORBSLAMConfig)

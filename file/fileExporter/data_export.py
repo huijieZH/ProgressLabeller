@@ -3,7 +3,7 @@ import json
 import os
 
 from kernel.exporter import data_export
-from kernel.utility import log_report
+from kernel.logging_utility import log_report
 
 # ImportHelper is a helper class, defines filename and
 # invoke() function which calls the file selector.

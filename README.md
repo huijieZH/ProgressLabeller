@@ -4,7 +4,7 @@
 
 ## Overview
 
-**This is an developing repository**. The project is an blender add-on to re-implement a pipeline, Labelfusion. Labelfusion is a pipleine to generate ground truth object-centric pose and mask labels from sequential images. It is powerful, but we find it is hard to install due to some out-of-date dependencies. Therefore, this project is trying to re-implement Labelfusion in a more user-friendly, cross-platform software, blender. Moreover, we would further improve the accuracy of Labelfusion, and make it model-free.
+**This is an developing repository**. The project is an blender add-on to an object pose annotation pipeline, Progresslabeler. Progresslabeler is a pipleine to generate ground truth object-centric poses and mask labels from sequential images.
 
 ## Table of contents
 -----
@@ -26,20 +26,8 @@
 
 Our blender add-on has been tested in the following environment:
 
-* Ubuntu 18.04
-* Blender 2.9.2
-
-### Install add-on in blender
-
-In order to see some running message about our pipeline, it is recommended to run the blender in the terminal. Just run:
-```bash
-blender
-```
-
-Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/ProgressLabeller.zip`` and install it. After successful installation, you could see Progress Labeller in your Add-ons lists.
-
-<img src='doc/fig/installadd-on.png' width="500"/>
-
+* Ubuntu 18.04/20.04
+* Blender 2.92
 
 ### Install denpencies
 
@@ -48,7 +36,7 @@ Our add-on depends on the following python libraries:
 * open3d
 * Pillow
 * pycuda (only needed when you want to use build-in kinectfustion)
-* pybind11 (only needed when you want to use COLMAP)
+* pybind11 (only needed when you want to use COLMAP, ORB2-SLAM)
 * scipy
 * pyyaml
 * tqdm
@@ -57,21 +45,72 @@ Our add-on depends on the following python libraries:
 * scikit-image
 * pyntcloud
 
-It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, pip install command shoudld be 
+It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, we use conda to install library: 
 ```bash
-/PATH/TO/BLENDER/2.92/python/bin/python3.7 -m ensurepip
-/PATH/TO/BLENDER/2.92/python/bin/python3.7 -m pip install --target /PATH/TO/BLENDER/2.92/python/lib/python3.7/site-packages open3d Pillow scipy pyyaml tqdm trimesh pyrender scikit-image
+conda create -n progresslabeler python=3.7
+conda activate progresslabeler
+pip install open3d Pillow scipy pyyaml tqdm trimesh pyrender scikit-image pyntcloud
+pip install --target </PATH/TO/BLENDER>/2.92/python/lib/python3.7/site-packages open3d Pillow scipy pyyaml tqdm trimesh pyrender scikit-image pyntcloud
 ```
 
-More details about pybind11 is available [here](https://pybind11.readthedocs.io/en/stable/installing.html), it should also be installed by your blender's python.
+To install pycuda:
+```bash
+conda activate progresslabeler
+pip install pycuda 
+pip install --target </PATH/TO/BLENDER>/2.92/python/lib/python3.7/site-packages pycuda
+```
+To install pybind11:
+```bash
+conda activate progresslabeler
+pip install pybind11
+pip install --target </PATH/TO/BLENDER>/2.92/python/lib/python3.7/site-packages pybind11
+```
 
-To enableing [COLMAP reconstruction](https://colmap.github.io/), please also following its official guidance to install COLMAP. 
+For some reason, it is not recommended to directly use blender's python to install those package, you might meet some problems when install pycuda. Our way is to use the pip from python3.7 in conda.
+
 
 ### Build COLMAP_extension(only needed when you want to use COLMAP)
 
-We use pybind to transform COLMAP C++ code to python interface， so after installing COLMAP and pybind, we should build the library.
+To enableing [COLMAP reconstruction](https://colmap.github.io/), please also following its official guidance to install COLMAP. Remember install the make file to the system package use:
 ```bash
-cd PATH/TO/REPO/kernel/colmap
+sudo make install
+```
+
+We use pybind to transform COLMAP C++ code to python interface， so after installing COLMAP and pybind, we could build the interface in Progresslabeler. First, open the file <PATH/TO/Progresslabeler>/kernel/colmap/CmakeLists.txt, change the line 7 to 
+```bash
+set(pybind11_DIR "</PATH/TO/BLENDER>/2.92/python/lib/python3.7/site-packages/pybind11/share/cmake/pybind11")
+```
+Then,
+```bash
+cd <PATH/TO/Progresslabeler>/kernel/colmap
+conda activate progresslabeler
+mkdir build
+cd build
+cmake ..
+make
+```
+
+### Build ORB-SLAM2_extension(only needed when you want to use ORB_SLAM2)
+
+To enableing [ORB-SLAM2 reconstruction](https://github.com/raulmur/ORB_SLAM2), you should clone [my branch](https://github.com/huijieZH/ORB_SLAM2) with a little modification from official version. 
+```bash
+git clone https://github.com/huijieZH/ORB_SLAM2.git ORB_SLAM2
+cd ORB_SLAM2
+chmod +x build.sh
+./build.sh
+```
+
+Then to build the interface between ORB-SLAM2 and Progresslabeler. First, open the file <PATH/TO/Progresslabeler>/kernel/colmap/CmakeLists.txt, change the line 6 to 
+```bash
+set(pybind11_DIR "</PATH/TO/BLENDER>/2.92/python/lib/python3.7/site-packages/pybind11/share/cmake/pybind11")
+```
+Then change the line 13 to
+```bash
+set(ORB_SOURCE_DIR "</PATH/TO/ORB_SLAM2>")
+```
+```bash
+cd <PATH/TO/Progresslabeler>/kernel/orb_slam
+conda activate progresslabeler
 mkdir build
 cd build
 cmake ..
@@ -79,13 +118,29 @@ make
 ```
 
 
+### Install add-on in blender
+
+In order to see some running message about our pipeline, it is recommended to run the blender in the terminal. Just run:
+```bash
+blender
+```
+First prepare the zip file for blender:
+```bash
+sudo apt-get install zip
+cd <PATH/TO/Progresslabeler>/..
+zip -r ProgressLabeler.zip ProgressLabeler/
+```
+Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/ProgressLabeller.zip`` and install it. After successful installation, you could see Progress Labeller in your Add-ons lists.
+
+<img src='doc/fig/installadd-on.png' width="500"/>
+
 ## Data structure
 
 ### Dataset
 
 To prepare a new dataset, please follow the structure below. We also provide a **demo dataset** [here](https://www.dropbox.com/s/qrgare7rg579m48/ProgressLabellerDemoDateset.zip?dl=0)
 
-```bash
+<!-- ```bash
 <dataset>
 |-- data              # pairwise rgb and depth images, no need for the name, just pairwise rgb and depth images 
                       # should have the same name
@@ -287,7 +342,7 @@ When click on the camera object, the 3D scene would automatically align to camer
 
 The ``Model Alignment`` button under the object properties of camera object using ICP algorithm for locally aligning the model and reconstruction. When aligning the model, first drag it to an approximate pose and than use ``Model Alignment`` for local alignment.
 
-<img src='doc/fig/modelalignment.png' width="700"/>
+<img src='doc/fig/modelalignment.png' width="700"/> -->
 
 
 

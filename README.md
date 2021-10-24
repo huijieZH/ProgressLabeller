@@ -45,25 +45,15 @@ Our add-on depends on the following python libraries:
 * scikit-image
 * pyntcloud
 
-It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, we use conda to install library: 
+It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, we use conda to install library, __please replace </PATH/TO/BLENDER>, <PATH/TO/Progresslabeler> to your own path__: 
 ```bash
+echo "export PROGRESSLABELER_BLENDER_PATH=</PATH/TO/BLENDER>" >> ~/.bashrc
+echo "export PROGRESSLABELER_PATH=<PATH/TO/Progresslabeler>" >> ~/.bashrc
+source ~/.bashrc
 conda create -n progresslabeler python=3.7
 conda activate progresslabeler
-pip install open3d Pillow scipy pyyaml tqdm trimesh pyrender scikit-image pyntcloud
-pip install --target </PATH/TO/BLENDER>/2.92/python/lib/python3.7/site-packages open3d Pillow scipy pyyaml tqdm trimesh pyrender scikit-image pyntcloud
-```
-
-To install pycuda:
-```bash
-conda activate progresslabeler
-pip install pycuda 
-pip install --target </PATH/TO/BLENDER>/2.92/python/lib/python3.7/site-packages pycuda
-```
-To install pybind11:
-```bash
-conda activate progresslabeler
-pip install pybind11
-pip install --target </PATH/TO/BLENDER>/2.92/python/lib/python3.7/site-packages pybind11
+python -m pip install -r requirements.txt
+python -m pip install -r requirements.txt --target $PROGRESSLABELER_BLENDER_PATH/2.92/python/lib/python3.7/site-packages 
 ```
 
 For some reason, it is not recommended to directly use blender's python to install those package, you might meet some problems when install pycuda. Our way is to use the pip from python3.7 in conda.
@@ -71,18 +61,14 @@ For some reason, it is not recommended to directly use blender's python to insta
 
 ### Build COLMAP_extension(only needed when you want to use COLMAP)
 
-To enableing [COLMAP reconstruction](https://colmap.github.io/), please also following its official guidance to install COLMAP. Remember install the make file to the system package use:
+To enableing [COLMAP reconstruction](https://colmap.github.io/), please also following its official guidance to install COLMAP. Remember install the make file to the system use:
 ```bash
 sudo make install
 ```
 
-We use pybind to transform COLMAP C++ code to python interface， so after installing COLMAP and pybind, we could build the interface in Progresslabeler. First, open the file <PATH/TO/Progresslabeler>/kernel/colmap/CmakeLists.txt, change the line 7 to 
+We use pybind to transform COLMAP C++ code to python interface， so after installing COLMAP and pybind, we could build the interface in Progresslabeler. 
 ```bash
-set(pybind11_DIR "</PATH/TO/BLENDER>/2.92/python/lib/python3.7/site-packages/pybind11/share/cmake/pybind11")
-```
-Then,
-```bash
-cd <PATH/TO/Progresslabeler>/kernel/colmap
+cd $PROGRESSLABELER_PATH/kernel/colmap
 conda activate progresslabeler
 mkdir build
 cd build
@@ -92,24 +78,18 @@ make
 
 ### Build ORB-SLAM2_extension(only needed when you want to use ORB_SLAM2)
 
-To enableing [ORB-SLAM2 reconstruction](https://github.com/raulmur/ORB_SLAM2), you should clone [my branch](https://github.com/huijieZH/ORB_SLAM2) with a little modification from official version. 
-```bash
+To enableing ORB-SLAM2 reconstruction, you should clone [my branch](https://github.com/huijieZH/ORB_SLAM2), containing a little modification from official version. Please follow the guidance to install ORB_SLAM2.
+<!-- ```bash
 git clone https://github.com/huijieZH/ORB_SLAM2.git ORB_SLAM2
 cd ORB_SLAM2
 chmod +x build.sh
 ./build.sh
-```
+``` -->
 
-Then to build the interface between ORB-SLAM2 and Progresslabeler. First, open the file <PATH/TO/Progresslabeler>/kernel/colmap/CmakeLists.txt, change the line 6 to 
+Then to build the interface between ORB-SLAM2 and Progresslabeler. 
 ```bash
-set(pybind11_DIR "</PATH/TO/BLENDER>/2.92/python/lib/python3.7/site-packages/pybind11/share/cmake/pybind11")
-```
-Then change the line 13 to
-```bash
-set(ORB_SOURCE_DIR "</PATH/TO/ORB_SLAM2>")
-```
-```bash
-cd <PATH/TO/Progresslabeler>/kernel/orb_slam
+export ORB_SOURCE_DIR=</PATH/TO/ORB_SLAM2>
+cd $PROGRESSLABELER_PATH/kernel/orb_slam
 conda activate progresslabeler
 mkdir build
 cd build
@@ -127,7 +107,7 @@ blender
 First prepare the zip file for blender:
 ```bash
 sudo apt-get install zip
-cd <PATH/TO/Progresslabeler>/..
+cd $PROGRESSLABELER_PATH/..
 zip -r ProgressLabeler.zip ProgressLabeler/
 ```
 Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/ProgressLabeller.zip`` and install it. After successful installation, you could see Progress Labeller in your Add-ons lists.

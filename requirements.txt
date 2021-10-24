@@ -1,0 +1,11 @@
+open3d 
+Pillow 
+scipy 
+pyyaml 
+tqdm 
+trimesh 
+pyrender 
+scikit-image 
+pyntcloud
+pycuda
+pybind11

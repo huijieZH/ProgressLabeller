@@ -4,7 +4,7 @@ project(colmap_extension)
 
 find_package(COLMAP REQUIRED)
 set(PYBIND11_PYTHON_VERSION 3.7)
-set(pybind11_DIR "/home/huijie/blender-2.92.0-linux64/2.92/python/lib/python3.7/site-packages/pybind11/share/cmake/pybind11")
+set(pybind11_DIR "/home/cxt/Documents/softwares/blender-2.92.0-linux64/2.92/python/lib/python3.7/site-packages/pybind11/share/cmake/pybind11")
 find_package(pybind11 REQUIRED)
 
 include_directories(${COLMAP_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})

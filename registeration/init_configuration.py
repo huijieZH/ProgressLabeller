@@ -112,17 +112,17 @@ class config(bpy.types.PropertyGroup):
                                         description="Scale for depth image", 
                                         default=0.00025, 
                                         min=0.000000, 
-                                        max=1.000000, 
+                                        max=10.000000, 
                                         step=6, 
                                         precision=6)  
 
-    reconstructionscale: bpy.props.FloatProperty(name="reconstruction scale", 
-                                        description="reconstruction scale for the fused.ply", 
-                                        default=1.00, 
-                                        min=0.00, 
-                                        max=2.00, 
-                                        step=0.01, 
-                                        precision=2)      
+    # reconstructionscale: bpy.props.FloatProperty(name="reconstruction scale", 
+    #                                     description="reconstruction scale for the fused.ply", 
+    #                                     default=1.00, 
+    #                                     min=0.00, 
+    #                                     max=1000.00, 
+    #                                     step=0.01, 
+    #                                     precision=2)      
 
     cameradisplayscale: bpy.props.FloatProperty(name="reconstruction scale", 
                                         description="reconstruction scale for the fused.ply", 
@@ -162,7 +162,7 @@ class config(bpy.types.PropertyGroup):
 
     
     reconstructionscale: bpy.props.FloatProperty(name="reconstruction scale", description="scale of the reconstruction model", 
-        min=0.01, max=10.000, step=3, precision=3, default = 1.000, 
+        min=0.01, max=1000.000, step=3, precision=3, default = 1.000, 
         update=scale_update)
 
     def cameradisplayscale_update(self, context):

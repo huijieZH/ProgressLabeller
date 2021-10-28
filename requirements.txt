@@ -9,3 +9,4 @@ scikit-image
 pyntcloud
 pycuda
 pybind11
+numba

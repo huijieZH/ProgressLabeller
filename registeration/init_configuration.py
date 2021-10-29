@@ -90,7 +90,7 @@ class config(bpy.types.PropertyGroup):
     cy: bpy.props.FloatProperty(name="cy", description="camera intrinsic cy.", 
         min=0.00, max=1000.00, step=10, precision=2)
     lens: bpy.props.FloatProperty(name="lens", description="camera lens length", 
-        min=0.000, max=1.000, step=3, precision=3, default = 30)
+        min=0.000, max=1000.000, step=3, precision=3, default = 30)
 
     inverse_pose: bpy.props.BoolProperty(
         name="Inverse Camera Pose",

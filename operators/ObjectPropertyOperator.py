@@ -13,7 +13,7 @@ import tqdm
 from kernel.render import save_img
 from kernel.geometry import plane_alignment, transform_from_plane, _pose2Rotation, _rotation2Pose, modelICP, globalRegisteration
 from kernel.logging_utility import log_report
-from kernel.loader import load_cam_img_depth, load_reconstruction_result, updateprojectname, removeworkspace
+from kernel.loader import load_cam_img_depth, load_reconstruction_result, updateprojectname, removeworkspace, load_pc
 from kernel.blender_utility import \
     _get_configuration, _get_reconstruction_insameworkspace, _get_obj_insameworkspace, _get_workspace_name, _apply_trans2obj, \
     _align_reconstruction
@@ -29,8 +29,8 @@ class PlaneAlignment(Operator):
     def execute(self, context):
         # current_object = bpy.context.object.name
         # workspace_name = current_object.split(":")[0]
-        recon = _get_reconstruction_insameworkspace(context.object)
-
+        # recon = _get_reconstruction_insameworkspace(context.object)
+        recon = context.object
         log_report(
             "INFO", "Starting calculate the plane function", None
         )      
@@ -165,6 +165,7 @@ class ImportReconResult(Operator):
                                         IMPORT_RATIO = scene.loadreconparas.Import_ratio,
                                         CAMPOSE_INVERSE = config.inverse_pose
                                         )
+            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), config.reconstructionscale, config_id, "reconstruction_depthfusion")
         else:
             log_report(
             "INFO", "Starting aligning the point cloud", None
@@ -181,7 +182,7 @@ class ImportReconResult(Operator):
                                         IMPORT_RATIO = scene.loadreconparas.Import_ratio,
                                         CAMPOSE_INVERSE = config.inverse_pose
                                         )
-            
+            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), 1.0, config_id, "reconstruction_depthfusion")
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -261,16 +262,7 @@ class LoadRecon(bpy.types.PropertyGroup):
                                           max=1.00, 
                                           step=2, 
                                           precision=2)   
-                                                      
-    # depth_scale: bpy.props.FloatProperty(name="Depth Data Scale", 
-    #                                         description="Scale for depth", 
-    #                                         default=0.00025)  
-                                        
-    # CAMPOSE_INVERSE: bpy.props.BoolProperty(
-    #     name="Inverse Camera Pose",
-    #     description="Need when given poses are from world to camera",
-    #     default=False,
-    # )       
+                                                     
   
 
 

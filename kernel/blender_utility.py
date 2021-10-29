@@ -46,7 +46,9 @@ def _get_configuration(obj):
 def _get_reconstruction_insameworkspace(obj):
     if _is_progresslabeller_object(obj):
         workspaceName = _get_workspace_name(obj)
-        if _is_in_blender(workspaceName + ":reconstruction"):
+        if _is_in_blender(workspaceName + ":reconstructiondepthfusion"):
+            return bpy.data.objects[workspaceName + ":reconstructiondepthfusion"]
+        elif _is_in_blender(workspaceName + ":reconstruction"):
             return bpy.data.objects[workspaceName + ":reconstruction"]
         else:
             return None

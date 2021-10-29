@@ -5,9 +5,18 @@ import os
 import multiprocessing
 import subprocess
 
+from kernel.exporter import configuration_export
+
 from kernel.logging_utility import log_report
-from kernel.loader import load_reconstruction_result
+from kernel.loader import load_reconstruction_result, load_pc
 from kernel.blender_utility import _get_configuration, _align_reconstruction, _clear_recon_output, _initreconpose
+
+try: 
+    from kernel.reconstruction import KinectfusionRecon, poseFusion
+except:
+    log_report(
+        "Error", "Please successfully install pycuda", None
+    )        
 
 class Reconstruction(Operator):
     """This appears in the tooltip of the operator and in the generated docs"""
@@ -36,42 +45,35 @@ class Reconstruction(Operator):
     def execute(self, context):
         scene = context.scene
         config_id, config = _get_configuration(context.object)
-        if self.ReconstructionType == "KinectFusion":
-            try: 
-                from kernel.reconstruction import KinectfusionRecon
-            except:
-                log_report(
-                    "Error", "Please successfully install pycuda", None
-                )        
-            else:         
-                _clear_recon_output(config.reconstructionsrc)    
-                KinectfusionRecon(
-                    data_folder = config.datasrc,
-                    save_folder = config.reconstructionsrc,
-                    prefix_list = self.PerfixList,
-                    resX = config.resX, 
-                    resY = config.resY, 
-                    fx = config.fx, 
-                    fy = config.fy, 
-                    cx = config.cx, 
-                    cy = config.cy,
-                    tsdf_voxel_size = scene.kinectfusionparas.tsdf_voxel_size, 
-                    tsdf_trunc_margin = scene.kinectfusionparas.tsdf_trunc_margin, 
-                    pcd_voxel_size = scene.kinectfusionparas.pcd_voxel_size, 
-                    depth_scale = config.depth_scale, 
-                    depth_ignore = scene.kinectfusionparas.depth_ignore, 
-                    DISPLAY = scene.kinectfusionparas.DISPLAY,  
-                    frame_per_display = scene.kinectfusionparas.frame_per_display, 
-                )
-                config.inverse_pose = False
-                _initreconpose(config)
-                load_reconstruction_result(filepath = config.reconstructionsrc, 
-                                    pointcloudscale = 1.0, 
-                                    datasrc = config.datasrc,
-                                    config_id = config_id,
-                                    camera_display_scale = config.cameradisplayscale,
-                                    CAMPOSE_INVERSE= config.inverse_pose
-                                    )
+        if self.ReconstructionType == "KinectFusion":      
+            _clear_recon_output(config.reconstructionsrc)    
+            KinectfusionRecon(
+                data_folder = config.datasrc,
+                save_folder = config.reconstructionsrc,
+                prefix_list = self.PerfixList,
+                resX = config.resX, 
+                resY = config.resY, 
+                fx = config.fx, 
+                fy = config.fy, 
+                cx = config.cx, 
+                cy = config.cy,
+                tsdf_voxel_size = scene.kinectfusionparas.tsdf_voxel_size, 
+                tsdf_trunc_margin = scene.kinectfusionparas.tsdf_trunc_margin, 
+                pcd_voxel_size = scene.kinectfusionparas.pcd_voxel_size, 
+                depth_scale = config.depth_scale, 
+                depth_ignore = scene.kinectfusionparas.depth_ignore, 
+                DISPLAY = scene.kinectfusionparas.DISPLAY,  
+                frame_per_display = scene.kinectfusionparas.frame_per_display, 
+            )
+            config.inverse_pose = False
+            _initreconpose(config)
+            load_reconstruction_result(filepath = config.reconstructionsrc, 
+                                pointcloudscale = 1.0, 
+                                datasrc = config.datasrc,
+                                config_id = config_id,
+                                camera_display_scale = config.cameradisplayscale,
+                                CAMPOSE_INVERSE= config.inverse_pose
+                                )
         elif self.ReconstructionType == "COLMAP":
             try: 
                 from kernel.colmap.build import colmap_extension
@@ -168,7 +170,19 @@ class Reconstruction(Operator):
                                            IMPORT_RATIO = config.sample_rate,
                                            CAMPOSE_INVERSE= config.inverse_pose
                                            )
-                
+        
+        ### whatever pose reconstruction method, estimate an volume
+        if self.ReconstructionType != "KinectFusion":
+            dir = os.path.dirname(config.reconstructionsrc)
+            configuration_export(config, os.path.join(dir, "configuration.json"))
+            poseFusion(
+                os.path.join(dir, "configuration.json"),
+                tsdf_voxel_size = scene.kinectfusionparas.tsdf_voxel_size,
+                tsdf_trunc_margin = scene.kinectfusionparas.tsdf_trunc_margin, 
+                pcd_voxel_size = scene.kinectfusionparas.pcd_voxel_size, 
+                depth_ignore = scene.kinectfusionparas.depth_ignore
+                )
+            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), 1.0, config_id, "reconstruction_depthfusion")
         return {'FINISHED'}
 
 
@@ -262,6 +276,16 @@ class Reconstruction(Operator):
             row.prop(config, "depth_scale")
             row = layout.row()
             row.prop(config, "cameradisplayscale")
+            layout.label(text="Set Depth Fusion Parameters:")
+            row = layout.row() 
+            row.prop(scene.kinectfusionparas, "tsdf_voxel_size")
+            row = layout.row() 
+            row.prop(scene.kinectfusionparas, "tsdf_trunc_margin")
+            row = layout.row() 
+            row.prop(scene.kinectfusionparas, "pcd_voxel_size")
+            row = layout.row() 
+            row.prop(scene.kinectfusionparas, "depth_ignore")
+            box = layout.box() 
         
         elif self.ReconstructionType == "ORB_SLAM2":
             layout.label(text="Set Camera Parameters:")
@@ -296,6 +320,16 @@ class Reconstruction(Operator):
             row.prop(scene.orbslamparas, "orb_vocabularysrc") 
             row = box.row()
             row.prop(scene.orbslamparas, "timestampfrenquency")             
+            layout.label(text="Set Depth Fusion Parameters:")
+            row = layout.row() 
+            row.prop(scene.kinectfusionparas, "tsdf_voxel_size")
+            row = layout.row() 
+            row.prop(scene.kinectfusionparas, "tsdf_trunc_margin")
+            row = layout.row() 
+            row.prop(scene.kinectfusionparas, "pcd_voxel_size")
+            row = layout.row() 
+            row.prop(scene.kinectfusionparas, "depth_ignore")
+            box = layout.box() 
 
 class KinectfusionConfig(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.

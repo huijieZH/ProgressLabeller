@@ -103,7 +103,6 @@ def load_pc(filepath, pointcloudscale, config_id):
         bpy.ops.object.select_all(action='DESELECT')
         bpy.data.objects[workspace_name + ":" + 'reconstruction'].select_set(True)
         bpy.ops.object.delete() 
-    # if workspace_name + ":" + 'reconstruction' not in bpy.data.objects:
     points = PointDataFileHandler.parse_point_data_file(filepath)
     draw_points(points = points, 
                 point_size = 3, 
@@ -122,6 +121,33 @@ def load_pc(filepath, pointcloudscale, config_id):
                                                                             [0., 1., 0., 0.], 
                                                                             [0., 0., 1., 0.], 
                                                                             [0., 0., 0., 1.]]
+
+def load_pc(filepath, pointcloudscale, config_id, name = 'reconstruction'):
+    if os.path.exists(filepath):
+        workspace_name = bpy.context.scene.configuration[config_id].projectname
+
+        if workspace_name + ":" + name in bpy.data.objects:
+            bpy.ops.object.select_all(action='DESELECT')
+            bpy.data.objects[workspace_name + ":" + name].select_set(True)
+            bpy.ops.object.delete() 
+        points = PointDataFileHandler.parse_point_data_file(filepath)
+        draw_points(points = points, 
+                    point_size = 3, 
+                    add_points_to_point_cloud_handle = True, 
+                    reconstruction_collection = bpy.data.collections[workspace_name + ":" + "Pointcloud"], 
+                    object_anchor_handle_name=workspace_name + ":" + name, op=None)
+        bpy.data.objects[workspace_name + ":" + name]["type"] = "reconstruction"
+        bpy.data.objects[workspace_name + ":" + name].scale = Vector((pointcloudscale, 
+                                                                    pointcloudscale, 
+                                                                    pointcloudscale))
+
+        bpy.data.objects[workspace_name + ":" + name]["path"] = filepath
+        bpy.data.objects[workspace_name + ":" + name]["scale"] = pointcloudscale
+        bpy.data.objects[workspace_name + ":" + name].rotation_mode = 'QUATERNION'
+        bpy.data.objects[workspace_name + ":" + name]["alignT"] = [[1., 0., 0., 0.],
+                                                                    [0., 1., 0., 0.], 
+                                                                    [0., 0., 1., 0.], 
+                                                                    [0., 0., 0., 1.]]
 
 def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate):
 

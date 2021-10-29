@@ -133,5 +133,4 @@ if __name__ == "__main__":
             _scaleFordepth(depth, camera_idx, intrinsic, Camera_dict, PointsDict, PointsDepth)
     
     scale = _calculateDepth(THRESHOLD = 0.005, NUM_THRESHOLD = 3, PointsDepth = PointsDepth)
-    print(scale)
     pass

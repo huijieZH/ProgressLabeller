@@ -64,7 +64,25 @@ class KinectFusion:
         self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], cam_pose)
         self.prev_pcd = pcd
         self.cam_poses.append(cam_pose)
+    
+    def initialize_tsdf_volume(self, color_im, depth_im, pose, visualize=False):
+        pcd = utils.create_pcd(depth_im, self.cfg['cam_intr'], color_im)
+        
+        transformed_pcd = copy.deepcopy(pcd).transform(pose)
+        transformed_pts = np.asarray(transformed_pcd.points)
 
+        vol_bnds = np.zeros((3, 2), dtype=np.float32)
+        vol_bnds[:, 0] = transformed_pts.min(0)
+        vol_bnds[:, 1] = transformed_pts.max(0)
+
+        self.init_transformation = la.inv(pose).copy()
+        self.transformation = la.inv(pose).copy()
+        self.tsdf_volume = TSDFVolume(vol_bnds=vol_bnds,
+                                      voxel_size=self.cfg['tsdf_voxel_size'],
+                                      trunc_margin=self.cfg['tsdf_trunc_margin'])
+        self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], pose)
+        self.prev_pcd = pcd
+        self.cam_poses.append(pose)
     @staticmethod
     def multiscale_icp(src: o3d.geometry.PointCloud,
                        tgt: o3d.geometry.PointCloud,
@@ -140,6 +158,15 @@ class KinectFusion:
             self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], cam_pose, weight=1)
         else:
             self.cam_poses.append(np.eye(4))
+    
+    def update(self, color_im, depth_im, pose):
+        ## update with pose
+        if self.tsdf_volume is None:
+            self.initialize_tsdf_volume(color_im, depth_im, pose, visualize=False)
+            return True
+
+        self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], pose, weight=1)
+     
 
     def interpolation_update(self, color_im, depth_im, accurate_pose = None):
         if accurate_pose is None:

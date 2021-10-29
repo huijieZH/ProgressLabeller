@@ -30,12 +30,14 @@ def _is_in_blender(name):
         return False
 
 def _get_workspace_name(obj):
+    # print("_get_workspace_name")
     if _is_progresslabeller_object(obj):
         return obj.name.split(":")[0]
     else:
         return None
 
 def _get_configuration(obj):
+    # print("_get_configuration")
     if _is_progresslabeller_object(obj):
         workspaceName = _get_workspace_name(obj)
         config_id = bpy.data.objects[workspaceName + ":Setting"]['config_id']
@@ -44,6 +46,7 @@ def _get_configuration(obj):
         return None, None
 
 def _get_reconstruction_insameworkspace(obj):
+    # print("_get_reconstruction_insameworkspace")
     if _is_progresslabeller_object(obj):
         workspaceName = _get_workspace_name(obj)
         if _is_in_blender(workspaceName + ":reconstructiondepthfusion"):
@@ -56,12 +59,14 @@ def _get_reconstruction_insameworkspace(obj):
         return None
 
 def _is_obj_type(obj, types):
+    # print("_is_obj_type")
     if _is_progresslabeller_object(obj) and obj["type"] in types:
         return True
     else:
         return False
 
 def _get_obj_insameworkspace(obj, types):
+    # print("_get_obj_insameworkspace")
     if _is_progresslabeller_object(obj):
         obj_list = []
         workspaceName = _get_workspace_name(obj)
@@ -79,6 +84,14 @@ def _apply_trans2obj(obj, trans):
     after_align_pose = _rotation2Pose(after_align_trans)
     obj.location = after_align_pose[0]
     obj.rotation_quaternion = after_align_pose[1]/np.linalg.norm(after_align_pose[1])
+
+def _get_allrgb_insameworkspace(config):
+    im_list = []
+    workspace_name = config.projectname
+    for im in bpy.data.images:
+        if im.name.split(":")[0] == workspace_name:
+            im_list.append(im)
+    return im_list
 
 def _clear_allrgbdcam_insameworkspace(config):
     workspace_name = config.projectname

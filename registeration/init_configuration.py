@@ -4,6 +4,7 @@ import os
 import numpy as np
 from mathutils import Vector
 from kernel.geometry import _pose2Rotation, _rotation2Pose
+from kernel.blender_utility import _is_progresslabeller_object, _get_allrgb_insameworkspace, _get_configuration
 
 config_json_dict = {
     'projectname': [['projectname']],
@@ -24,6 +25,7 @@ config_json_dict = {
     'recon_trans': [['reconstruction', 'recon_trans']],
     'sample_rate': [['data', 'sample_rate']],
     'depth_scale': [['data', 'depth_scale']],
+    'depth_ignore': [['data', 'depth_ignore']],
 
 }
 
@@ -61,6 +63,7 @@ def encode_dict(configuration):
         'data':{
         "sample_rate": configuration.sample_rate,
         "depth_scale": configuration.depth_scale,
+        "depth_ignore": configuration.depth_ignore,
         }
     }
     return output_dict
@@ -107,6 +110,13 @@ class config(bpy.types.PropertyGroup):
                                         max=1.00, 
                                         step=0.01, 
                                         precision=2)
+    
+    def depthInfoUpdate(self, context):
+        if context.object != None and _is_progresslabeller_object(context.object):
+            _, config = _get_configuration(context.object)
+            im_list = _get_allrgb_insameworkspace(config)
+            for im in im_list:
+                im["UPDATEALPHA"] = True
                         
     depth_scale: bpy.props.FloatProperty(name="Depth Scale", 
                                         description="Scale for depth image", 
@@ -114,15 +124,17 @@ class config(bpy.types.PropertyGroup):
                                         min=0.000000, 
                                         max=10.000000, 
                                         step=6, 
-                                        precision=6)  
+                                        precision=6,
+                                        update=depthInfoUpdate)  
 
-    # reconstructionscale: bpy.props.FloatProperty(name="reconstruction scale", 
-    #                                     description="reconstruction scale for the fused.ply", 
-    #                                     default=1.00, 
-    #                                     min=0.00, 
-    #                                     max=1000.00, 
-    #                                     step=0.01, 
-    #                                     precision=2)      
+    depth_ignore: bpy.props.FloatProperty(name="Depth Ignore", 
+                                        description="Use depth as a filter for rgb", 
+                                        default=1.5, 
+                                        min=0.0, 
+                                        max=10.0, 
+                                        step=3, 
+                                        precision=3,
+                                        update=depthInfoUpdate)  
 
     cameradisplayscale: bpy.props.FloatProperty(name="reconstruction scale", 
                                         description="reconstruction scale for the fused.ply", 
@@ -130,7 +142,9 @@ class config(bpy.types.PropertyGroup):
                                         min=0.00, 
                                         max=1.00, 
                                         step=0.01, 
-                                        precision=2)    
+                                        precision=2)   
+
+
 
     def scale_update(self, context):
         

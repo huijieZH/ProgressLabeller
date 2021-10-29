@@ -5,6 +5,7 @@ from gpu_extras.presets import draw_texture_2d
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.props import StringProperty, EnumProperty, FloatProperty, BoolProperty
 from bpy.types import Operator
+from kernel.geometry import depthfilter
 
 def draw():
     context = bpy.context
@@ -24,20 +25,29 @@ def draw():
                 show_frame = obj["depth"]
                 if show_frame.bindcode == 0:
                     show_frame.gl_load()
+            
+            for area in bpy.context.screen.areas:
+                if area.type == 'IMAGE_EDITOR': 
+                    area.spaces.active.image = show_frame
 
             if show_frame:
                 if show_frame["UPDATEALPHA"]:
-                    if len(show_frame["alpha"]) == 1:
-                        pixels = list(show_frame.pixels) 
-                        for i in range(3, len(pixels), 4):
-                            pixels[i] = show_frame["alpha"][0]
-                        show_frame.pixels[:] = pixels
-                    else:
-                        pixels = list(show_frame.pixels) 
-                        for i in range(3, len(pixels), 4):
-                            pixels[i] = show_frame["alpha"][i]
-                        show_frame.pixels[:] = pixels   
-                
+                    # if len(show_frame["alpha"]) == 1:
+                    #     pixels = list(show_frame.pixels) 
+                    #     for i in range(3, len(pixels), 4):
+                    #         pixels[i] = show_frame["alpha"][0]
+                    #     show_frame.pixels[:] = pixels
+                    # else:
+                    #     pixels = list(show_frame.pixels) 
+                    #     for i in range(0, int(len(pixels)/4)):
+                    #         pixels[4 * i + 3] = show_frame["alpha"][i]
+                    #     show_frame.pixels[:] = pixels   
+                    
+                    alpha = depthfilter(obj["depth"]["depth"], config.depth_scale, config.depth_ignore)
+                    pixels = list(show_frame.pixels) 
+                    for i in range(0, int(len(pixels)/4)):
+                        pixels[4 * i + 3] = float(alpha[i])
+                    show_frame.pixels[:] = pixels                   
                 obj.data.show_background_images = scene.floatscreenproperty.BACKGROUND
                 obj.data.background_images[0].image = show_frame
                 obj.data.background_images[0].alpha = scene.floatscreenproperty.background_alpha
@@ -76,13 +86,15 @@ def draw():
                     bias_X = scene.floatscreenproperty.display_X
                     bias_Y = scene.floatscreenproperty.display_Y
                     res_X = int(config.resX * scene.floatscreenproperty.display_scale)
-                    res_Y = int(config.resY * scene.floatscreenproperty.display_scale)                           
+                    res_Y = int(config.resY * scene.floatscreenproperty.display_scale)   
+                  
                 if scene.floatscreenproperty.DISPLAY:
                     draw_texture_2d(show_frame.bindcode, 
                                     (bias_X, bias_Y), 
                                     res_X, 
                                     res_Y)
                 show_frame["UPDATEALPHA"] = False
+
 
 class FloatScreenProperty(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.

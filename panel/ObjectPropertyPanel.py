@@ -1,5 +1,5 @@
 import bpy
-
+from kernel.blender_utility import _get_configuration
 
 class ObjectPropertyPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
@@ -14,9 +14,8 @@ class ObjectPropertyPanel(bpy.types.Panel):
         scene = context.scene
         if "type" in bpy.data.objects[current_object]:
             name = current_object.split(":")[0]
-            config_id =  bpy.data.objects[name + ":Setting"]['config_id']
-            config = scene.configuration[config_id]
             object_type = bpy.data.objects[current_object]["type"]
+            config_id, config = _get_configuration(context.object)
             if object_type == "model":
                 layout = self.layout
                 scene = context.scene
@@ -66,6 +65,14 @@ class ObjectPropertyPanel(bpy.types.Panel):
                     row = box.row(align=True)
                     row.prop(scene.floatscreenproperty, "display_X")
                     row.prop(scene.floatscreenproperty, "display_Y")
+                
+                layout.label(text="Set depth parameter:")
+                box = layout.box() 
+                row = box.row(align=True)
+                row.prop(config, "depth_scale")
+                row = box.row()
+                row.prop(config, "depth_ignore")
+
             elif object_type == "setting":
                 object = bpy.data.objects[current_object]
                 scene = context.scene

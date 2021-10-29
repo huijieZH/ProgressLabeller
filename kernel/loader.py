@@ -1,3 +1,4 @@
+from PIL import Image
 import bpy
 import os
 import yaml
@@ -223,6 +224,10 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
                                     files=[{"name":perfix + ".png"}], 
                                     relative_path=True, show_multiview=False)
                 bpy.data.images[perfix + ".png"].name = depth_name
+                
+                depth = np.array(Image.open(os.path.join(depth_path, perfix + ".png")))
+                depth = depth[::-1, ::]
+                bpy.data.images[depth_name]["depth"] = depth.flatten().astype(np.float32)
                 ## change transparency
             bpy.data.images[depth_name]["UPDATEALPHA"] = True
             bpy.data.images[depth_name]["alpha"] = [0.5]
@@ -327,6 +332,9 @@ def load_reconstruction_result(filepath,
                                         files=[{"name":perfix + ".png"}], 
                                         relative_path=True, show_multiview=False)
                     bpy.data.images[perfix + ".png"].name = depth_name
+                    depth = np.array(Image.open(os.path.join(depth_path, perfix + ".png")))
+                    depth = depth[::-1, ::]
+                    bpy.data.images[depth_name]["depth"] = depth.flatten().astype(np.float32)
                 bpy.data.images[depth_name]["UPDATEALPHA"] = True
                 bpy.data.images[depth_name]["alpha"] = [0.5]
                 # bpy.data.images[depth_name].filepath = depth_name

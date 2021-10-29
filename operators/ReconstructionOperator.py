@@ -61,7 +61,7 @@ class Reconstruction(Operator):
                 tsdf_trunc_margin = scene.kinectfusionparas.tsdf_trunc_margin, 
                 pcd_voxel_size = scene.kinectfusionparas.pcd_voxel_size, 
                 depth_scale = config.depth_scale, 
-                depth_ignore = scene.kinectfusionparas.depth_ignore, 
+                depth_ignore = config.depth_ignore, 
                 DISPLAY = scene.kinectfusionparas.DISPLAY,  
                 frame_per_display = scene.kinectfusionparas.frame_per_display, 
             )
@@ -180,7 +180,7 @@ class Reconstruction(Operator):
                 tsdf_voxel_size = scene.kinectfusionparas.tsdf_voxel_size,
                 tsdf_trunc_margin = scene.kinectfusionparas.tsdf_trunc_margin, 
                 pcd_voxel_size = scene.kinectfusionparas.pcd_voxel_size, 
-                depth_ignore = scene.kinectfusionparas.depth_ignore
+                depth_ignore = config.depth_ignore
                 )
             load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), 1.0, config_id, "reconstruction_depthfusion")
         return {'FINISHED'}
@@ -240,7 +240,7 @@ class Reconstruction(Operator):
             row = layout.row() 
             row.prop(scene.kinectfusionparas, "pcd_voxel_size")
             row = layout.row() 
-            row.prop(scene.kinectfusionparas, "depth_ignore")
+            row.prop(config, "depth_ignore")
             box = layout.box() 
             row = box.row(align=True)
             row.prop(scene.kinectfusionparas, "DISPLAY")
@@ -284,7 +284,7 @@ class Reconstruction(Operator):
             row = layout.row() 
             row.prop(scene.kinectfusionparas, "pcd_voxel_size")
             row = layout.row() 
-            row.prop(scene.kinectfusionparas, "depth_ignore")
+            row.prop(config, "depth_ignore")
             box = layout.box() 
         
         elif self.ReconstructionType == "ORB_SLAM2":
@@ -328,7 +328,7 @@ class Reconstruction(Operator):
             row = layout.row() 
             row.prop(scene.kinectfusionparas, "pcd_voxel_size")
             row = layout.row() 
-            row.prop(scene.kinectfusionparas, "depth_ignore")
+            row.prop(config, "depth_ignore")
             box = layout.box() 
 
 class KinectfusionConfig(bpy.types.PropertyGroup):
@@ -362,13 +362,13 @@ class KinectfusionConfig(bpy.types.PropertyGroup):
                                             max=1.00, 
                                             step=4, 
                                             precision=4)  
-    depth_ignore: bpy.props.FloatProperty(name="Ignore depth range (m)", 
-                                            description="Depth beyond this value would be ignore, in meter", 
-                                            default=1.5, 
-                                            min=0.0, 
-                                            max=10.0, 
-                                            step=3, 
-                                            precision=3)      
+    # depth_ignore: bpy.props.FloatProperty(name="Ignore depth range (m)", 
+    #                                         description="Depth beyond this value would be ignore, in meter", 
+    #                                         default=1.5, 
+    #                                         min=0.0, 
+    #                                         max=10.0, 
+    #                                         step=3, 
+    #                                         precision=3)      
     DISPLAY: bpy.props.BoolProperty(
         name="Display during reconstruction",
         description="During reconstruction simutaneously display the reconstruction result in Blender",

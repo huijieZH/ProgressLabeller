@@ -66,12 +66,17 @@ class ObjectPropertyPanel(bpy.types.Panel):
                     row.prop(scene.floatscreenproperty, "display_X")
                     row.prop(scene.floatscreenproperty, "display_Y")
                 
-                layout.label(text="Set depth parameter:")
+                layout.label(text="Set depth filter parameter:")
+                
                 box = layout.box() 
                 row = box.row(align=True)
+                row = box.row()
+                row.prop(scene.floatscreenproperty, "UPDATE_DEPTHFILTER")
+                row = box.row()
                 row.prop(config, "depth_scale")
                 row = box.row()
                 row.prop(config, "depth_ignore")
+                
 
             elif object_type == "setting":
                 object = bpy.data.objects[current_object]

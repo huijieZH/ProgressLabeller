@@ -31,7 +31,7 @@ def draw():
                     area.spaces.active.image = show_frame
 
             if show_frame:
-                if show_frame["UPDATEALPHA"]:
+                if show_frame["UPDATEALPHA"] and scene.floatscreenproperty.UPDATE_DEPTHFILTER:
                     # if len(show_frame["alpha"]) == 1:
                     #     pixels = list(show_frame.pixels) 
                     #     for i in range(3, len(pixels), 4):
@@ -172,6 +172,12 @@ class FloatScreenProperty(bpy.types.PropertyGroup):
                             max=2000, 
                             step=100, 
                             precision=0)
+    
+    UPDATE_DEPTHFILTER: BoolProperty(
+                name="Update depth filter on image",
+                description="Display filtered depth on screen (would be slow)",
+                default=True,
+            )
 
 def register():
     global floatscreen_handler

@@ -7,7 +7,7 @@ import subprocess
 
 from kernel.logging_utility import log_report
 from kernel.loader import load_reconstruction_result
-from kernel.blender_utility import _get_configuration, _align_reconstruction
+from kernel.blender_utility import _get_configuration, _align_reconstruction, _clear_recon_output, _initreconpose
 
 class Reconstruction(Operator):
     """This appears in the tooltip of the operator and in the generated docs"""
@@ -43,7 +43,8 @@ class Reconstruction(Operator):
                 log_report(
                     "Error", "Please successfully install pycuda", None
                 )        
-            else:             
+            else:         
+                _clear_recon_output(config.reconstructionsrc)    
                 KinectfusionRecon(
                     data_folder = config.datasrc,
                     save_folder = config.reconstructionsrc,
@@ -63,6 +64,7 @@ class Reconstruction(Operator):
                     frame_per_display = scene.kinectfusionparas.frame_per_display, 
                 )
                 config.inverse_pose = False
+                _initreconpose(config)
                 load_reconstruction_result(filepath = config.reconstructionsrc, 
                                     pointcloudscale = 1.0, 
                                     datasrc = config.datasrc,
@@ -78,6 +80,7 @@ class Reconstruction(Operator):
                     "Error", "Please successfully install COLMAP, pybind11 and complie colmap_extension", None
                 )            
             else:
+                _clear_recon_output(config.reconstructionsrc)    
                 colmap_extension.colmap_reconstruction(
                     os.path.join(config.reconstructionsrc, "reconstruction.db"),
                     os.path.join(config.datasrc, "rgb"),
@@ -90,6 +93,7 @@ class Reconstruction(Operator):
                 config.inverse_pose = True
                 scale = _align_reconstruction(config, scene)
                 config.reconstructionscale = scale
+                _initreconpose(config)
                 load_reconstruction_result(filepath = config.reconstructionsrc, 
                                     pointcloudscale = scale, 
                                     datasrc = config.datasrc,
@@ -107,6 +111,7 @@ class Reconstruction(Operator):
                     "Error", "Please successfully install ORB_SLAM2, pybind11 and complie orb_extension", None
                 )            
             else:
+                _clear_recon_output(config.reconstructionsrc)    
                 orbslam_yaml(os.path.join(config.reconstructionsrc, "orb_slam.yaml"), 
                              config.fx, config.fy, config.cx, config.cy, 
                              config.resX, config.resY, config.depth_scale, 
@@ -154,6 +159,7 @@ class Reconstruction(Operator):
                 config.inverse_pose = False
                 scale = _align_reconstruction(config, scene)
                 config.reconstructionscale = scale
+                _initreconpose(config)
                 load_reconstruction_result(filepath = config.reconstructionsrc, 
                                            pointcloudscale = scale, 
                                            datasrc = config.datasrc,
@@ -162,6 +168,7 @@ class Reconstruction(Operator):
                                            IMPORT_RATIO = config.sample_rate,
                                            CAMPOSE_INVERSE= config.inverse_pose
                                            )
+                
         return {'FINISHED'}
 
 

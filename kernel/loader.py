@@ -18,7 +18,7 @@ from kernel.utility import _transstring2trans
 from kernel.logging_utility import log_report
 from registeration.init_configuration import config_json_dict, decode_dict
 from kernel.blender_utility import \
-    _get_configuration, _get_obj_insameworkspace, _apply_trans2obj
+    _get_configuration, _get_obj_insameworkspace, _apply_trans2obj, _clear_allrgbdcam_insameworkspace
 from kernel.utility import _select_sample_files, _generate_image_list
 import time
 
@@ -98,25 +98,30 @@ def load_model_from_pose(filepath, config_id):
 
 def load_pc(filepath, pointcloudscale, config_id):
     workspace_name = bpy.context.scene.configuration[config_id].projectname
-    if workspace_name + ":" + 'reconstruction' not in bpy.data.objects:
-        points = PointDataFileHandler.parse_point_data_file(filepath)
-        draw_points(points = points, 
-                    point_size = 3, 
-                    add_points_to_point_cloud_handle = True, 
-                    reconstruction_collection = bpy.data.collections[workspace_name + ":" + "Pointcloud"], 
-                    object_anchor_handle_name=workspace_name + ":" + "reconstruction", op=None)
-        bpy.data.objects[workspace_name + ":" + 'reconstruction']["type"] = "reconstruction"
-        bpy.data.objects[workspace_name + ":" + 'reconstruction'].scale = Vector((pointcloudscale, 
-                                                            pointcloudscale, 
-                                                            pointcloudscale))
 
-        bpy.data.objects[workspace_name + ":" + 'reconstruction']["path"] = filepath
-        bpy.data.objects[workspace_name + ":" + 'reconstruction']["scale"] = pointcloudscale
-        bpy.data.objects[workspace_name + ":" + 'reconstruction'].rotation_mode = 'QUATERNION'
-        bpy.data.objects[workspace_name + ":" + 'reconstruction']["alignT"] = [[1., 0., 0., 0.],
-                                                                              [0., 1., 0., 0.], 
-                                                                              [0., 0., 1., 0.], 
-                                                                              [0., 0., 0., 1.]]
+    if workspace_name + ":" + 'reconstruction' in bpy.data.objects:
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.data.objects[workspace_name + ":" + 'reconstruction'].select_set(True)
+        bpy.ops.object.delete() 
+    # if workspace_name + ":" + 'reconstruction' not in bpy.data.objects:
+    points = PointDataFileHandler.parse_point_data_file(filepath)
+    draw_points(points = points, 
+                point_size = 3, 
+                add_points_to_point_cloud_handle = True, 
+                reconstruction_collection = bpy.data.collections[workspace_name + ":" + "Pointcloud"], 
+                object_anchor_handle_name=workspace_name + ":" + "reconstruction", op=None)
+    bpy.data.objects[workspace_name + ":" + 'reconstruction']["type"] = "reconstruction"
+    bpy.data.objects[workspace_name + ":" + 'reconstruction'].scale = Vector((pointcloudscale, 
+                                                        pointcloudscale, 
+                                                        pointcloudscale))
+
+    bpy.data.objects[workspace_name + ":" + 'reconstruction']["path"] = filepath
+    bpy.data.objects[workspace_name + ":" + 'reconstruction']["scale"] = pointcloudscale
+    bpy.data.objects[workspace_name + ":" + 'reconstruction'].rotation_mode = 'QUATERNION'
+    bpy.data.objects[workspace_name + ":" + 'reconstruction']["alignT"] = [[1., 0., 0., 0.],
+                                                                            [0., 1., 0., 0.], 
+                                                                            [0., 0., 1., 0.], 
+                                                                            [0., 0., 0., 1.]]
 
 def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate):
 
@@ -138,6 +143,7 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
     rgb_files.sort()
     rgb_sample_files = _select_sample_files(rgb_files, sample_rate)
     _generate_image_list(bpy.context.scene.configuration[config_id].reconstructionsrc, rgb_sample_files)
+    _clear_allrgbdcam_insameworkspace(bpy.context.scene.configuration[config_id])
     log_report(
         "INFO", "Loading camera, rgb and depth images", None
     )
@@ -154,6 +160,12 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
                 
                 cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX/2 - bpy.context.scene.configuration[config_id].cx)/bpy.context.scene.configuration[config_id].resX
                 cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/bpy.context.scene.configuration[config_id].resX
+                # f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2
+                # cam_data.sensor_width = cam_data.lens * bpy.context.scene.configuration[config_id].resX * 2/f
+                # cam_data.display_size = camera_display_scale
+                
+                # cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX - bpy.context.scene.configuration[config_id].cx - 320)/(bpy.context.scene.configuration[config_id].resX * 2)
+                # cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy + 240 - bpy.context.scene.configuration[config_id].resY)/(bpy.context.scene.configuration[config_id].resX * 2)
                 ## allow background display
                 cam_data.background_images.new()
                 
@@ -232,6 +244,7 @@ def load_reconstruction_result(filepath,
         if data[0].isnumeric():
             camera_lines.append(l)
     camera_selected_lines = _select_sample_files(camera_lines, IMPORT_RATIO)
+    _clear_allrgbdcam_insameworkspace(bpy.context.scene.configuration[config_id])
     for l in tqdm(camera_selected_lines):
         data = l.split(" ")
         if data[0].isnumeric():

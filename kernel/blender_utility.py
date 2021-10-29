@@ -8,6 +8,8 @@ from PIL import Image
 from kernel.logging_utility import log_report
 from kernel.geometry import _pose2Rotation, _rotation2Pose
 from kernel.scale import _parseImagesFile, _parsePoints3D, _scaleFordepth, _calculateDepth
+from kernel.utility import _transstring2trans,  _trans2transstring
+
 
 def _is_progresslabeller_object(obj):
     if "type" in obj:
@@ -76,6 +78,42 @@ def _apply_trans2obj(obj, trans):
     obj.location = after_align_pose[0]
     obj.rotation_quaternion = after_align_pose[1]/np.linalg.norm(after_align_pose[1])
 
+def _clear_allrgbdcam_insameworkspace(config):
+    workspace_name = config.projectname
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in bpy.data.objects:
+        if _is_obj_type(obj, "camera") and _get_workspace_name(obj) == workspace_name:
+            obj.select_set(True)
+    bpy.ops.object.delete() 
+    for im in bpy.data.images:
+        if im.name.split(":")[0] == workspace_name:
+            bpy.data.images.remove(im)
+
+def _clear_recon_output(recon_dir):
+    not_delete_file = ["label_pose.yaml", "image-list.txt"] 
+    files = os.listdir(recon_dir)
+    for f in files:
+        p = os.path.join(recon_dir, f)
+        if os.path.isfile(p) and f not in not_delete_file:
+            os.remove(p)
+        elif os.path.isdir(p):
+            _delete(p)
+
+def _delete(dir):
+    files = os.listdir(dir)
+    for f in files:
+        os.remove(os.path.join(dir, f))
+    os.rmdir(dir)
+
+def _initreconpose(config):
+    trans = np.identity(4)
+    config.recon_trans = _trans2transstring(trans)
+    # setting = bpy.data.objects[config.projectname + ":Setting"]
+    # obj_lists = _get_obj_insameworkspace(setting, ["reconstruction", "camera"])
+    # for obj in obj_lists:
+    #     _apply_trans2obj(obj, trans)  
+    #     if obj['type'] == 'reconstruction':
+    #         obj["alignT"] = trans.tolist()    
 
 
 

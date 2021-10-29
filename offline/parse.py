@@ -46,12 +46,13 @@ class offlineParam:
     
     def parseobj(self):
         self.objs = {}
-        f = open(os.path.join(self.modelposesrc, "label_pose.yaml"))
-        poses = yaml.safe_load(f)
-        model_dir = os.listdir(self.modelsrc)
-        for objname in poses:
-            if objname in model_dir:
-                self.objs[objname] = {}
-                self.objs[objname]['type'] = poses[objname]['type']
-                self.objs[objname]['trans'] = _pose2Rotation(poses[objname]['pose'])
+        if os.path.exists(os.path.join(self.modelposesrc, "label_pose.yaml")):
+            f = open()
+            poses = yaml.safe_load(f)
+            model_dir = os.listdir(self.modelsrc)
+            for objname in poses:
+                if objname in model_dir:
+                    self.objs[objname] = {}
+                    self.objs[objname]['type'] = poses[objname]['type']
+                    self.objs[objname]['trans'] = _pose2Rotation(poses[objname]['pose'])
 

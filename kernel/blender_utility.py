@@ -15,9 +15,9 @@ def _is_progresslabeller_object(obj):
     if "type" in obj:
         return True
     else:
-        log_report(
-            "Error", "Current object is not ProgressLabeller object", None
-        )  
+        # log_report(
+        #     "Error", "Current object is not ProgressLabeller object", None
+        # )  
         return False
 
 def _is_in_blender(name):

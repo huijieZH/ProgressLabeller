@@ -1,6 +1,8 @@
 import bpy
 from kernel.blender_utility import _get_configuration
 
+import numpy as np
+
 class ObjectPropertyPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
     bl_label = "Progress Labeller"
@@ -73,9 +75,13 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 row = box.row()
                 row.prop(scene.floatscreenproperty, "UPDATE_DEPTHFILTER")
                 row = box.row()
+                row.prop(scene.floatscreenproperty, "IGNORE_ZERODEPTH")
+                row = box.row()
                 row.prop(config, "depth_scale")
                 row = box.row()
                 row.prop(config, "depth_ignore")
+                meandepth = np.mean(np.array(context.object["depth"]["depth"])) * config.depth_scale
+                box.label(text="Mean depth for current image is : {0:.3f}m".format(meandepth))
                 
 
             elif object_type == "setting":

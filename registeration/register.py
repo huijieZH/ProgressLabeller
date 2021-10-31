@@ -7,7 +7,6 @@ from panel import ObjectPropertyPanel, FloatScreenPanel
 from operators import ObjectPropertyOperator, ReconstructionOperator
 
 def register():
-
     init_configuration.register()
     configuration_loader.register()
     model_loader.register()

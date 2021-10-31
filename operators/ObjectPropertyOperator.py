@@ -1,5 +1,6 @@
 import bpy
 from bpy.props import StringProperty, EnumProperty, FloatProperty, IntProperty
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.types import Operator
 import numpy as np
 from PIL import Image
@@ -19,6 +20,7 @@ from kernel.blender_utility import \
     _align_reconstruction
 from registeration.init_configuration import config
 from kernel.utility import _trans2transstring
+from kernel.blender_utility import _is_progresslabeller_object
 
 
 class PlaneAlignment(Operator):
@@ -327,7 +329,70 @@ class AllModelsICP(Operator):
             recon_vertices_rotated = (rot[:3, :3].dot(recon_vertices.T) + rot[:3, [3]]).T
             trans_obj_icp = modelICP(recon_vertices_rotated, model_vertices)
             _apply_trans2obj(obj, trans_obj_icp)
-        return {'FINISHED'}         
+        return {'FINISHED'}    
+
+class CurrentDepthOperator(bpy.types.Operator):
+    """Move an object with the mouse, example"""
+    bl_idname = "object_property.current_depth_operator"
+    bl_label = "Current depth operator"
+
+    current_depth: FloatProperty()
+
+    def modal(self, context, event):
+        if _is_progresslabeller_object(context.object) and context.object["type"] == "camera" and event.type == 'MOUSEMOVE':
+            print(event.mouse_x, event.mouse_y)
+            config_id, config = _get_configuration(context.object)
+            for area in context.screen.areas:
+                if area.type == 'VIEW_3D':
+                    area.spaces[0].region_3d.view_perspective = 'CAMERA'
+                    bpy.context.scene.render.resolution_x = config.resX
+                    bpy.context.scene.render.resolution_y = config.resY
+                    bpy.context.scene.camera = context.object
+                    cam = bpy.context.scene.camera
+                    frame = cam.data.view_frame(scene = bpy.context.scene)
+                    frame = [cam.matrix_world @ corner for corner in frame]
+                    region = bpy.context.region
+                    rv3d = bpy.context.region_data
+                    frame_px = [location_3d_to_region_2d(region, rv3d, corner) for corner in frame]           
+                    bias_X = min([v[0] for v in frame_px])
+                    bias_Y = min([v[1] for v in frame_px])
+                    res_X = max([v[0] for v in frame_px]) - min([v[0] for v in frame_px])
+                    res_Y = max([v[1] for v in frame_px]) - min([v[1] for v in frame_px])
+                    print(res_X, res_Y)
+            if event.mouse_x > bias_X \
+                and event.mouse_x < bias_X + res_X\
+                and event.mouse_y > bias_Y\
+                and event.mouse_x < bias_Y + res_Y:
+                print(event.mouse_x, event.mouse_y) 
+        return {'PASS_THROUGH'}
+        
+
+    def invoke(self, context, event):
+        # if _is_progresslabeller_object(context.object) \
+        #     and context.object["type"] == ["camera"] \
+        #     and event.type == 'MOUSEMOVE':
+        #     self.current_depth = 0
+        #     for area in context.screen.areas:
+        #         if area.type == 'VIEW_3D':
+        #             cam = bpy.context.scene.camera
+        #             frame = cam.data.view_frame(scene = bpy.context.scene)
+        #             frame = [cam.matrix_world @ corner for corner in frame]
+        #             region = bpy.context.region
+        #             rv3d = bpy.context.region_data
+        #             frame_px = [location_3d_to_region_2d(region, rv3d, corner) for corner in frame]           
+        #             bias_X = min([v[0] for v in frame_px])
+        #             bias_Y = min([v[1] for v in frame_px])
+        #             res_X = max([v[0] for v in frame_px]) - min([v[0] for v in frame_px])
+        #             res_Y = max([v[1] for v in frame_px]) - min([v[1] for v in frame_px])
+        #             print(res_X, res_Y)
+        #             
+                    
+        #             return {'RUNNING_MODAL'}
+        self.current_depth = 0
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+        
+            
 
 
 def register():
@@ -346,6 +411,9 @@ def register():
     bpy.utils.register_class(WorkspaceRename)
     bpy.utils.register_class(RemoveWorkspace)
 
+    bpy.utils.register_class(CurrentDepthOperator)
+    # bpy.ops.object_property.current_depth_operator('INVOKE_DEFAULT')
+
 def unregister():
     # bpy.utils.unregister_class(ViewImage)
     
@@ -359,3 +427,4 @@ def unregister():
     
     bpy.utils.unregister_class(WorkspaceRename)
     bpy.utils.unregister_class(RemoveWorkspace)
+    bpy.utils.unregister_class(CurrentDepthOperator)

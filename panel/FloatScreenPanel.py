@@ -43,7 +43,7 @@ def draw():
                     #         pixels[4 * i + 3] = show_frame["alpha"][i]
                     #     show_frame.pixels[:] = pixels   
                     
-                    alpha = depthfilter(obj["depth"]["depth"], config.depth_scale, config.depth_ignore)
+                    alpha = depthfilter(obj["depth"]["depth"], config.depth_scale, config.depth_ignore, scene.floatscreenproperty.IGNORE_ZERODEPTH)
                     pixels = list(show_frame.pixels) 
                     for i in range(0, int(len(pixels)/4)):
                         pixels[4 * i + 3] = float(alpha[i])
@@ -178,6 +178,19 @@ class FloatScreenProperty(bpy.types.PropertyGroup):
                 description="Display filtered depth on screen (would be slow)",
                 default=True,
             )
+    
+    def ignorezerodepthUpdate(self, context):
+        context.object['depth']["UPDATEALPHA"] = True
+        context.object['rgb']["UPDATEALPHA"] = True
+    IGNORE_ZERODEPTH: BoolProperty(
+                name="Ignore zero depth",
+                description="If true, depth with zero value would be filtered out",
+                default=True,
+                update=ignorezerodepthUpdate
+            )
+    
+
+
 
 def register():
     global floatscreen_handler

@@ -189,9 +189,11 @@ def _register_point_cloud_fpfh(source, target, source_fpfh, target_fpfh, distanc
         return result.transformation
 
 
-def depthfilter(depth, scale, depthignore):
-    return np.array(depth) * scale <= depthignore
-
+def depthfilter(depth, scale, depthignore, ZERODEPTH_IGNORE):
+    if not ZERODEPTH_IGNORE:
+        return np.array(depth) * scale <= depthignore
+    else:
+        return (np.array(depth) * scale <= depthignore) * (np.array(depth) > 0)
 
 
 

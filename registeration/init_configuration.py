@@ -127,7 +127,7 @@ class config(bpy.types.PropertyGroup):
                                         precision=6,
                                         update=depthInfoUpdate)  
 
-    depth_ignore: bpy.props.FloatProperty(name="Depth Ignore", 
+    depth_ignore: bpy.props.FloatProperty(name="Depth Ignore (m)", 
                                         description="Use depth as a filter for rgb", 
                                         default=1.5, 
                                         min=0.0, 
@@ -138,7 +138,7 @@ class config(bpy.types.PropertyGroup):
 
     cameradisplayscale: bpy.props.FloatProperty(name="reconstruction scale", 
                                         description="reconstruction scale for the fused.ply", 
-                                        default=0.1, 
+                                        default=0.05, 
                                         min=0.00, 
                                         max=1.00, 
                                         step=0.01, 

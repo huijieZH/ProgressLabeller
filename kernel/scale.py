@@ -103,10 +103,10 @@ def _calculateDepth(THRESHOLD, NUM_THRESHOLD, PointsDepth):
             if si < THRESHOLD and si > 0 and number_point > NUM_THRESHOLD:
                 number += number_point
                 total_scale += np.sum(np.array(scale_point))
+    print("remain {0:.2f}% vaild points".format(number * 100/len(PointsDepth)))
     if number == 0:
         return 0
     else:
-        # print(number)
         return total_scale/number
 
 

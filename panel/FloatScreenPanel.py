@@ -46,7 +46,7 @@ def draw():
                     alpha = depthfilter(obj["depth"]["depth"], config.depth_scale, config.depth_ignore, scene.floatscreenproperty.IGNORE_ZERODEPTH)
                     pixels = list(show_frame.pixels) 
                     for i in range(0, int(len(pixels)/4)):
-                        pixels[4 * i + 3] = float(alpha[i])
+                        pixels[4 * i + 3] = float(alpha[i]) * 0.5
                     show_frame.pixels[:] = pixels                   
                 obj.data.show_background_images = scene.floatscreenproperty.BACKGROUND
                 obj.data.background_images[0].image = show_frame

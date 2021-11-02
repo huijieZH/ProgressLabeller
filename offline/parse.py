@@ -47,7 +47,7 @@ class offlineParam:
     def parseobj(self):
         self.objs = {}
         if os.path.exists(os.path.join(self.modelposesrc, "label_pose.yaml")):
-            f = open()
+            f = open(os.path.join(self.modelposesrc, "label_pose.yaml"))
             poses = yaml.safe_load(f)
             model_dir = os.listdir(self.modelsrc)
             for objname in poses:

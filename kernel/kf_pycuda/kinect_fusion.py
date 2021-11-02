@@ -35,54 +35,86 @@ class KinectFusion:
         self.prev_pcd = None
         self.cam_poses = []   # store the tracking results
 
-    def initialize_tsdf_volume(self, color_im, depth_im, visualize=False):
-        pcd = utils.create_pcd(depth_im, self.cfg['cam_intr'], color_im)
-        plane_frame, inlier_ratio = utils.plane_detection_ransac(pcd, inlier_thresh=0.005, early_stop_thresh=0.6,
-                                                                 visualize=visualize)
+    # def initialize_tsdf_volume(self, color_im, depth_im, visualize=False):
+    #     pcd = utils.create_pcd(depth_im, self.cfg['cam_intr'], color_im)
+    #     plane_frame, inlier_ratio = utils.plane_detection_ransac(pcd, inlier_thresh=0.005, early_stop_thresh=0.6,
+    #                                                              visualize=visualize)
         
-        cam_pose = la.inv(plane_frame)
-        transformed_pcd = copy.deepcopy(pcd).transform(la.inv(plane_frame))
-        transformed_pts = np.asarray(transformed_pcd.points)
+    #     cam_pose = la.inv(plane_frame)
+    #     transformed_pcd = copy.deepcopy(pcd).transform(la.inv(plane_frame))
+    #     transformed_pts = np.asarray(transformed_pcd.points)
 
-        vol_bnds = np.zeros((3, 2), dtype=np.float32)
-        vol_bnds[:, 0] = transformed_pts.min(0)
-        vol_bnds[:, 1] = transformed_pts.max(0)
-        # print(vol_bnds)
-        # vol_bnds[2] = [-0.01, 0.25]
+    #     vol_bnds = np.zeros((3, 2), dtype=np.float32)
+    #     vol_bnds[:, 0] = transformed_pts.min(0)
+    #     vol_bnds[:, 1] = transformed_pts.max(0)
+    #     # print(vol_bnds)
+    #     # vol_bnds[2] = [-0.01, 0.25]
 
-        if visualize:
-            vol_box = o3d.geometry.OrientedBoundingBox()
-            vol_box.center = vol_bnds.mean(1)
-            vol_box.extent = vol_bnds[:, 1] - vol_bnds[:, 0]
-            o3d.visualization.draw_geometries([vol_box, transformed_pcd])
+    #     if visualize:
+    #         vol_box = o3d.geometry.OrientedBoundingBox()
+    #         vol_box.center = vol_bnds.mean(1)
+    #         vol_box.extent = vol_bnds[:, 1] - vol_bnds[:, 0]
+    #         o3d.visualization.draw_geometries([vol_box, transformed_pcd])
 
-        self.init_transformation = plane_frame.copy()
-        self.transformation = plane_frame.copy()
-        self.tsdf_volume = TSDFVolume(vol_bnds=vol_bnds,
-                                      voxel_size=self.cfg['tsdf_voxel_size'],
-                                      trunc_margin=self.cfg['tsdf_trunc_margin'])
-        self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], cam_pose)
-        self.prev_pcd = pcd
-        self.cam_poses.append(cam_pose)
+    #     self.init_transformation = plane_frame.copy()
+    #     self.transformation = plane_frame.copy()
+    #     self.tsdf_volume = TSDFVolume(vol_bnds=vol_bnds,
+    #                                   voxel_size=self.cfg['tsdf_voxel_size'],
+    #                                   trunc_margin=self.cfg['tsdf_trunc_margin'])
+    #     self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], cam_pose)
+    #     self.prev_pcd = pcd
+    #     self.cam_poses.append(cam_pose)
     
-    def initialize_tsdf_volume(self, color_im, depth_im, pose, visualize=False):
-        pcd = utils.create_pcd(depth_im, self.cfg['cam_intr'], color_im)
-        
-        transformed_pcd = copy.deepcopy(pcd).transform(pose)
-        transformed_pts = np.asarray(transformed_pcd.points)
+    def initialize_tsdf_volume(self, color_im, depth_im, pose=None, visualize=False):
+        if pose is None:
+            pcd = utils.create_pcd(depth_im, self.cfg['cam_intr'], color_im, depth_trunc = self.cfg['tsdf_trunc_margin']*10000)
+            
+            transformed_pcd = copy.deepcopy(pcd).transform(pose)
+            transformed_pts = np.asarray(transformed_pcd.points)
 
-        vol_bnds = np.zeros((3, 2), dtype=np.float32)
-        vol_bnds[:, 0] = transformed_pts.min(0)
-        vol_bnds[:, 1] = transformed_pts.max(0)
+            vol_bnds = np.zeros((3, 2), dtype=np.float32)
+            vol_bnds[:, 0] = transformed_pts.min(0)
+            vol_bnds[:, 1] = transformed_pts.max(0)
 
-        self.init_transformation = la.inv(pose).copy()
-        self.transformation = la.inv(pose).copy()
-        self.tsdf_volume = TSDFVolume(vol_bnds=vol_bnds,
-                                      voxel_size=self.cfg['tsdf_voxel_size'],
-                                      trunc_margin=self.cfg['tsdf_trunc_margin'])
-        self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], pose)
-        self.prev_pcd = pcd
-        self.cam_poses.append(pose)
+            self.init_transformation = la.inv(pose).copy()
+            self.transformation = la.inv(pose).copy()
+            self.tsdf_volume = TSDFVolume(vol_bnds=vol_bnds,
+                                        voxel_size=self.cfg['tsdf_voxel_size'],
+                                        trunc_margin=self.cfg['tsdf_trunc_margin'])
+            self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], pose)
+            self.prev_pcd = pcd
+            self.cam_poses.append(pose)
+        else:
+            pcd = utils.create_pcd(depth_im, self.cfg['cam_intr'], color_im)
+            plane_frame, inlier_ratio = utils.plane_detection_ransac(pcd, inlier_thresh=0.005, early_stop_thresh=0.6,
+                                                                    visualize=visualize)
+            
+            cam_pose = la.inv(plane_frame)
+            transformed_pcd = copy.deepcopy(pcd).transform(la.inv(plane_frame))
+            transformed_pts = np.asarray(transformed_pcd.points)
+
+            vol_bnds = np.zeros((3, 2), dtype=np.float32)
+            vol_bnds[:, 0] = transformed_pts.min(0)
+            vol_bnds[:, 1] = transformed_pts.max(0)
+            # print(vol_bnds)
+            # vol_bnds[2] = [-0.01, 0.25]
+
+            if visualize:
+                vol_box = o3d.geometry.OrientedBoundingBox()
+                vol_box.center = vol_bnds.mean(1)
+                vol_box.extent = vol_bnds[:, 1] - vol_bnds[:, 0]
+                o3d.visualization.draw_geometries([vol_box, transformed_pcd])
+
+            self.init_transformation = plane_frame.copy()
+            self.transformation = plane_frame.copy()
+            self.tsdf_volume = TSDFVolume(vol_bnds=vol_bnds,
+                                        voxel_size=self.cfg['tsdf_voxel_size'],
+                                        trunc_margin=self.cfg['tsdf_trunc_margin'])
+            self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], cam_pose)
+            self.prev_pcd = pcd
+            self.cam_poses.append(cam_pose)            
+    
+
     @staticmethod
     def multiscale_icp(src: o3d.geometry.PointCloud,
                        tgt: o3d.geometry.PointCloud,
@@ -146,26 +178,40 @@ class KinectFusion:
         self.prev_observation = curr_pcd
         return True
 
-    def update(self, color_im, depth_im):
-        if self.tsdf_volume is None:
-            self.initialize_tsdf_volume(color_im, depth_im, visualize=False)
-            return True
+    # def update(self, color_im, depth_im):
+    #     if self.tsdf_volume is None:
+    #         self.initialize_tsdf_volume(color_im, depth_im, visualize=False)
+    #         return True
 
-        success = self.update_pose_using_icp(depth_im)
-        if success:
-            cam_pose = la.inv(self.transformation)
-            self.cam_poses.append(cam_pose)
-            self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], cam_pose, weight=1)
-        else:
-            self.cam_poses.append(np.eye(4))
+    #     success = self.update_pose_using_icp(depth_im)
+    #     if success:
+    #         cam_pose = la.inv(self.transformation)
+    #         self.cam_poses.append(cam_pose)
+    #         self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], cam_pose, weight=1)
+    #     else:
+    #         self.cam_poses.append(np.eye(4))
     
-    def update(self, color_im, depth_im, pose):
-        ## update with pose
-        if self.tsdf_volume is None:
-            self.initialize_tsdf_volume(color_im, depth_im, pose, visualize=False)
-            return True
+    
+    def update(self, color_im, depth_im, pose = None):
+        if pose is None:
+            ## update with pose
+            if self.tsdf_volume is None:
+                self.initialize_tsdf_volume(color_im, depth_im, pose, visualize=False)
+                return True
 
-        self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], pose, weight=1)
+            self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], pose, weight=1)
+        else:
+            if self.tsdf_volume is None:
+                self.initialize_tsdf_volume(color_im, depth_im, visualize=False)
+                return True
+
+            success = self.update_pose_using_icp(depth_im)
+            if success:
+                cam_pose = la.inv(self.transformation)
+                self.cam_poses.append(cam_pose)
+                self.tsdf_volume.integrate(color_im, depth_im, self.cfg['cam_intr'], cam_pose, weight=1)
+            else:
+                self.cam_poses.append(np.eye(4))            
      
 
     def interpolation_update(self, color_im, depth_im, accurate_pose = None):

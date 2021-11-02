@@ -4,7 +4,7 @@ import os
 import numpy as np
 from mathutils import Vector
 from kernel.geometry import _pose2Rotation, _rotation2Pose
-from kernel.blender_utility import _is_progresslabeller_object, _get_allrgb_insameworkspace, _get_configuration
+from kernel.blender_utility import _is_progresslabeller_object, _get_allrgb_insameworkspace, _get_configuration, _get_obj_insameworkspace
 
 config_json_dict = {
     'projectname': [['projectname']],
@@ -108,7 +108,7 @@ class config(bpy.types.PropertyGroup):
                                         default=0.10, 
                                         min=0.00, 
                                         max=1.00, 
-                                        step=0.01, 
+                                        step=0.1, 
                                         precision=2)
     
     def depthInfoUpdate(self, context):
@@ -131,7 +131,7 @@ class config(bpy.types.PropertyGroup):
                                         description="Use depth as a filter for rgb", 
                                         default=1.5, 
                                         min=0.0, 
-                                        max=10.0, 
+                                        max=10000.0, 
                                         step=3, 
                                         precision=3,
                                         update=depthInfoUpdate)  
@@ -140,7 +140,7 @@ class config(bpy.types.PropertyGroup):
                                         description="reconstruction scale for the fused.ply", 
                                         default=0.05, 
                                         min=0.00, 
-                                        max=1.00, 
+                                        max=1000.00, 
                                         step=0.01, 
                                         precision=2)   
 
@@ -171,8 +171,11 @@ class config(bpy.types.PropertyGroup):
                         scaled_location = origin_location * new_scale
                         current_scaled_location = (alignT[:3, :3].dot(scaled_location) + alignT[:3, [3]]).reshape((3, ))
                         obj.location = Vector(current_scaled_location)
-                        
-            recon["scale"] = self.reconstructionscale   
+
+            recons = _get_obj_insameworkspace(recon, ["reconstruction"])
+
+            for obj in recons:
+                obj["scale"] = self.reconstructionscale   
 
     
     reconstructionscale: bpy.props.FloatProperty(name="reconstruction scale", description="scale of the reconstruction model", 

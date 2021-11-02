@@ -90,6 +90,7 @@ Then to build the interface between ORB-SLAM2 and Progresslabeler.
 ```bash
 export ORB_SOURCE_DIR=</PATH/TO/ORB_SLAM2>
 cd $PROGRESSLABELER_PATH/kernel/orb_slam
+tar -xf ORBvoc.txt.tar.gz
 conda activate progresslabeler
 mkdir build
 cd build

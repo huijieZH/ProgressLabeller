@@ -1,3 +1,4 @@
+from typing import DefaultDict
 import bpy
 from bpy.props import StringProperty, EnumProperty, FloatProperty
 from bpy.types import Operator
@@ -93,7 +94,7 @@ class Reconstruction(Operator):
 
                 colmap_extension.parseReconstruction(config.reconstructionsrc)
                 config.inverse_pose = True
-                scale = _align_reconstruction(config, scene)
+                scale = _align_reconstruction(config, scene, scene.scalealign.THRESHOLD, scene.scalealign.NUM_THRESHOLD)
                 config.reconstructionscale = scale
                 _initreconpose(config)
                 load_reconstruction_result(filepath = config.reconstructionsrc, 
@@ -123,15 +124,6 @@ class Reconstruction(Operator):
                                       scene.orbslamparas.timestampfrenquency)
                 source = os.path.dirname(os.path.dirname(__file__))
                 code_path = os.path.join(source, "kernel", "orb_slam", "orb_slam.py")
-                # subprocess.call("conda init bash; conda activate progresslabeler; python {0} {1} {2} {3} {4} {5} {6}".format(code_path, 
-                #                                                                                             scene.orbslamparas.orb_vocabularysrc, 
-                #                                                                                             os.path.join(config.reconstructionsrc,"orb_slam.yaml"),
-                #                                                                                             config.datasrc,
-                #                                                                                             os.path.join(config.reconstructionsrc, "associate.txt"),
-                #                                                                                             config.reconstructionsrc,
-                #                                                                                             scene.orbslamparas.timestampfrenquency
-                #                                                                                             ), shell=True)
-                # os.system("eval \"$(command conda 'shell.bash' 'hook' 2> /dev/null)\"; conda activate progresslabeler ; python -V")
                 os.system("eval \"$(command conda 'shell.bash' 'hook' 2> /dev/null)\"; conda activate progresslabeler ; python {0} {1} {2} {3} {4} {5} {6}".format(code_path, 
                                                                                                 scene.orbslamparas.orb_vocabularysrc, 
                                                                                                 os.path.join(config.reconstructionsrc,"orb_slam.yaml"),
@@ -140,30 +132,13 @@ class Reconstruction(Operator):
                                                                                                 config.reconstructionsrc,
                                                                                                 scene.orbslamparas.timestampfrenquency
                                                                                                 ))
-                # p = multiprocessing.Process(target=orb_extension.orb_slam_recon, 
-                #                             args=(
-                #                                     scene.orbslamparas.orb_vocabularysrc,
-                #                                     os.path.join(config.reconstructionsrc, "orb_slam.yaml"),
-                #                                     config.datasrc,
-                #                                     os.path.join(config.reconstructionsrc, "associate.txt"),
-                #                                     config.reconstructionsrc,
-                #                                     scene.orbslamparas.timestampfrenquency
-                #                                 ))
-                # p.start()
-                # orb_extension.orb_slam_recon(
-                #     scene.orbslamparas.orb_vocabularysrc,
-                #     os.path.join(config.reconstructionsrc, "orb_slam.yaml"),
-                #     config.datasrc,
-                #     os.path.join(config.reconstructionsrc, "associate.txt"),
-                #     config.reconstructionsrc,
-                #     scene.orbslamparas.timestampfrenquency
-                # )
                 config.inverse_pose = False
-                scale = _align_reconstruction(config, scene)
-                config.reconstructionscale = scale
+                # scale =  _align_reconstruction(config, scene, scene.scalealign.THRESHOLD, scene.scalealign.NUM_THRESHOLD)
+                # config.reconstructionscale = scale
+                config.reconstructionscale = 1.0
                 _initreconpose(config)
                 load_reconstruction_result(filepath = config.reconstructionsrc, 
-                                           pointcloudscale = scale, 
+                                           pointcloudscale = 1.0, 
                                            datasrc = config.datasrc,
                                            config_id = config_id,
                                            camera_display_scale = config.cameradisplayscale,
@@ -271,11 +246,14 @@ class Reconstruction(Operator):
             box = layout.box() 
             box.label(text="Point Cloud Scale:")
             row = box.row()
-            row = box.row()
-            # row.prop(scene.loadreconparas, "depth_scale")
             row.prop(config, "depth_scale")
             row = layout.row()
             row.prop(config, "cameradisplayscale")
+            row = layout.row()
+            row.prop(scene.scalealign, "THRESHOLD")
+            row = layout.row()
+            row.prop(scene.scalealign, "NUM_THRESHOLD")     
+
             layout.label(text="Set Depth Fusion Parameters:")
             row = layout.row() 
             row.prop(scene.kinectfusionparas, "tsdf_voxel_size")
@@ -314,6 +292,10 @@ class Reconstruction(Operator):
             row.prop(config, "depth_scale")
             row = layout.row()
             row.prop(config, "cameradisplayscale")
+            row = layout.row()
+            row.prop(scene.scalealign, "THRESHOLD")
+            row = layout.row()
+            row.prop(scene.scalealign, "NUM_THRESHOLD") 
             layout.label(text="Set ORB_SLAM2 Parameters:")   
             box = layout.box() 
             row = box.row()
@@ -345,21 +327,21 @@ class KinectfusionConfig(bpy.types.PropertyGroup):
                                             description="Voxel size for truncated signed distance function, in meter", 
                                             default=0.0025, 
                                             min=0.00, 
-                                            max=1.00, 
+                                            max=10.00, 
                                             step=4, 
                                             precision=4)
     tsdf_trunc_margin: bpy.props.FloatProperty(name="TSDF Truncated Margin (m)", 
                                             description="Truncated margin for truncated signed distance function, in meter", 
                                             default=0.015, 
                                             min=0.00, 
-                                            max=1.00, 
+                                            max=10.00, 
                                             step=4, 
                                             precision=4)
     pcd_voxel_size: bpy.props.FloatProperty(name="Model Voxel Size (m)", 
                                             description="Voxel size for rendered model, in meter", 
                                             default=0.005, 
                                             min=0.00, 
-                                            max=1.00, 
+                                            max=10.00, 
                                             step=4, 
                                             precision=4)  
     # depth_ignore: bpy.props.FloatProperty(name="Ignore depth range (m)", 
@@ -380,8 +362,11 @@ class KinectfusionConfig(bpy.types.PropertyGroup):
                                                 default=5)                                                                           
 
 class ORBSLAMConfig(bpy.types.PropertyGroup):
+    dirpath = os.path.dirname(os.path.dirname(__file__))
+    orb_vocabularysrc = os.path.join(dirpath, "kernel", "orb_slam", "ORBvoc.txt")
     orb_vocabularysrc: bpy.props.StringProperty(name = "orb_vocabulary path", 
-                subtype = "FILE_PATH")  
+                                                subtype = "FILE_PATH",
+                                                default = orb_vocabularysrc)  
     timestampfrenquency: bpy.props.FloatProperty(name="Frequency for timestamp", 
                                             description="Frequency of the images, realted to the speed of ORB-SLAM, set 20 for 1280X720 images and 30 for 640X480 ", 
                                             default=20, 
@@ -390,14 +375,31 @@ class ORBSLAMConfig(bpy.types.PropertyGroup):
                                             step=1, 
                                             precision=1)    
 
+class ScaleAlignment(bpy.types.PropertyGroup):
+    THRESHOLD: bpy.props.FloatProperty(name="variance threshold for scale alignment", 
+                                        description="variance threshold for scale alignment", 
+                                        default = 0.01, 
+                                        min=0.0, 
+                                        max=1.0, 
+                                        step=2, 
+                                        precision=2)   
+    NUM_THRESHOLD: bpy.props.IntProperty(name="number threshold for scale alignment", 
+                                        description="number threshold for scale alignment", 
+                                        default = 8, 
+                                        min=1, 
+                                        max=20)   
+
 def register():
     bpy.utils.register_class(Reconstruction)
     bpy.utils.register_class(KinectfusionConfig)
     bpy.utils.register_class(ORBSLAMConfig)
+    bpy.utils.register_class(ScaleAlignment)
     bpy.types.Scene.kinectfusionparas = bpy.props.PointerProperty(type=KinectfusionConfig)   
     bpy.types.Scene.orbslamparas = bpy.props.PointerProperty(type=ORBSLAMConfig)   
+    bpy.types.Scene.scalealign = bpy.props.PointerProperty(type=ScaleAlignment)  
 
 def unregister():
     bpy.utils.unregister_class(Reconstruction)
     bpy.utils.unregister_class(KinectfusionConfig)
     bpy.utils.unregister_class(ORBSLAMConfig)
+    bpy.utils.unregister_class(ScaleAlignment)

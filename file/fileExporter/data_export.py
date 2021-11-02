@@ -10,7 +10,7 @@ from kernel.logging_utility import log_report
 from bpy_extras.io_utils import ExportHelper
 from bpy.props import StringProperty
 from bpy.types import Operator
-from kernel.exporter import configuration_export
+from kernel.exporter import configuration_export, objectposes_export
 
 class DataOutput(Operator, ExportHelper):
     """This appears in the tooltip of the operator and in the generated docs"""
@@ -44,6 +44,7 @@ class DataOutput(Operator, ExportHelper):
             )
         else:
             configuration_export(config, "/tmp/progresslabeler.json")
+            objectposes_export(config.projectname, os.path.join(config.reconstructionsrc, "label_pose.yaml"))
             data_export("/tmp/progresslabeler.json", self.filepath)
             os.remove("/tmp/progresslabeler.json")
         return {'FINISHED'}

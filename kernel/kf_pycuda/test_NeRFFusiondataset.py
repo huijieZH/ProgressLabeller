@@ -6,7 +6,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append("/home/huijie/research/progresslabeller/ProgressLabeller")
 from kernel.kf_pycuda.kinect_fusion import KinectFusion
-from kernel.kf_pycuda.config import get_config, print_config
+from kernel.kf_pycuda.config import get_config, print_config, set_config
 import open3d as o3d
 
 def visualize(kf):
@@ -28,11 +28,12 @@ if __name__ == '__main__':
     # color_im_list = []
     # depth_im_list = []
 
-    depth_scale = 0.00025
+    depth_scale = 1
 
     print("Fusion......")
-
-    config = get_config(camera='umich')
+    scale = 1000
+    # config = get_config(camera='umich')
+    config = set_config(1280, 720, 904.572, 905.295, 635.981, 353.060, 0.0025 * scale, 0.015 * scale , 0.005 * scale)
     print_config(config)
 
     kf = KinectFusion(cfg=config)
@@ -45,7 +46,7 @@ if __name__ == '__main__':
         depth_im = cv2.imread(depth_im_path, cv2.IMREAD_UNCHANGED).astype(np.float32) * depth_scale
         # depth_im[depth_im > 1.5] = 0
 
-        kf.update(color_im, depth_im)
+        kf.update(color_im, depth_im, pose = np.identity(4))
         # if (idx + 1) % 500 == 0:
         #     kf.save(save_folder)
     visualize(kf)

@@ -171,7 +171,7 @@ def _initreconpose(config):
 #         )  
 #     return scale
 
-def _align_reconstruction(config, scene, THRESHOLD = 0.01, NUM_THRESHOLD = 8):
+def _align_reconstruction(config, scene, THRESHOLD = 0.01, NUM_THRESHOLD = 5):
     filepath = config.reconstructionsrc
 
     imagefilepath = os.path.join(filepath, "images.txt")
@@ -191,6 +191,7 @@ def _align_reconstruction(config, scene, THRESHOLD = 0.01, NUM_THRESHOLD = 8):
     PointsDepth = {}
     _parseImagesFile(imagefilepath, Camera_dict, PointsDict)
     _parsePoints3D(points3Dpath, PointsDict)
+    print("Auto Aligning the scale:....")
     for camera_idx in tqdm.tqdm(Camera_dict):
             rgb_name = Camera_dict[camera_idx]["name"]
             with Image.open(os.path.join(datapath, "depth", rgb_name)) as im:
@@ -198,5 +199,5 @@ def _align_reconstruction(config, scene, THRESHOLD = 0.01, NUM_THRESHOLD = 8):
                 _scaleFordepth(depth, camera_idx, intrinsic, Camera_dict, PointsDict, PointsDepth, POSE_INVERSE = config.inverse_pose)
         
     scale = _calculateDepth(THRESHOLD = THRESHOLD, NUM_THRESHOLD = NUM_THRESHOLD, PointsDepth = PointsDepth)
-
+    print("The scale is : {0}".format(scale))
     return scale

@@ -14,7 +14,7 @@ from kernel.ply_importer.point_data_file_handler import(
 from kernel.ply_importer.utility import(
     draw_points
 )
-from kernel.utility import _transstring2trans
+from kernel.utility import _transstring2trans, _parse_camfile
 
 from kernel.logging_utility import log_report
 from registeration.init_configuration import config_json_dict, decode_dict
@@ -267,13 +267,7 @@ def load_reconstruction_result(filepath,
     bpy.ops.object.select_all(action='DESELECT')
     
     ## load camera and image result
-    camera_lines = []
-    file = open(camera_rgb_file, "r")
-    lines = file.read().split("\n")
-    for l in lines:
-        data = l.split(" ")
-        if data[0].isnumeric():
-            camera_lines.append(l)
+    camera_lines = _parse_camfile(camera_rgb_file)
     camera_selected_lines = _select_sample_files(camera_lines, IMPORT_RATIO)
     _clear_allrgbdcam_insameworkspace(bpy.context.scene.configuration[config_id])
     for l in tqdm(camera_selected_lines):

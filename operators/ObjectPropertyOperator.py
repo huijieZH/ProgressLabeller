@@ -19,8 +19,8 @@ from kernel.blender_utility import \
     _get_configuration, _get_reconstruction_insameworkspace, _get_obj_insameworkspace, _get_workspace_name, _apply_trans2obj, \
     _align_reconstruction
 from registeration.init_configuration import config
-from kernel.utility import _trans2transstring
-from kernel.blender_utility import _is_progresslabeller_object
+from kernel.utility import _trans2transstring,  _parse_camfile, _select_sample_files
+from kernel.blender_utility import _is_progresslabeller_object, _initreconpose, _get_obj_insameworkspace
 
 
 class PlaneAlignment(Operator):
@@ -37,7 +37,6 @@ class PlaneAlignment(Operator):
             "INFO", "Starting calculate the plane function", None
         )      
         
-
         [a, b, c, d], plane_center = plane_alignment(recon["path"], 
                                                      recon["scale"],
                                                      np.array(recon["alignT"]),
@@ -61,11 +60,14 @@ class PlaneAlignment(Operator):
             _apply_trans2obj(obj, trans)
 
 
-        
-        recon["alignT"] = (trans.dot(np.array(recon["alignT"]))).tolist()
+        recons = _get_obj_insameworkspace(recon, ["reconstruction"])
+
+        for obj in recons:
+            print(obj.name)
+            obj["alignT"] = (trans.dot(np.array(obj["alignT"]))).tolist()
 
         _, config = _get_configuration(context.object)
-        config.recon_trans = _trans2transstring(np.array(recon["alignT"]))
+        config.recon_trans = _trans2transstring(np.array(obj["alignT"]))
 
         return {'FINISHED'}
 
@@ -113,6 +115,7 @@ class ImportCamRGBDepth(Operator):
     bl_idname = "object_property.importcamrgbdepth"  # important since its how bpy.ops.import_test.some_data is constructed
     bl_label = "Import RGB & Depth"
 
+
     def execute(self, context): 
         config_id, config = _get_configuration(context.object)
         packagepath = config.datasrc
@@ -133,6 +136,9 @@ class ImportCamRGBDepth(Operator):
         return {'FINISHED'}
     
     def invoke(self, context, event):
+        config_id, config = _get_configuration(context.object)
+        files = os.listdir(os.path.join(config.datasrc, "rgb"))
+        self.total_files = len(files)
         return context.window_manager.invoke_props_dialog(self, width = 400)
 
     def draw(self, context):
@@ -143,6 +149,8 @@ class ImportCamRGBDepth(Operator):
         box = layout.box() 
         row = box.row()
         row.prop(config, "sample_rate") 
+        row = box.row()
+        row.label(text="You would load around {0} cameras".format(int(self.total_files * config.sample_rate)))
 
 
 class ImportReconResult(Operator):
@@ -159,6 +167,7 @@ class ImportReconResult(Operator):
         # config.cameradisplayscale = scene.loadreconparas.camera_display_scale
 
         if not scene.loadreconparas.AUTOALIGN:
+            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), 1.0, config_id, "reconstruction_depthfusion")
             load_reconstruction_result(filepath = filepath, 
                                         pointcloudscale = scene.loadreconparas.pointcloud_scale, 
                                         datasrc = datasrc,
@@ -167,15 +176,14 @@ class ImportReconResult(Operator):
                                         IMPORT_RATIO = scene.loadreconparas.Import_ratio,
                                         CAMPOSE_INVERSE = config.inverse_pose
                                         )
-            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), config.reconstructionscale, config_id, "reconstruction_depthfusion")
         else:
             log_report(
             "INFO", "Starting aligning the point cloud", None
             )     
 
-            scale = _align_reconstruction(config, scene)
-                
+            scale =  _align_reconstruction(config, scene, scene.scalealign.THRESHOLD, scene.scalealign.NUM_THRESHOLD)
             config.reconstructionscale = scale
+            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), 1.0, config_id, "reconstruction_depthfusion")
             load_reconstruction_result(filepath = filepath, 
                                         pointcloudscale = scale, 
                                         datasrc = datasrc,
@@ -184,7 +192,8 @@ class ImportReconResult(Operator):
                                         IMPORT_RATIO = scene.loadreconparas.Import_ratio,
                                         CAMPOSE_INVERSE = config.inverse_pose
                                         )
-            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), 1.0, config_id, "reconstruction_depthfusion")
+            
+
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -212,6 +221,9 @@ class ImportReconResult(Operator):
             )   
             return {'FINISHED'}
         else:
+            camera_rgb_file = os.path.join(config.reconstructionsrc, "campose.txt")  
+            camera_lines = _parse_camfile(camera_rgb_file)
+            self.total_cam_num = len(camera_lines)
             return context.window_manager.invoke_props_dialog(self, width = 400)
 
     def draw(self, context):
@@ -237,12 +249,18 @@ class ImportReconResult(Operator):
         else:
             row = box.row()
             row.prop(config, "depth_scale")
+            row = layout.row()
+            row.prop(scene.scalealign, "THRESHOLD")
+            row = layout.row()
+            row.prop(scene.scalealign, "NUM_THRESHOLD") 
         row = layout.row()
         row.prop(config, "cameradisplayscale")
         row = layout.row()
         row.prop(config, "inverse_pose")  
         row = layout.row()
-        row.prop(scene.loadreconparas, "Import_ratio")     
+        row.prop(scene.loadreconparas, "Import_ratio")  
+        row = layout.row()
+        row.label(text="You would load around {0} cameras".format(int(self.total_cam_num*scene.loadreconparas.Import_ratio)))
             
 class LoadRecon(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.

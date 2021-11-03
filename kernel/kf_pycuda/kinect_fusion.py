@@ -66,16 +66,15 @@ class KinectFusion:
     #     self.cam_poses.append(cam_pose)
     
     def initialize_tsdf_volume(self, color_im, depth_im, pose=None, visualize=False):
-        if pose is None:
+        if pose is not None:
             pcd = utils.create_pcd(depth_im, self.cfg['cam_intr'], color_im, depth_trunc = self.cfg['tsdf_trunc_margin']*10000)
             
             transformed_pcd = copy.deepcopy(pcd).transform(pose)
             transformed_pts = np.asarray(transformed_pcd.points)
-
+            
             vol_bnds = np.zeros((3, 2), dtype=np.float32)
-            vol_bnds[:, 0] = transformed_pts.min(0)
-            vol_bnds[:, 1] = transformed_pts.max(0)
-
+            vol_bnds[:, 0] = np.mean(transformed_pts, axis = 0) - np.abs(transformed_pts - np.mean(transformed_pts, axis = 0)).max(0)*1.2
+            vol_bnds[:, 1] = np.mean(transformed_pts, axis = 0) + np.abs(transformed_pts - np.mean(transformed_pts, axis = 0)).max(0)*1.2
             self.init_transformation = la.inv(pose).copy()
             self.transformation = la.inv(pose).copy()
             self.tsdf_volume = TSDFVolume(vol_bnds=vol_bnds,
@@ -193,7 +192,7 @@ class KinectFusion:
     
     
     def update(self, color_im, depth_im, pose = None):
-        if pose is None:
+        if pose is not None:
             ## update with pose
             if self.tsdf_volume is None:
                 self.initialize_tsdf_volume(color_im, depth_im, pose, visualize=False)

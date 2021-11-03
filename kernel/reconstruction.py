@@ -38,7 +38,7 @@ def KinectfusionRecon(
 
 def poseFusion(
     param_path,
-    tsdf_voxel_size, tsdf_trunc_margin, pcd_voxel_size, depth_ignore,
+    tsdf_voxel_size, tsdf_trunc_margin, pcd_voxel_size, depth_ignore, MAXFRAME = 200
     ):
     def parsecamfile(param):
         param.camposes = {}
@@ -73,7 +73,17 @@ def poseFusion(
                         tsdf_voxel_size = tsdf_voxel_size, tsdf_trunc_margin = tsdf_trunc_margin, pcd_voxel_size = pcd_voxel_size)
     depth_ignore = depth_ignore
     kf = KinectFusion(cfg=config)
-    for frame in tqdm(param.camposes):
+    frame_keys = list(param.camposes.keys())
+    ratio = len(frame_keys)/MAXFRAME
+    
+    # for frame in tqdm(param.camposes):
+    #     rgb = np.array(Image.open(os.path.join(rgb_path, frame)))
+    #     depth = np.array(Image.open(os.path.join(depth_path, frame))).astype(np.float32) * param.data['depth_scale']
+
+    #     depth[depth > depth_ignore] = 0
+    #     kf.update(rgb, depth, param.camposes[frame])
+    for frame_id in tqdm(range(min(len(param.camposes), MAXFRAME))):
+        frame = frame_keys[int(frame_id)] if ratio <= 1 else frame_keys[int(frame_id * ratio)]
         rgb = np.array(Image.open(os.path.join(rgb_path, frame)))
         depth = np.array(Image.open(os.path.join(depth_path, frame))).astype(np.float32) * param.data['depth_scale']
 

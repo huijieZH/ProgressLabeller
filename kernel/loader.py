@@ -89,6 +89,7 @@ def load_model_from_pose(filepath, config_id):
             if objname in model_dir:
                 objworkspacename = workspace_name + ":" + objname
                 if objworkspacename in bpy.data.objects:
+                    print("hi")
                     bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
                     bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
                 else:

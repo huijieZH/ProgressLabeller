@@ -193,10 +193,9 @@ class offlineRender:
         scene_gt = {}
         scene_gt_info = {}
         for idx, cam_name in tqdm(enumerate(self.camposes)):
-            inputrgb = Image.open(os.path.join(self.datasrc, "rgb", cam_name))
+            os.system('cp ' + os.path.join(self.datasrc, "rgb", cam_name) + ' ' + os.path.join(self.outputpath, "rgb", "{0:06d}.png".format(idx)))
+            os.system('cp ' + os.path.join(self.datasrc, "depth", cam_name) + ' ' + os.path.join(self.outputpath, "depth", "{0:06d}.png".format(idx)))
             inputdepth = Image.open(os.path.join(self.datasrc, "depth", cam_name))
-            inputrgb.save(os.path.join(self.outputpath, "rgb", "{0:06d}.png".format(idx)))
-            inputdepth.save(os.path.join(self.outputpath, "depth", "{0:06d}.png".format(idx)))
             ### 
             scene_camera[idx] = {
                 "cam_K": self.intrinsic.flatten().tolist(),
@@ -222,13 +221,6 @@ class offlineRender:
 
             for node in self.objectmap:
                 node.mesh.is_visible = False
-                modelT = self.objectmap[node]["trans"]
-                model_camT = np.linalg.inv(self.camposes[cam_name]).dot(modelT)
-                scene_gt[idx].append({
-                    "cam_R_m2c": (model_camT[:3, :3]).flatten().tolist(),
-                    "cam_t_m2c":(model_camT[:3, 3]).flatten().tolist(),
-                    "obj_id": self.objectmap[node]['index']
-                })
             
             for obj_idx, node in enumerate(self.objectmap):
                 node.mesh.is_visible = True
@@ -242,23 +234,30 @@ class offlineRender:
                 depth_pillow.save(os.path.join(self.outputpath, "mask", "{0:06d}_{1:06d}.png".format(idx ,obj_idx)))
                 mask_pillow = Image.fromarray(mask_visiable_trim)
                 mask_pillow.save(os.path.join(self.outputpath, "mask_visib", "{0:06d}_{1:06d}.png".format(idx ,obj_idx)))
-                self._getbbx(mask_trim)
-                pass
+                node.mesh.is_visible = False
+                if not self._getbbx(mask_trim)[0]:
+                    continue
                 scene_gt_info[idx].append({
-                    "bbox_obj": self._getbbx(mask_trim), 
-                    "bbox_visib": self._getbbx(mask_visiable_trim),
+                    "bbox_obj": self._getbbx(mask_trim)[1], 
+                    "bbox_visib": self._getbbx(mask_visiable_trim)[1],
                     "px_count_all": int(np.sum(depth > 0)),
                     "px_count_valid": int(np.sum(np.array(inputdepth)[mask_trim] != 0)),
                     "px_count_visib": int(np.sum(mask_visiable_trim)),
                     "visib_fract": float(np.sum(mask_visiable_trim)/np.sum(depth > 0)),
                 })
-                node.mesh.is_visible = False
-            with open(os.path.join(self.outputpath, 'scene_camera.json'), 'w', encoding='utf-8') as f:
-                json.dump(scene_camera, f, ensure_ascii=False, indent=1)
-            with open(os.path.join(self.outputpath, 'scene_gt.json'), 'w', encoding='utf-8') as f:
-                json.dump(scene_gt, f, ensure_ascii=False, indent=1)
-            with open(os.path.join(self.outputpath, 'scene_gt_info.json'), 'w', encoding='utf-8') as f:
-                json.dump(scene_gt_info, f, ensure_ascii=False, indent=1)
+                modelT = self.objectmap[node]["trans"]
+                model_camT = np.linalg.inv(self.camposes[cam_name]).dot(modelT)
+                scene_gt[idx].append({
+                    "cam_R_m2c": (model_camT[:3, :3]).flatten().tolist(),
+                    "cam_t_m2c":(model_camT[:3, 3]).flatten().tolist(),
+                    "obj_id": self.objectmap[node]['index']
+                })
+        with open(os.path.join(self.outputpath, 'scene_camera.json'), 'w', encoding='utf-8') as f:
+            json.dump(scene_camera, f, ensure_ascii=False, indent=1)
+        with open(os.path.join(self.outputpath, 'scene_gt.json'), 'w', encoding='utf-8') as f:
+            json.dump(scene_gt, f, ensure_ascii=False, indent=1)
+        with open(os.path.join(self.outputpath, 'scene_gt_info.json'), 'w', encoding='utf-8') as f:
+            json.dump(scene_gt_info, f, ensure_ascii=False, indent=1)
 
     def _prepare_scene_BOP(self):
         self.objectmap = {}
@@ -281,10 +280,12 @@ class offlineRender:
     
     def _getbbx(self, mask):
         pixel_list = np.where(mask)
-        top = pixel_list[0].min()
-        bottom = pixel_list[0].max()
-        left = pixel_list[1].min()
-        right = pixel_list[1].max()
-        return [int(left), int(top), int(right - left), int(bottom - top)]
-
+        if np.any(pixel_list):
+            top = pixel_list[0].min()
+            bottom = pixel_list[0].max()
+            left = pixel_list[1].min()
+            right = pixel_list[1].max()
+            return True, [int(left), int(top), int(right - left), int(bottom - top)]
+        else:
+            return False, []
     

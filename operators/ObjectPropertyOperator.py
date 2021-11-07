@@ -167,7 +167,7 @@ class ImportReconResult(Operator):
         # config.cameradisplayscale = scene.loadreconparas.camera_display_scale
 
         if not scene.loadreconparas.AUTOALIGN:
-            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), 1.0, config_id, "reconstruction_depthfusion")
+            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), scene.loadreconparas.pointcloud_scale, config_id, "reconstruction_depthfusion")
             load_reconstruction_result(filepath = filepath, 
                                         pointcloudscale = scene.loadreconparas.pointcloud_scale, 
                                         datasrc = datasrc,
@@ -183,7 +183,7 @@ class ImportReconResult(Operator):
 
             scale =  _align_reconstruction(config, scene, scene.scalealign.THRESHOLD, scene.scalealign.NUM_THRESHOLD)
             config.reconstructionscale = scale
-            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), 1.0, config_id, "reconstruction_depthfusion")
+            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), scale, config_id, "reconstruction_depthfusion")
             load_reconstruction_result(filepath = filepath, 
                                         pointcloudscale = scale, 
                                         datasrc = datasrc,

@@ -7,10 +7,11 @@ import pyrender
 from kernel.geometry import _pose2Rotation
 from PIL import Image
 from tqdm import tqdm
+from scipy.io import savemat
 
 class offlineRender:
     def __init__(self, param, outputdir, interpolation_type, pkg_type = "BOP") -> None:
-        assert(pkg_type in ["ProgressLabeler", "BOP"])
+        assert(pkg_type in ["ProgressLabeler", "BOP", "YCBV"])
         print("Start offline rendering")
         self.param = param
         self.interpolation_type = interpolation_type
@@ -26,9 +27,9 @@ class offlineRender:
         # self._applytrans2cam()
         if pkg_type == "ProgressLabeler":
             self._createallpkgs()
-            self.renderAll()
             self._prepare_scene()
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
+            self.renderAll()
         elif pkg_type == "BOP":
             self.object_label = { # according to 21 objects in ycbv
             "002_master_chef_can" : 1,
@@ -45,6 +46,23 @@ class offlineRender:
             self._prepare_scene_BOP()
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0] + 640, self.param.camera["resolution"][1] + 240)
             self.renderBOP()
+        elif pkg_type == "YCBV":
+            self.object_label = { # according to 21 objects in ycbv
+            "002_master_chef_can" : 1,
+            "003_cracker_box" : 2,
+            "004_sugar_box" : 3,
+            "005_tomato_soup_can" : 4,
+            "006_mustard_bottle" : 5,
+            "007_tuna_fish_can" : 6,
+            "009_gelatin_box" : 8,
+            "010_potted_meat_can" : 9,
+            "025_mug" : 14,
+            "040_large_marker" : 18
+            }
+            self._prepare_scene()
+            self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
+            self.renderYCBV()
+
     
     def data_export(self, target_dir):
         if not os.path.exists(target_dir):
@@ -291,3 +309,82 @@ class offlineRender:
         else:
             return False, []
     
+    def renderYCBV(self):
+        self._createpkg(self.outputpath)
+        for idx, cam_name in tqdm(enumerate(self.camposes)):
+            os.system('cp ' + os.path.join(self.datasrc, "rgb", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-color.png".format(idx)))
+            os.system('cp ' + os.path.join(self.datasrc, "depth", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-depth.png".format(idx)))
+            ## render
+            Axis_align = np.array([[1, 0, 0, 0],
+                               [0, -1, 0, 0],
+                               [0, 0, -1, 0],
+                               [0, 0, 0, 1],]
+            )
+            camT = self.camposes[cam_name].dot(Axis_align)
+            self.scene.set_pose(self.nc, pose=camT)
+            flags = pyrender.constants.RenderFlags.DEPTH_ONLY
+
+            segimg = np.zeros((self.param.camera["resolution"][1], self.param.camera["resolution"][0]), dtype=np.uint8)
+            vertmap = np.zeros((self.param.camera["resolution"][1], self.param.camera["resolution"][0]), dtype=np.float32)
+            for node in self.objectmap:
+                node.mesh.is_visible = True
+            full_depth = self.render.render(self.scene, flags = flags)
+
+            for node in self.objectmap:
+                node.mesh.is_visible = False
+            
+            ## create -label.txt
+            txtfile = open(os.path.join(self.outputpath, "{0:06d}-box.txt".format(idx)),"w+")
+            ## create -meta.mat
+            mat = {}
+            mat['cls_indexes'] = np.empty((0, 1), dtype = np.uint8)
+            mat['center'] = np.empty((0, 2))
+            mat['factor_depth'] = np.array([[np.around(1/self.param.data['depth_scale'])]], dtype = np.uint16)
+            mat['intrinsic_matrix'] = self.intrinsic
+            mat['poses'] = np.empty((3, 4, 0))
+            mat['rotation_translation_matrix'] = self.camposes[cam_name][:3, :]
+            for obj_idx, node in enumerate(self.objectmap):
+                node.mesh.is_visible = True
+                depth = self.render.render(self.scene, flags = flags)
+                mask = np.logical_and(
+                    (np.abs(depth - full_depth) < 1e-6), np.abs(full_depth) > 0
+                )
+                mask_visiable = (mask * 255).astype('uint8')
+                segimg[mask] = self.object_label[self.objectmap[node]["name"]]
+                node.mesh.is_visible = False
+                if not self._getbbxycb(mask_visiable)[0]:
+                    continue
+                else:
+                    bbx = self._getbbxycb(mask_visiable)[1]
+                    txtfile.write(self.objectmap[node]["name"] + f' {bbx[0]} {bbx[1]} {bbx[2]} {bbx[3]}\n')
+                    mat['cls_indexes'] = np.vstack((mat['cls_indexes'], np.array([[self.object_label[self.objectmap[node]["name"]]]], dtype = np.uint8)))
+                    
+                    modelT = self.objectmap[node]["trans"]
+                    model_camT = np.linalg.inv(self.camposes[cam_name]).dot(modelT)
+                    center_homo = self.intrinsic @ model_camT[:3, 3]
+                    center = center_homo[:2]/center_homo[2]
+                    mat['center'] = np.vstack((mat['center'], center))
+                    mat['poses'] = np.concatenate((mat['poses'], model_camT[:3, :, np.newaxis]), axis = 2)
+                    pass
+
+            txtfile.close()
+            savemat(os.path.join(self.outputpath, "{0:06d}-meta.mat".format(idx)), mat)
+            segimg_pillow = Image.fromarray(segimg)
+            segimg_pillow.save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
+            if idx == 1: # TODO: remove later, rerun entire scene
+                break
+
+    def _getbbxycb(self, mask):
+        pixel_list = np.where(mask)
+        if np.any(pixel_list):
+            top = pixel_list[0].min()
+            bottom = pixel_list[0].max()
+            left = pixel_list[1].min()
+            right = pixel_list[1].max()
+            return True, [int(left), int(top), int(right), int(bottom)]
+        else:
+            return False, []
+    
+    def _getvertmap(self):
+        ##TODO
+        pass

@@ -49,8 +49,8 @@ def _get_reconstruction_insameworkspace(obj):
     # print("_get_reconstruction_insameworkspace")
     if _is_progresslabeller_object(obj):
         workspaceName = _get_workspace_name(obj)
-        if _is_in_blender(workspaceName + ":reconstructiondepthfusion"):
-            return bpy.data.objects[workspaceName + ":reconstructiondepthfusion"]
+        if _is_in_blender(workspaceName + ":reconstruction_depthfusion"):
+            return bpy.data.objects[workspaceName + ":reconstruction_depthfusion"]
         elif _is_in_blender(workspaceName + ":reconstruction"):
             return bpy.data.objects[workspaceName + ":reconstruction"]
         else:
@@ -104,6 +104,16 @@ def _clear_allrgbdcam_insameworkspace(config):
         if im.name.split(":")[0] == workspace_name:
             bpy.data.images.remove(im)
 
+def clear_initial_object():
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in ["Camera", "Cube", "Light"]:
+        if obj in bpy.data.objects:
+            bpy.data.objects[obj].select_set(True)
+    bpy.ops.object.delete()
+
+    if "Collection" in bpy.data.collections:
+        collection = bpy.data.collections.get("Collection")
+        bpy.data.collections.remove(collection)
 def _clear_recon_output(recon_dir):
     not_delete_file = ["label_pose.yaml", "image-list.txt"] 
     files = os.listdir(recon_dir)

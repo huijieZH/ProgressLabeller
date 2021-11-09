@@ -5,8 +5,10 @@ from file.fileExporter import configuration_export, objectposes_export, data_exp
 from registeration import init_configuration
 from panel import ObjectPropertyPanel, FloatScreenPanel
 from operators import ObjectPropertyOperator, ReconstructionOperator
+from kernel.blender_utility import clear_initial_object
 
 def register():
+    clear_initial_object()
     init_configuration.register()
     configuration_loader.register()
     model_loader.register()

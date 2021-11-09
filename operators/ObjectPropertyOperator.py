@@ -323,6 +323,7 @@ class ModelICP(Operator):
             return {'FINISHED'}
         else:
             recon = _get_reconstruction_insameworkspace(obj)
+            print(recon.name)
             recon_vertices = np.array(recon["particle_coords"])
             rot = np.array(recon.matrix_world)
             recon_vertices_rotated = (rot[:3, :3].dot(recon_vertices.T) + rot[:3, [3]]).T

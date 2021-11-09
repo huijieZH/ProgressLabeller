@@ -30,17 +30,17 @@ class offlineRender:
             self._prepare_scene()
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
         elif pkg_type == "BOP":
-            self.object_label = {
+            self.object_label = { # according to 21 objects in ycbv
             "002_master_chef_can" : 1,
             "003_cracker_box" : 2,
             "004_sugar_box" : 3,
             "005_tomato_soup_can" : 4,
             "006_mustard_bottle" : 5,
             "007_tuna_fish_can" : 6,
-            "009_gelatin_box" : 7,
-            "010_potted_meat_can" : 8,
-            "025_mug" : 9,
-            "040_large_marker" : 10
+            "009_gelatin_box" : 8,
+            "010_potted_meat_can" : 9,
+            "025_mug" : 14,
+            "040_large_marker" : 18
             }
             self._prepare_scene_BOP()
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0] + 640, self.param.camera["resolution"][1] + 240)
@@ -228,8 +228,8 @@ class offlineRender:
                 mask = np.logical_and(
                     (np.abs(depth - full_depth) < 1e-6), np.abs(full_depth) > 0
                 )
-                mask_trim = (np.abs(depth) > 0)[120:600, 320:960]
-                mask_visiable_trim = mask[120:600, 320:960]
+                mask_trim = ((np.abs(depth) > 0)[120:600, 320:960] * 255).astype('uint8')
+                mask_visiable_trim = (mask[120:600, 320:960] * 255).astype('uint8')
                 depth_pillow = Image.fromarray(mask_trim)
                 depth_pillow.save(os.path.join(self.outputpath, "mask", "{0:06d}_{1:06d}.png".format(idx ,obj_idx)))
                 mask_pillow = Image.fromarray(mask_visiable_trim)
@@ -246,12 +246,14 @@ class offlineRender:
                     "visib_fract": float(np.sum(mask_visiable_trim)/np.sum(depth > 0)),
                 })
                 modelT = self.objectmap[node]["trans"]
-                model_camT = np.linalg.inv(self.camposes[cam_name]).dot(modelT)
+                model_camT = np.linalg.inv(modelT).dot(self.camposes[cam_name])
                 scene_gt[idx].append({
                     "cam_R_m2c": (model_camT[:3, :3]).flatten().tolist(),
                     "cam_t_m2c":(model_camT[:3, 3]).flatten().tolist(),
                     "obj_id": self.objectmap[node]['index']
                 })
+            if idx == 1: # TODO: remove later, rerun entire scene
+                break
         with open(os.path.join(self.outputpath, 'scene_camera.json'), 'w', encoding='utf-8') as f:
             json.dump(scene_camera, f, ensure_ascii=False, indent=1)
         with open(os.path.join(self.outputpath, 'scene_gt.json'), 'w', encoding='utf-8') as f:

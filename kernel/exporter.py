@@ -9,6 +9,7 @@ import trimesh
 import pyrender
 import multiprocessing
 import subprocess
+import sys
 
 from registeration.init_configuration import config_json_dict, encode_dict
 from kernel.logging_utility import log_report
@@ -34,7 +35,7 @@ def objectposes_export(name, path):
 def data_export(config_path, target_dir):
     source = os.path.dirname(os.path.dirname(__file__))
     code_path = os.path.join(source, "offline", "main.py")
-    subprocess.call("eval \"$(command conda 'shell.bash' 'hook' 2> /dev/null)\"; conda activate progresslabeler; python {0} {1} {2}".format(code_path, config_path, target_dir), shell=True)
+    subprocess.call("{} {} {} {}".format(sys.executable, code_path, config_path, target_dir), shell=True)
 
 # def data_export(config, target_dir):
 #     if not os.path.exists(target_dir):

@@ -5,6 +5,7 @@ from bpy.types import Operator
 import os
 import multiprocessing
 import subprocess
+import sys
 
 from kernel.exporter import configuration_export
 
@@ -124,8 +125,7 @@ class Reconstruction(Operator):
                                       scene.orbslamparas.timestampfrenquency)
                 source = os.path.dirname(os.path.dirname(__file__))
                 code_path = os.path.join(source, "kernel", "orb_slam", "orb_slam.py")
-                os.system(os.path.join(os.environ["PROGRESSLABELER_BLENDER_PATH"], "2.92", "python", "bin", "python3.7m")\
-                     + " {0} {1} {2} {3} {4} {5} {6}".format(code_path, 
+                os.system(sys.executable + " {0} {1} {2} {3} {4} {5} {6}".format(code_path, 
                     scene.orbslamparas.orb_vocabularysrc, 
                     os.path.join(config.reconstructionsrc,"orb_slam.yaml"),
                     config.datasrc,

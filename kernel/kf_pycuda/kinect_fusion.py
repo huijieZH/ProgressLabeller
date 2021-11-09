@@ -93,8 +93,8 @@ class KinectFusion:
             transformed_pts = np.asarray(transformed_pcd.points)
 
             vol_bnds = np.zeros((3, 2), dtype=np.float32)
-            vol_bnds[:, 0] = transformed_pts.min(0)
-            vol_bnds[:, 1] = transformed_pts.max(0)
+            vol_bnds[:, 0] = np.mean(transformed_pts, axis = 0) - np.abs(transformed_pts - np.mean(transformed_pts, axis = 0)).max(0)*1.2
+            vol_bnds[:, 1] = np.mean(transformed_pts, axis = 0) + np.abs(transformed_pts - np.mean(transformed_pts, axis = 0)).max(0)*1.2
             # print(vol_bnds)
             # vol_bnds[2] = [-0.01, 0.25]
 

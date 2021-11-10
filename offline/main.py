@@ -15,4 +15,4 @@ if __name__ == "__main__":
     #["KF_forward_m2f", "KF_forward_f2f", "all"]
     interpolation_type = "all"
     offlineRecon(param, interpolation_type)
-    offlineRender(param, output_dir, interpolation_type, pkg_type="YCBV")
+    offlineRender(param, output_dir, interpolation_type, pkg_type="BOP")

@@ -246,11 +246,11 @@ class offlineRender:
                 mask = np.logical_and(
                     (np.abs(depth - full_depth) < 1e-6), np.abs(full_depth) > 0
                 )
-                mask_trim = ((np.abs(depth) > 0)[120:600, 320:960] * 255).astype('uint8')
-                mask_visiable_trim = (mask[120:600, 320:960] * 255).astype('uint8')
-                depth_pillow = Image.fromarray(mask_trim)
+                mask_trim = (np.abs(depth) > 0)[120:600, 320:960]
+                mask_visiable_trim = mask[120:600, 320:960] 
+                depth_pillow = Image.fromarray((mask_trim * 255).astype('uint8'))
                 depth_pillow.save(os.path.join(self.outputpath, "mask", "{0:06d}_{1:06d}.png".format(idx ,obj_idx)))
-                mask_pillow = Image.fromarray(mask_visiable_trim)
+                mask_pillow = Image.fromarray((mask_visiable_trim * 255).astype('uint8'))
                 mask_pillow.save(os.path.join(self.outputpath, "mask_visib", "{0:06d}_{1:06d}.png".format(idx ,obj_idx)))
                 node.mesh.is_visible = False
                 if not self._getbbx(mask_trim)[0]:
@@ -270,8 +270,8 @@ class offlineRender:
                     "cam_t_m2c":(model_camT[:3, 3]).flatten().tolist(),
                     "obj_id": self.objectmap[node]['index']
                 })
-            if idx == 1: # TODO: remove later, rerun entire scene
-                break
+            # if idx == 1: # TODO: remove later, rerun entire scene
+            #     break
         with open(os.path.join(self.outputpath, 'scene_camera.json'), 'w', encoding='utf-8') as f:
             json.dump(scene_camera, f, ensure_ascii=False, indent=1)
         with open(os.path.join(self.outputpath, 'scene_gt.json'), 'w', encoding='utf-8') as f:
@@ -371,7 +371,7 @@ class offlineRender:
             savemat(os.path.join(self.outputpath, "{0:06d}-meta.mat".format(idx)), mat)
             segimg_pillow = Image.fromarray(segimg)
             segimg_pillow.save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
-            if idx == 1: # TODO: remove later, rerun entire scene
+            if idx == 100: # TODO: remove later, rerun entire scene
                 break
 
     def _getbbxycb(self, mask):

@@ -148,7 +148,7 @@ class Reconstruction(Operator):
                                            )
         
         ### whatever pose reconstruction method, estimate an volume
-        if self.ReconstructionType != "KinectFusion":
+        if self.ReconstructionType == "ORB_SLAM2":
             dir = os.path.dirname(config.reconstructionsrc)
             configuration_export(config, os.path.join(dir, "configuration.json"))
             poseFusion(

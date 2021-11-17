@@ -26,8 +26,8 @@ class offlineRender:
         self._parsecamfile()
         # self._applytrans2cam()
         if pkg_type == "ProgressLabeler":
-            self._createallpkgs()
             self._prepare_scene()
+            self._createallpkgs()
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
             self.renderAll()
         elif pkg_type == "BOP":
@@ -182,7 +182,7 @@ class offlineRender:
                 rgbpath = os.path.join(self.outputpath, self.objectmap[node]["name"], "rgb")
                 modelT = self.objectmap[node]["trans"]
                 # model_camT = np.linalg.inv(camT.dot(Axis_align)).dot(modelT)
-                model_camT = np.linalg.inv(camT).dot(modelT)
+                model_camT = np.linalg.inv(self.camposes[cam]).dot(modelT)
                 self._createpose(posepath, perfix, model_camT)
                 self._createrbg(inputrgb, segment, os.path.join(rgbpath, cam), self.objectmap[node]["index"] + 1)
 
@@ -371,8 +371,8 @@ class offlineRender:
             savemat(os.path.join(self.outputpath, "{0:06d}-meta.mat".format(idx)), mat)
             segimg_pillow = Image.fromarray(segimg)
             segimg_pillow.save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
-            if idx == 100: # TODO: remove later, rerun entire scene
-                break
+            # if idx == 100: # TODO: remove later, rerun entire scene
+            #     break
 
     def _getbbxycb(self, mask):
         pixel_list = np.where(mask)

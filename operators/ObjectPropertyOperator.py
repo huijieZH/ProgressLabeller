@@ -21,7 +21,7 @@ from kernel.blender_utility import \
 from registeration.init_configuration import config
 from kernel.utility import _trans2transstring,  _parse_camfile, _select_sample_files
 from kernel.blender_utility import _is_progresslabeller_object, _initreconpose, _get_obj_insameworkspace
-
+import registeration.register 
 
 class PlaneAlignment(Operator):
     """Using RANSAC to detect the plane and align it"""
@@ -409,10 +409,37 @@ class CurrentDepthOperator(bpy.types.Operator):
         #             return {'RUNNING_MODAL'}
         self.current_depth = 0
         context.window_manager.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
+        return {'FINISHED'}
+
+class Current3DArea(bpy.types.Operator):
+    """Move an object with the mouse, example"""
+    bl_idname = "object_property.current3darea"
+    bl_label = "Lock the view"
+
+
+    def modal(self, context, event):
+        if _is_progresslabeller_object(context.object) and context.object["type"] == "camera" and event.type == 'L':
+            for area in bpy.context.screen.areas:
+                if area.type == 'VIEW_3D':
+                    area_bottom = area.y
+                    area_left = area.x
+                    area_top= area.y + area.height
+                    area_right = area.x + area.width  
+                    if event.mouse_x >= area_left and event.mouse_x < area_right\
+                        and event.mouse_y >= area_bottom and event.mouse_y < area_top:
+                        # print(area_top, area_bottom, area_left, area_right)
+                        registeration.register.area_image_pair[area] = context.object
+                        return {'FINISHED'}
+            print("please select a scene.")
+            return {'RUNNING_MODAL'}
+        else:
+            return {'RUNNING_MODAL'}
+    
+    def invoke(self, context, event):
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}   
         
             
-
 
 def register():
     # bpy.utils.register_class(ViewImage)
@@ -431,6 +458,7 @@ def register():
     bpy.utils.register_class(RemoveWorkspace)
 
     bpy.utils.register_class(CurrentDepthOperator)
+    bpy.utils.register_class(Current3DArea)
     # bpy.ops.object_property.current_depth_operator('INVOKE_DEFAULT')
 
 def unregister():
@@ -447,3 +475,4 @@ def unregister():
     bpy.utils.unregister_class(WorkspaceRename)
     bpy.utils.unregister_class(RemoveWorkspace)
     bpy.utils.unregister_class(CurrentDepthOperator)
+    bpy.utils.register_class(Current3DArea)

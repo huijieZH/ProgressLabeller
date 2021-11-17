@@ -96,6 +96,7 @@ def draw():
                 show_frame["UPDATEALPHA"] = False
 
 
+
 class FloatScreenProperty(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.
     viewimage_mode: EnumProperty(

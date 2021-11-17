@@ -30,6 +30,7 @@ class offlineRecon:
         keyframe = sorted(self.keyposes.keys())
         index_whole = 0
         index_key = 0
+        key_pair = None
         while(index_whole < len(imagefiles)):
             current_image_name = imagefiles[index_whole]
             if (current_image_name in keyframe) and (index_key + 1 < len(keyframe)):
@@ -38,8 +39,10 @@ class offlineRecon:
                 index_key += 1
             elif (current_image_name in keyframe) and (index_key + 1 >= len(keyframe)):
                 pass
-            else:
+            elif (current_image_name not in keyframe) and key_pair is not None:
                 self.wholemap[key_pair].append(current_image_name)
+            else:
+                pass
             index_whole += 1
         for img in imagefiles:
             self.wholecam[img] = np.empty((0, 0))

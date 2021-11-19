@@ -9,7 +9,6 @@ from operators import ObjectPropertyOperator, ReconstructionOperator
 from kernel.blender_utility import clear_initial_object
 
 area_image_pair = {
-
 }
 
 # def get_area_image_dict():

@@ -416,7 +416,6 @@ class Current3DArea(bpy.types.Operator):
     bl_idname = "object_property.current3darea"
     bl_label = "Lock the view"
 
-
     def modal(self, context, event):
         if _is_progresslabeller_object(context.object) and context.object["type"] == "camera" and event.type == 'L':
             for area in bpy.context.screen.areas:
@@ -429,6 +428,9 @@ class Current3DArea(bpy.types.Operator):
                         and event.mouse_y >= area_bottom and event.mouse_y < area_top:
                         # print(area_top, area_bottom, area_left, area_right)
                         registeration.register.area_image_pair[area] = context.object
+                        for area in bpy.context.screen.areas:
+                            if area.type == 'VIEW_3D':
+                                print(area in registeration.register.area_image_pair)
                         return {'FINISHED'}
             print("please select a scene.")
             return {'RUNNING_MODAL'}

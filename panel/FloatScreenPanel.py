@@ -6,6 +6,7 @@ from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.props import StringProperty, EnumProperty, FloatProperty, BoolProperty
 from bpy.types import Operator
 from kernel.geometry import depthfilter
+import registeration.register 
 
 def draw():
     context = bpy.context
@@ -94,6 +95,48 @@ def draw():
                                     res_X, 
                                     res_Y)
                 show_frame["UPDATEALPHA"] = False
+
+
+def draw_multi():
+    context = bpy.context
+    scene = context.scene
+    obj = context.object
+    if obj and "type" in obj and obj['type'] == "camera":
+        name = obj.name.split(":")[0]
+        config_id =  bpy.data.objects[name + ":Setting"]['config_id']
+        config = scene.configuration[config_id]
+        area_show_frame = {}
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                if area in registeration.register.area_image_pair and registeration.register.area_image_pair[area] is not None:
+                    area_show_frame[area] = registeration.register.area_image_pair[area]
+                else:
+                    area_show_frame[area] = obj
+                if scene.floatscreenproperty.viewimage_mode == "RGB Origin":
+                    show_frame = area_show_frame[area]["rgb"]
+                    if show_frame.bindcode == 0:
+                        show_frame.gl_load()
+                elif scene.floatscreenproperty.viewimage_mode == "Depth Origin":
+                    show_frame = area_show_frame[area]["depth"]
+                    if show_frame.bindcode == 0:
+                        show_frame.gl_load()
+
+                if show_frame:         
+                    if show_frame["UPDATEALPHA"] and scene.floatscreenproperty.UPDATE_DEPTHFILTER:
+                        alpha = depthfilter(obj["depth"]["depth"], config.depth_scale, config.depth_ignore, scene.floatscreenproperty.IGNORE_ZERODEPTH)
+                        pixels = list(show_frame.pixels) 
+                        for i in range(0, int(len(pixels)/4)):
+                            pixels[4 * i + 3] = float(alpha[i]) * 0.5
+                        show_frame.pixels[:] = pixels      
+                    area_show_frame[area].data.show_background_images = scene.floatscreenproperty.BACKGROUND
+                    area_show_frame[area].data.background_images[0].image = show_frame
+                    area_show_frame[area].data.background_images[0].alpha = scene.floatscreenproperty.background_alpha                                
+
+                    if scene.floatscreenproperty.TRACK:
+                        area
+
+                    show_frame["UPDATEALPHA"] = False
+
 
 
 
@@ -197,6 +240,7 @@ def register():
     global floatscreen_handler
     bpy.utils.register_class(FloatScreenProperty)
     bpy.types.Scene.floatscreenproperty = bpy.props.PointerProperty(type=FloatScreenProperty)
+    # floatscreen_handler = bpy.types.SpaceView3D.draw_handler_add(draw, (), 'WINDOW', 'POST_PIXEL')
     floatscreen_handler = bpy.types.SpaceView3D.draw_handler_add(draw, (), 'WINDOW', 'POST_PIXEL')
 
 def unregister():

@@ -467,7 +467,8 @@ class Unlockcurrent3DArea(bpy.types.Operator):
                 if event.mouse_x >= area_left and event.mouse_x < area_right\
                     and event.mouse_y >= area_bottom and event.mouse_y < area_top:
                     if area in registeration.register.area_image_pair:
-                        area.spaces[0].draw_handler_remove(registeration.register.area_image_pair[area]["handler"], 'WINDOW')
+                        # area.spaces[0].draw_handler_remove(registeration.register.area_image_pair[area]["handler"], 'WINDOW')
+                        bpy.types.SpaceView3D.draw_handler_remove(registeration.register.area_image_pair[area]["handler"], 'WINDOW')
                         registeration.register.area_image_pair.pop(area)
                         log_report(
                             "Info", "Unlock current 3D view area", None

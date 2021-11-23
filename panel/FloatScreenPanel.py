@@ -191,10 +191,10 @@ def draw_for_area(area, camera_obj):
         camera_obj.data.background_images[0].alpha = scene.floatscreenproperty.background_alpha                                
 
         if scene.floatscreenproperty.TRACK:
-            # area.spaces.active.region_3d.view_matrix = Matrix(np.linalg.inv(area_show_frame[area].matrix_world))
+            # area.spaces[0].region_3d.view_matrix = Matrix(np.linalg.inv(camera_obj.matrix_world))
             # area.spaces.active.region_3d.view_matrix = area_show_frame[area].matrix_world
-            area.spaces.active.region_3d.view_perspective = 'CAMERA'
-            area.spaces.active.camera = camera_obj
+            area.spaces[0].region_3d.view_perspective = 'CAMERA'
+            area.spaces[0].camera = camera_obj
         if scene.floatscreenproperty.TRACK and scene.floatscreenproperty.ALIGN:
             frame = camera_obj.data.view_frame(scene = bpy.context.scene)
             frame = [camera_obj.matrix_world @ corner for corner in frame]

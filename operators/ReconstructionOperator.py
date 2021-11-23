@@ -70,12 +70,12 @@ class Reconstruction(Operator):
             config.inverse_pose = False
             _initreconpose(config)
             load_reconstruction_result(filepath = config.reconstructionsrc, 
-                                pointcloudscale = 1.0, 
-                                datasrc = config.datasrc,
-                                config_id = config_id,
-                                camera_display_scale = config.cameradisplayscale,
-                                CAMPOSE_INVERSE= config.inverse_pose
-                                )
+                                        pointcloudscale = 1.0, 
+                                        datasrc = config.datasrc,
+                                        config_id = config_id,
+                                        camera_display_scale = config.cameradisplayscale,
+                                        CAMPOSE_INVERSE= config.inverse_pose
+                                        )
         elif self.ReconstructionType == "COLMAP":
             try: 
                 from kernel.colmap.build import colmap_extension

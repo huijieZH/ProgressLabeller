@@ -11,7 +11,7 @@ from scipy.io import savemat
 
 class offlineRender:
     def __init__(self, param, outputdir, interpolation_type, pkg_type = "BOP") -> None:
-        assert(pkg_type in ["ProgressLabeler", "BOP", "YCBV"])
+        assert(pkg_type in ["ProgressLabeller", "BOP", "YCBV"])
         print("Start offline rendering")
         self.param = param
         self.interpolation_type = interpolation_type
@@ -25,7 +25,7 @@ class offlineRender:
         
         self._parsecamfile()
         # self._applytrans2cam()
-        if pkg_type == "ProgressLabeler":
+        if pkg_type == "ProgressLabeller":
             self._prepare_scene()
             self._createallpkgs()
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])

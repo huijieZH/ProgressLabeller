@@ -1,7 +1,6 @@
 bl_info = {
-    "name": "Progress Labeller",
+    "name": "ProgressLabeller",
     "description": "Precisely segment object-wise image from sfm results",
-    "author": "Huijie Zhang, Zeren Yu",
     "location": "File/Import and File/Export",
     "version": (1, 0),
     "blender": (2, 92, 0),
@@ -32,5 +31,5 @@ def unregister():
     registeration.register.unregister()
 
 if __name__ == "__main__":
-    print(os.path.abspath(__file__))
+    # print(os.path.abspath(__file__))
     register()

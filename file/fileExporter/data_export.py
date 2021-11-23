@@ -8,7 +8,7 @@ from kernel.logging_utility import log_report
 # ImportHelper is a helper class, defines filename and
 # invoke() function which calls the file selector.
 from bpy_extras.io_utils import ExportHelper
-from bpy.props import StringProperty
+from bpy.props import StringProperty, EnumProperty
 from bpy.types import Operator
 from kernel.exporter import configuration_export, objectposes_export
 
@@ -24,6 +24,17 @@ class DataOutput(Operator, ExportHelper):
         default="/",
         options={'HIDDEN'},
         maxlen=255,  # Max internal buffer length, longer would be clamped.
+    )
+
+    dataformatType: EnumProperty(
+        name="Output format",
+        description="Choose a output format",
+        items=(
+            ('BOP', "BOP", "BOP challenge format"),
+            ('YCBV', "YCBV", "YCBV dataset format"),
+            ('ProgressLabeller', "ProgressLabeller", "ProgressLabeller format")
+        ),
+        default='ProgressLabeller',
     )
 
     def execute(self, context):
@@ -44,8 +55,11 @@ class DataOutput(Operator, ExportHelper):
             )
         else:
             configuration_export(config, "/tmp/progresslabeler.json")
-            objectposes_export(config.projectname, os.path.join(config.reconstructionsrc, "label_pose.yaml"))
-            data_export("/tmp/progresslabeler.json", self.filepath)
+            # objectposes_export(config.projectname, os.path.join(config.reconstructionsrc, "label_pose.yaml"))
+            log_report(
+                "Info", "Export data to" + self.filepath, None
+            )
+            data_export("/tmp/progresslabeler.json", self.filepath, self.dataformatType)
             os.remove("/tmp/progresslabeler.json")
         return {'FINISHED'}
 

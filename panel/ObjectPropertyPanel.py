@@ -57,7 +57,7 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 if scene.floatscreenproperty.TRACK:
                     row = box.row()
                     row.prop(scene.floatscreenproperty, "ALIGN")
-                    row.operator("object_property.current3darea")
+                    # row.operator("object_property.current3darea")
                     
                 row = box.row(align=True)
                 row.prop(scene.floatscreenproperty, "BACKGROUND")

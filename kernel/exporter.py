@@ -32,10 +32,10 @@ def objectposes_export(name, path):
         documents = yaml.dump(pose, file)
 
 
-def data_export(config_path, target_dir):
+def data_export(config_path, target_dir, data_format):
     source = os.path.dirname(os.path.dirname(__file__))
     code_path = os.path.join(source, "offline", "main.py")
-    subprocess.call("{} {} {} {}".format(sys.executable, code_path, config_path, target_dir), shell=True)
+    subprocess.call("{} {} {} {} {}".format(sys.executable, code_path, config_path, target_dir, data_format), shell=True)
 
 # def data_export(config, target_dir):
 #     if not os.path.exists(target_dir):

@@ -21,6 +21,7 @@ from kernel.blender_utility import \
 from registeration.init_configuration import config
 from kernel.utility import _trans2transstring,  _parse_camfile, _select_sample_files
 from kernel.blender_utility import _is_progresslabeller_object, _initreconpose, _get_obj_insameworkspace
+from panel.FloatScreenPanel import draw_for_area
 import registeration.register 
 
 class PlaneAlignment(Operator):
@@ -363,7 +364,7 @@ class CurrentDepthOperator(bpy.types.Operator):
             config_id, config = _get_configuration(context.object)
             for area in context.screen.areas:
                 if area.type == 'VIEW_3D':
-                    area.spaces[0].region_3d.view_perspective = 'CAMERA'
+                    area.spaces.active.region_3d.view_perspective = 'CAMERA'
                     bpy.context.scene.render.resolution_x = config.resX
                     bpy.context.scene.render.resolution_y = config.resY
                     bpy.context.scene.camera = context.object
@@ -411,36 +412,77 @@ class CurrentDepthOperator(bpy.types.Operator):
         context.window_manager.modal_handler_add(self)
         return {'FINISHED'}
 
-class Current3DArea(bpy.types.Operator):
+class Lockcurrent3DArea(bpy.types.Operator):
     """Move an object with the mouse, example"""
-    bl_idname = "object_property.current3darea"
-    bl_label = "Lock the view"
+    bl_idname = "object_property.lockcurrent3darea"
+    bl_label = "Lock the view (progresslabelelr)"
 
-    def modal(self, context, event):
-        if _is_progresslabeller_object(context.object) and context.object["type"] == "camera" and event.type == 'L':
-            for area in bpy.context.screen.areas:
-                if area.type == 'VIEW_3D':
-                    area_bottom = area.y
-                    area_left = area.x
-                    area_top= area.y + area.height
-                    area_right = area.x + area.width  
-                    if event.mouse_x >= area_left and event.mouse_x < area_right\
-                        and event.mouse_y >= area_bottom and event.mouse_y < area_top:
-                        # print(area_top, area_bottom, area_left, area_right)
-                        registeration.register.area_image_pair[area] = context.object
-                        for area in bpy.context.screen.areas:
-                            if area.type == 'VIEW_3D':
-                                print(area in registeration.register.area_image_pair)
-                        return {'FINISHED'}
-            print("please select a scene.")
-            return {'RUNNING_MODAL'}
-        else:
-            return {'RUNNING_MODAL'}
-    
-    def invoke(self, context, event):
+    def execute(self, context):
         context.window_manager.modal_handler_add(self)
-        return {'RUNNING_MODAL'}   
-        
+        return {'RUNNING_MODAL'}  
+    
+    def modal(self, context, event):
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area_bottom = area.y
+                area_left = area.x
+                area_top= area.y + area.height
+                area_right = area.x + area.width  
+                if event.mouse_x >= area_left and event.mouse_x < area_right\
+                    and event.mouse_y >= area_bottom and event.mouse_y < area_top:
+                    if context.object is not None and _is_progresslabeller_object(context.object) and context.object["type"] == "camera":
+                        floatscreen_handler = area.spaces[0].draw_handler_add(draw_for_area, (area, context.object), 'WINDOW', 'POST_PIXEL')
+                        registeration.register.area_image_pair[area] = {"camera" : context.object,
+                                                                        "handler" : floatscreen_handler}
+                        log_report(
+                            "Info", "Lock current 3D view area", None
+                        )
+                        return {'FINISHED'}
+                    else:
+                        log_report(
+                            "Info", "Doesn't Lock anything, please select a Progresslabeller camera object", None
+                        )
+                        return {'FINISHED'}
+        log_report(
+            "Info", "Doesn't Lock anything, please select a 3D view area", None
+        )
+        return {'FINISHED'}
+
+class Unlockcurrent3DArea(bpy.types.Operator):
+    """Move an object with the mouse, example"""
+    bl_idname = "object_property.unlockcurrent3darea"
+    bl_label = "Unlock the view (progresslabelelr)"
+
+    def execute(self, context):
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}  
+    
+    def modal(self, context, event):
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area_bottom = area.y
+                area_left = area.x
+                area_top= area.y + area.height
+                area_right = area.x + area.width  
+                if event.mouse_x >= area_left and event.mouse_x < area_right\
+                    and event.mouse_y >= area_bottom and event.mouse_y < area_top:
+                    if area in registeration.register.area_image_pair:
+                        area.spaces[0].draw_handler_remove(registeration.register.area_image_pair[area]["handler"], 'WINDOW')
+                        registeration.register.area_image_pair.pop(area)
+                        log_report(
+                            "Info", "Unlock current 3D view area", None
+                        )
+                        return {'FINISHED'}
+                    else:
+                        log_report(
+                            "Info", "Current 3D view area is not lock", None
+                        )
+                        return {'FINISHED'}                        
+        log_report(
+            "Info", "Doesn't Unlock anything, please select a 3D view area", None
+        )
+        return {'FINISHED'}
+
             
 
 def register():
@@ -460,8 +502,9 @@ def register():
     bpy.utils.register_class(RemoveWorkspace)
 
     bpy.utils.register_class(CurrentDepthOperator)
-    bpy.utils.register_class(Current3DArea)
-    # bpy.ops.object_property.current_depth_operator('INVOKE_DEFAULT')
+    bpy.utils.register_class(Lockcurrent3DArea)
+    bpy.utils.register_class(Unlockcurrent3DArea)
+    
 
 def unregister():
     # bpy.utils.unregister_class(ViewImage)
@@ -477,4 +520,5 @@ def unregister():
     bpy.utils.unregister_class(WorkspaceRename)
     bpy.utils.unregister_class(RemoveWorkspace)
     bpy.utils.unregister_class(CurrentDepthOperator)
-    bpy.utils.register_class(Current3DArea)
+    bpy.utils.unregister_class(Lockcurrent3DArea)
+    bpy.utils.unregister_class(Unlockcurrent3DArea)

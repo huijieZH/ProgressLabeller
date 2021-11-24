@@ -431,6 +431,8 @@ class Lockcurrent3DArea(bpy.types.Operator):
                 if event.mouse_x >= area_left and event.mouse_x < area_right\
                     and event.mouse_y >= area_bottom and event.mouse_y < area_top:
                     if context.object is not None and _is_progresslabeller_object(context.object) and context.object["type"] == "camera":
+                        context.object["depth"]["UPDATEALPHA"] = True
+                        context.object["rgb"]["UPDATEALPHA"] = True
                         floatscreen_handler = area.spaces[0].draw_handler_add(draw_for_area, (area, context.object), 'WINDOW', 'POST_PIXEL')
                         registeration.register.area_image_pair[area] = {"camera" : context.object,
                                                                         "handler" : floatscreen_handler}

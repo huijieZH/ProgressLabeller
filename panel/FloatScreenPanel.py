@@ -59,112 +59,114 @@ def draw():
                 if scene.floatscreenproperty.TRACK:
                     for area in bpy.context.screen.areas:
                         ## change camera view
-                        if area.type == 'VIEW_3D':
+                        if area.type == 'VIEW_3D' and area not in registeration.register.area_image_pair:
                             area.spaces.active.region_3d.view_perspective = 'CAMERA'
-                    bpy.context.scene.render.resolution_x = bpy.context.scene.configuration[config_id].resX
-                    bpy.context.scene.render.resolution_y = bpy.context.scene.configuration[config_id].resY
-                    bpy.context.scene.camera = obj
+                            bpy.context.scene.render.resolution_x = bpy.context.scene.configuration[config_id].resX
+                            bpy.context.scene.render.resolution_y = bpy.context.scene.configuration[config_id].resY
+                            # bpy.context.scene.camera = obj
+                            area.spaces[0].use_local_camera = True
+                            area.spaces[0].camera = obj
                 
 
-                if scene.floatscreenproperty.TRACK and scene.floatscreenproperty.ALIGN:
-                    for area in bpy.context.screen.areas:
-                        if area.type == 'VIEW_3D':
-                            cam = bpy.context.scene.camera
-                            frame = cam.data.view_frame(scene = bpy.context.scene)
-                            frame = [cam.matrix_world @ corner for corner in frame]
-                            region = bpy.context.region
+                # if scene.floatscreenproperty.TRACK and scene.floatscreenproperty.ALIGN:
+                #     for area in bpy.context.screen.areas :
+                #         if area.type == 'VIEW_3D' and area not in registeration.register.area_image_pair:
+                #             cam = bpy.context.scene.camera
+                #             frame = cam.data.view_frame(scene = bpy.context.scene)
+                #             frame = [cam.matrix_world @ corner for corner in frame]
+                #             region = bpy.context.region
 
-                            rv3d = bpy.context.region_data
-                            frame_px = [location_3d_to_region_2d(region, rv3d, corner) for corner in frame]           
-                            bias_X = min([v[0] for v in frame_px])
-                            bias_Y = min([v[1] for v in frame_px])
-                            res_X = max([v[0] for v in frame_px]) - min([v[0] for v in frame_px])
-                            res_Y = max([v[1] for v in frame_px]) - min([v[1] for v in frame_px])                    
-                            break
-                        else:
-                            bias_X = scene.floatscreenproperty.display_X
-                            bias_Y = scene.floatscreenproperty.display_Y
-                            res_X = int(config.resX * scene.floatscreenproperty.display_scale)
-                            res_Y = int(config.resY * scene.floatscreenproperty.display_scale) 
-                else:
-                    bias_X = scene.floatscreenproperty.display_X
-                    bias_Y = scene.floatscreenproperty.display_Y
-                    res_X = int(config.resX * scene.floatscreenproperty.display_scale)
-                    res_Y = int(config.resY * scene.floatscreenproperty.display_scale)   
+                #             rv3d = bpy.context.region_data
+                #             frame_px = [location_3d_to_region_2d(region, rv3d, corner) for corner in frame]           
+                #             bias_X = min([v[0] for v in frame_px])
+                #             bias_Y = min([v[1] for v in frame_px])
+                #             res_X = max([v[0] for v in frame_px]) - min([v[0] for v in frame_px])
+                #             res_Y = max([v[1] for v in frame_px]) - min([v[1] for v in frame_px])                    
+                #             break
+                #         else:
+                #             bias_X = scene.floatscreenproperty.display_X
+                #             bias_Y = scene.floatscreenproperty.display_Y
+                #             res_X = int(config.resX * scene.floatscreenproperty.display_scale)
+                #             res_Y = int(config.resY * scene.floatscreenproperty.display_scale) 
+                # else:
+                #     bias_X = scene.floatscreenproperty.display_X
+                #     bias_Y = scene.floatscreenproperty.display_Y
+                #     res_X = int(config.resX * scene.floatscreenproperty.display_scale)
+                #     res_Y = int(config.resY * scene.floatscreenproperty.display_scale)   
                   
-                if scene.floatscreenproperty.DISPLAY:
-                    draw_texture_2d(show_frame.bindcode, 
-                                    (bias_X, bias_Y), 
-                                    res_X, 
-                                    res_Y)
+                # if scene.floatscreenproperty.DISPLAY:
+                #     draw_texture_2d(show_frame.bindcode, 
+                #                     (bias_X, bias_Y), 
+                #                     res_X, 
+                #                     res_Y)
                 show_frame["UPDATEALPHA"] = False
 
 
-def draw_multi():
-    context = bpy.context
-    scene = context.scene
-    obj = context.object
-    if obj and "type" in obj and obj['type'] == "camera":
-        name = obj.name.split(":")[0]
-        config_id =  bpy.data.objects[name + ":Setting"]['config_id']
-        config = scene.configuration[config_id]
-        area_show_frame = {}
-        for area in bpy.context.screen.areas:
-            if area.type == 'VIEW_3D':
-                if area in registeration.register.area_image_pair:
-                    area_show_frame[area] = registeration.register.area_image_pair[area]
-                else:
-                    area_show_frame[area] = obj
-                if scene.floatscreenproperty.viewimage_mode == "RGB Origin":
-                    show_frame = area_show_frame[area]["rgb"]
-                    if show_frame.bindcode == 0:
-                        show_frame.gl_load()
-                elif scene.floatscreenproperty.viewimage_mode == "Depth Origin":
-                    show_frame = area_show_frame[area]["depth"]
-                    if show_frame.bindcode == 0:
-                        show_frame.gl_load()
+# def draw_multi():
+#     context = bpy.context
+#     scene = context.scene
+#     obj = context.object
+#     if obj and "type" in obj and obj['type'] == "camera":
+#         name = obj.name.split(":")[0]
+#         config_id =  bpy.data.objects[name + ":Setting"]['config_id']
+#         config = scene.configuration[config_id]
+#         area_show_frame = {}
+#         for area in bpy.context.screen.areas:
+#             if area.type == 'VIEW_3D':
+#                 if area in registeration.register.area_image_pair:
+#                     area_show_frame[area] = registeration.register.area_image_pair[area]
+#                 else:
+#                     area_show_frame[area] = obj
+#                 if scene.floatscreenproperty.viewimage_mode == "RGB Origin":
+#                     show_frame = area_show_frame[area]["rgb"]
+#                     if show_frame.bindcode == 0:
+#                         show_frame.gl_load()
+#                 elif scene.floatscreenproperty.viewimage_mode == "Depth Origin":
+#                     show_frame = area_show_frame[area]["depth"]
+#                     if show_frame.bindcode == 0:
+#                         show_frame.gl_load()
 
-                if show_frame:         
-                    if show_frame["UPDATEALPHA"] and scene.floatscreenproperty.UPDATE_DEPTHFILTER:
-                        alpha = depthfilter(obj["depth"]["depth"], config.depth_scale, config.depth_ignore, scene.floatscreenproperty.IGNORE_ZERODEPTH)
-                        pixels = list(show_frame.pixels) 
-                        for i in range(0, int(len(pixels)/4)):
-                            pixels[4 * i + 3] = float(alpha[i]) * 0.5
-                        show_frame.pixels[:] = pixels      
-                    area_show_frame[area].data.show_background_images = scene.floatscreenproperty.BACKGROUND
-                    area_show_frame[area].data.background_images[0].image = show_frame
-                    area_show_frame[area].data.background_images[0].alpha = scene.floatscreenproperty.background_alpha                                
+#                 if show_frame:         
+#                     if show_frame["UPDATEALPHA"] and scene.floatscreenproperty.UPDATE_DEPTHFILTER:
+#                         alpha = depthfilter(obj["depth"]["depth"], config.depth_scale, config.depth_ignore, scene.floatscreenproperty.IGNORE_ZERODEPTH)
+#                         pixels = list(show_frame.pixels) 
+#                         for i in range(0, int(len(pixels)/4)):
+#                             pixels[4 * i + 3] = float(alpha[i]) * 0.5
+#                         show_frame.pixels[:] = pixels      
+#                     area_show_frame[area].data.show_background_images = scene.floatscreenproperty.BACKGROUND
+#                     area_show_frame[area].data.background_images[0].image = show_frame
+#                     area_show_frame[area].data.background_images[0].alpha = scene.floatscreenproperty.background_alpha                                
 
-                    if scene.floatscreenproperty.TRACK:
-                        # area.spaces.active.region_3d.view_matrix = Matrix(np.linalg.inv(area_show_frame[area].matrix_world))
-                        # area.spaces.active.region_3d.view_matrix = area_show_frame[area].matrix_world
-                        pass
-                    if scene.floatscreenproperty.TRACK and scene.floatscreenproperty.ALIGN:
-                        cam = area_show_frame[area]
-                        frame = cam.data.view_frame(scene = bpy.context.scene)
-                        frame = [cam.matrix_world @ corner for corner in frame]
-                        # region = bpy.context.region
-                        region = area.regions.active
-                        # rv3d = bpy.context.region_data
-                        rv3d = area.spaces.active.region_3d
-                        frame_px = [location_3d_to_region_2d(region, rv3d, corner) for corner in frame]           
-                        bias_X = min([v[0] for v in frame_px])
-                        bias_Y = min([v[1] for v in frame_px])
-                        res_X = max([v[0] for v in frame_px]) - min([v[0] for v in frame_px])
-                        res_Y = max([v[1] for v in frame_px]) - min([v[1] for v in frame_px])  
+#                     if scene.floatscreenproperty.TRACK:
+#                         # area.spaces.active.region_3d.view_matrix = Matrix(np.linalg.inv(area_show_frame[area].matrix_world))
+#                         # area.spaces.active.region_3d.view_matrix = area_show_frame[area].matrix_world
+#                         pass
+#                     if scene.floatscreenproperty.TRACK and scene.floatscreenproperty.ALIGN:
+#                         cam = area_show_frame[area]
+#                         frame = cam.data.view_frame(scene = bpy.context.scene)
+#                         frame = [cam.matrix_world @ corner for corner in frame]
+#                         # region = bpy.context.region
+#                         region = area.regions.active
+#                         # rv3d = bpy.context.region_data
+#                         rv3d = area.spaces.active.region_3d
+#                         frame_px = [location_3d_to_region_2d(region, rv3d, corner) for corner in frame]           
+#                         bias_X = min([v[0] for v in frame_px])
+#                         bias_Y = min([v[1] for v in frame_px])
+#                         res_X = max([v[0] for v in frame_px]) - min([v[0] for v in frame_px])
+#                         res_Y = max([v[1] for v in frame_px]) - min([v[1] for v in frame_px])  
 
-                    else:
-                        bias_X = scene.floatscreenproperty.display_X
-                        bias_Y = scene.floatscreenproperty.display_Y
-                        res_X = int(config.resX * scene.floatscreenproperty.display_scale)
-                        res_Y = int(config.resY * scene.floatscreenproperty.display_scale)    
+#                     else:
+#                         bias_X = scene.floatscreenproperty.display_X
+#                         bias_Y = scene.floatscreenproperty.display_Y
+#                         res_X = int(config.resX * scene.floatscreenproperty.display_scale)
+#                         res_Y = int(config.resY * scene.floatscreenproperty.display_scale)    
 
-                    if scene.floatscreenproperty.DISPLAY:
-                        draw_texture_2d(show_frame.bindcode, 
-                                        (bias_X, bias_Y), 
-                                        res_X, 
-                                        res_Y)
-                    show_frame["UPDATEALPHA"] = False
+#                     if scene.floatscreenproperty.DISPLAY:
+#                         draw_texture_2d(show_frame.bindcode, 
+#                                         (bias_X, bias_Y), 
+#                                         res_X, 
+#                                         res_Y)
+#                     show_frame["UPDATEALPHA"] = False
 
 def draw_for_area(area, camera_obj):
     # print(area)
@@ -180,45 +182,24 @@ def draw_for_area(area, camera_obj):
         if show_frame.bindcode == 0:
             show_frame.gl_load()
     if show_frame:
-        if show_frame["UPDATEALPHA"] and scene.floatscreenproperty.UPDATE_DEPTHFILTER:
-            alpha = depthfilter(camera_obj["depth"]["depth"], config.depth_scale, config.depth_ignore, scene.floatscreenproperty.IGNORE_ZERODEPTH)
+
+        if show_frame["UPDATEALPHA"]:
             pixels = list(show_frame.pixels) 
             for i in range(0, int(len(pixels)/4)):
-                pixels[4 * i + 3] = float(alpha[i]) * 0.5
+                pixels[4 * i + 3] = 1
             show_frame.pixels[:] = pixels      
         camera_obj.data.show_background_images = scene.floatscreenproperty.BACKGROUND
         camera_obj.data.background_images[0].image = show_frame
-        camera_obj.data.background_images[0].alpha = scene.floatscreenproperty.background_alpha                                
-
-        if scene.floatscreenproperty.TRACK:
-            # area.spaces[0].region_3d.view_matrix = Matrix(np.linalg.inv(camera_obj.matrix_world))
-            # area.spaces.active.region_3d.view_matrix = area_show_frame[area].matrix_world
-            area.spaces[0].region_3d.view_perspective = 'CAMERA'
-            area.spaces[0].camera = camera_obj
-        if scene.floatscreenproperty.TRACK and scene.floatscreenproperty.ALIGN:
-            frame = camera_obj.data.view_frame(scene = bpy.context.scene)
-            frame = [camera_obj.matrix_world @ corner for corner in frame]
-            # region = bpy.context.region
-            region = area.regions.active
-            # rv3d = bpy.context.region_data
-            rv3d = area.spaces.active.region_3d
-            frame_px = [location_3d_to_region_2d(region, rv3d, corner) for corner in frame]           
-            bias_X = min([v[0] for v in frame_px])
-            bias_Y = min([v[1] for v in frame_px])
-            res_X = max([v[0] for v in frame_px]) - min([v[0] for v in frame_px])
-            res_Y = max([v[1] for v in frame_px]) - min([v[1] for v in frame_px])  
-
-        else:
-            bias_X = scene.floatscreenproperty.display_X
-            bias_Y = scene.floatscreenproperty.display_Y
-            res_X = int(config.resX * scene.floatscreenproperty.display_scale)
-            res_Y = int(config.resY * scene.floatscreenproperty.display_scale)    
-
-        if scene.floatscreenproperty.DISPLAY:
-            draw_texture_2d(show_frame.bindcode, 
-                            (bias_X, bias_Y), 
-                            res_X, 
-                            res_Y)
+        camera_obj.data.background_images[0].alpha = scene.floatscreenproperty.background_alpha   
+        bpy.context.scene.render.resolution_x = bpy.context.scene.configuration[config_id].resX
+        bpy.context.scene.render.resolution_y = bpy.context.scene.configuration[config_id].resY                             
+        area.spaces[0].use_local_camera = True
+        area.spaces[0].region_3d.view_perspective = 'CAMERA'
+        area.spaces[0].camera = camera_obj
+        # 
+        area.spaces[0].overlay.show_wireframes = True
+        area.spaces[0].overlay.wireframe_threshold = 0
+        # area.spaces[0].shading.type = 'WIREFRAME'
         show_frame["UPDATEALPHA"] = False        
 
 
@@ -325,11 +306,11 @@ def register():
     global floatscreen_handler
     bpy.utils.register_class(FloatScreenProperty)
     bpy.types.Scene.floatscreenproperty = bpy.props.PointerProperty(type=FloatScreenProperty)
-    # floatscreen_handler = bpy.types.SpaceView3D.draw_handler_add(draw, (), 'WINDOW', 'POST_PIXEL')
+    floatscreen_handler = bpy.types.SpaceView3D.draw_handler_add(draw, (), 'WINDOW', 'POST_PIXEL')
     # floatscreen_handler = bpy.types.SpaceView3D.draw_handler_add(draw_multi, (), 'WINDOW', 'POST_PIXEL')
     bpy.types.VIEW3D_MT_object_context_menu.append(right_click_menu_func)
 
 def unregister():
     bpy.utils.unregister_class(FloatScreenProperty)
-    # bpy.types.SpaceView3D.draw_handler_remove(floatscreen_handler, 'WINDOW')
+    bpy.types.SpaceView3D.draw_handler_remove(floatscreen_handler, 'WINDOW')
     bpy.types.VIEW3D_MT_object_context_menu.remove(right_click_menu_func)

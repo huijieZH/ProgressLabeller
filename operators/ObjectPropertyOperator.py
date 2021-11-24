@@ -26,13 +26,10 @@ import registeration.register
 
 class PlaneAlignment(Operator):
     """Using RANSAC to detect the plane and align it"""
-    bl_idname = "object_property.planealignment"  # important since its how bpy.ops.import_test.some_data is constructed
+    bl_idname = "object_property.planealignment"  
     bl_label = "Plane Alignment"
 
     def execute(self, context):
-        # current_object = bpy.context.object.name
-        # workspace_name = current_object.split(":")[0]
-        # recon = _get_reconstruction_insameworkspace(context.object)
         recon = context.object
         log_report(
             "INFO", "Starting calculate the plane function", None
@@ -88,7 +85,6 @@ class PlaneAlignment(Operator):
         row.prop(scene.planalignmentparas, "iteration") 
 
 class PlaneAlignmentConfig(bpy.types.PropertyGroup):
-    # The properties for this class which is referenced as an 'entry' below.
     threshold: bpy.props.FloatProperty(name="Inlier Threshold", 
                                         description="Inlier threshold for points aligned to plane", 
                                         default=0.01, 
@@ -113,7 +109,7 @@ class PlaneAlignmentConfig(bpy.types.PropertyGroup):
 
 class ImportCamRGBDepth(Operator):
     """This appears in the tooltip of the operator and in the generated docs"""
-    bl_idname = "object_property.importcamrgbdepth"  # important since its how bpy.ops.import_test.some_data is constructed
+    bl_idname = "object_property.importcamrgbdepth"  
     bl_label = "Import RGB & Depth"
 
 
@@ -388,26 +384,6 @@ class CurrentDepthOperator(bpy.types.Operator):
         
 
     def invoke(self, context, event):
-        # if _is_progresslabeller_object(context.object) \
-        #     and context.object["type"] == ["camera"] \
-        #     and event.type == 'MOUSEMOVE':
-        #     self.current_depth = 0
-        #     for area in context.screen.areas:
-        #         if area.type == 'VIEW_3D':
-        #             cam = bpy.context.scene.camera
-        #             frame = cam.data.view_frame(scene = bpy.context.scene)
-        #             frame = [cam.matrix_world @ corner for corner in frame]
-        #             region = bpy.context.region
-        #             rv3d = bpy.context.region_data
-        #             frame_px = [location_3d_to_region_2d(region, rv3d, corner) for corner in frame]           
-        #             bias_X = min([v[0] for v in frame_px])
-        #             bias_Y = min([v[1] for v in frame_px])
-        #             res_X = max([v[0] for v in frame_px]) - min([v[0] for v in frame_px])
-        #             res_Y = max([v[1] for v in frame_px]) - min([v[1] for v in frame_px])
-        #             print(res_X, res_Y)
-        #             
-                    
-        #             return {'RUNNING_MODAL'}
         self.current_depth = 0
         context.window_manager.modal_handler_add(self)
         return {'FINISHED'}

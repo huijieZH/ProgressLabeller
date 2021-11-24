@@ -10,7 +10,7 @@ from bpy.types import Operator
 
 class ImportConfiguration(Operator, ImportHelper):
     """Load model for pose alignment and segmentation"""
-    bl_idname = "import_data.configuration"  # important since its how bpy.ops.import_test.some_data is constructed
+    bl_idname = "import_data.configuration"  
     bl_label = "Import Configuration"
 
     # ImportHelper mixin class uses this
@@ -19,11 +19,8 @@ class ImportConfiguration(Operator, ImportHelper):
     filter_glob: StringProperty(
         default="*.json",
         options={'HIDDEN'},
-        maxlen=255,  # Max internal buffer length, longer would be clamped.
+        maxlen=255,  
     )
-
-    # List of operator properties, the attributes will be assigned
-    # to the class instance from the operator settings before calling.
 
     def execute(self, context):
         load_configuration(self.filepath)
@@ -31,7 +28,6 @@ class ImportConfiguration(Operator, ImportHelper):
     
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
-        # Tells Blender to hang on for the slow user input
         return {'RUNNING_MODAL'}
 
 

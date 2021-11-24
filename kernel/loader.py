@@ -188,13 +188,6 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
                 
                 cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX/2 - bpy.context.scene.configuration[config_id].cx)/bpy.context.scene.configuration[config_id].resX
                 cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/bpy.context.scene.configuration[config_id].resX
-                # f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2
-                # cam_data.sensor_width = cam_data.lens * bpy.context.scene.configuration[config_id].resX * 2/f
-                # cam_data.display_size = camera_display_scale
-                
-                # cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX - bpy.context.scene.configuration[config_id].cx - 320)/(bpy.context.scene.configuration[config_id].resX * 2)
-                # cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy + 240 - bpy.context.scene.configuration[config_id].resY)/(bpy.context.scene.configuration[config_id].resX * 2)
-                ## allow background display
                 cam_data.background_images.new()
                 
                 cam_object = bpy.data.objects.new(cam_name, cam_data)
@@ -208,15 +201,10 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
             ## load rgb
             rgb_name = workspace_name + ":rgb" + perfix
             if rgb_name not in bpy.data.images:
-                # bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), 
-                #                     directory=rgb_path, 
-                #                     files=[{"name":perfix + ".png"}], 
-                #                     relative_path=True, show_multiview=False)
                 bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), show_multiview=False)
                 bpy.data.images[perfix + ".png"].name = rgb_name
             bpy.data.images[rgb_name]["UPDATEALPHA"] = True
             bpy.data.images[rgb_name]["alpha"] = [0.5]
-            # bpy.data.images[rgb_name].filepath = rgb_name
             ## load depth
             depth_name = workspace_name + ":depth" + perfix
             if depth_name not in bpy.data.images:
@@ -232,7 +220,6 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
                 ## change transparency
             bpy.data.images[depth_name]["UPDATEALPHA"] = True
             bpy.data.images[depth_name]["alpha"] = [0.5]
-            # bpy.data.images[depth_name].filepath = depth_name
             cam_object["depth"] = bpy.data.images[depth_name]
             cam_object["rgb"] = bpy.data.images[rgb_name]
             cam_object["type"] = "camera"
@@ -318,7 +305,6 @@ def load_reconstruction_result(filepath,
                     bpy.data.images[perfix + ".png"].name = rgb_name
                 bpy.data.images[rgb_name]["UPDATEALPHA"] = True
                 bpy.data.images[rgb_name]["alpha"] = [0.5]
-                # bpy.data.images[rgb_name].filepath = rgb_name
                 ## load depth
                 depth_name = workspace_name + ":depth" + perfix
                 if depth_name not in bpy.data.images:
@@ -332,7 +318,6 @@ def load_reconstruction_result(filepath,
                     bpy.data.images[depth_name]["depth"] = depth.flatten().astype(np.float32)
                 bpy.data.images[depth_name]["UPDATEALPHA"] = True
                 bpy.data.images[depth_name]["alpha"] = [0.5]
-                # bpy.data.images[depth_name].filepath = depth_name
                 cam_object["depth"] = bpy.data.images[depth_name]
                 cam_object["rgb"] = bpy.data.images[rgb_name]
                 cam_object["type"] = "camera" 
@@ -361,7 +346,6 @@ def create_workspace(path, name,
     
     work_space_collection = create_collection(name, parent_collection = None)
     setting = setting_init(name + ":Setting", work_space_collection, path)
-    # setting_config_init(setting, config)
     setting["config_id"] = config_id
     model_collection = create_collection(name + ":Model", 
                                          parent_collection = work_space_collection)
@@ -396,7 +380,6 @@ def create_collection(new_name, parent_collection = None):
             raise Exception("parent collection not exists")
         return new_collection
     else: 
-        # print(new_name + " Collection is currently in the Blender")
         return bpy.data.collections[new_name]
 
 def setting_init(name, collection, path):

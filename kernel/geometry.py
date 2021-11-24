@@ -83,7 +83,6 @@ def _render(image, pose, intrinsic, model):
     return segimage
 
 def _loadModel(modelPath):
-
     ## load vertex from .obj
     pointCloud = []
     f = open(modelPath, "r")
@@ -140,7 +139,6 @@ def modelICP(scene_vertices, model_vertices):
     reg_p2p = o3d.pipelines.registration.registration_icp(
         model, scene, threshold, trans_init,
         o3d.pipelines.registration.TransformationEstimationPointToPoint())
-    # print(reg_p2p.transformation)
     return reg_p2p.transformation
 
 
@@ -165,11 +163,6 @@ def _preprocess_point_cloud(pcd, voxel_size = 0.005):
     return (pcd_down, pcd_fpfh)
 
 def _register_point_cloud_fpfh(source, target, source_fpfh, target_fpfh, distance_threshold = 0.005 * 1.4):
-
-    # result = o3d.pipelines.registration.registration_fast_based_on_feature_matching(
-    #     source, target, source_fpfh, target_fpfh,
-    #     o3d.pipelines.registration.FastGlobalRegistrationOption(
-    #         maximum_correspondence_distance=distance_threshold))
     result = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
         source, target, source_fpfh, target_fpfh, True, distance_threshold,
         o3d.pipelines.registration.TransformationEstimationPointToPoint(

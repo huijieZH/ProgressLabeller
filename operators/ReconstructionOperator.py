@@ -125,17 +125,16 @@ class Reconstruction(Operator):
                                       scene.orbslamparas.timestampfrenquency)
                 source = os.path.dirname(os.path.dirname(__file__))
                 code_path = os.path.join(source, "kernel", "orb_slam", "orb_slam.py")
-                os.system(sys.executable + " {0} {1} {2} {3} {4} {5} {6}".format(code_path, 
+                os.system(sys.executable + " {0} {1} {2} {3} {4} {5} {6} {7}".format(code_path, 
                     scene.orbslamparas.orb_vocabularysrc, 
                     os.path.join(config.reconstructionsrc,"orb_slam.yaml"),
                     config.datasrc,
                     os.path.join(config.reconstructionsrc, "associate.txt"),
                     config.reconstructionsrc,
-                    scene.orbslamparas.timestampfrenquency
+                    scene.orbslamparas.timestampfrenquency,
+                    float(scene.orbslamparas.display)
                     ))
                 config.inverse_pose = False
-                # scale =  _align_reconstruction(config, scene, scene.scalealign.THRESHOLD, scene.scalealign.NUM_THRESHOLD)
-                # config.reconstructionscale = scale
                 config.reconstructionscale = 1.0
                 _initreconpose(config)
                 load_reconstruction_result(filepath = config.reconstructionsrc, 
@@ -302,7 +301,9 @@ class Reconstruction(Operator):
             row = box.row()
             row.prop(scene.orbslamparas, "orb_vocabularysrc") 
             row = box.row()
-            row.prop(scene.orbslamparas, "timestampfrenquency")             
+            row.prop(scene.orbslamparas, "timestampfrenquency")   
+            row = box.row()
+            row.prop(scene.orbslamparas, "display")            
             layout.label(text="Set Depth Fusion Parameters:")
             row = layout.row() 
             row.prop(scene.kinectfusionparas, "tsdf_voxel_size")
@@ -315,14 +316,6 @@ class Reconstruction(Operator):
             box = layout.box() 
 
 class KinectfusionConfig(bpy.types.PropertyGroup):
-    # The properties for this class which is referenced as an 'entry' below.
-    # depth_scale: bpy.props.FloatProperty(name="Depth Scale", 
-    #                                     description="Scale for depth image", 
-    #                                     default=0.00025, 
-    #                                     min=0.000000, 
-    #                                     max=1.000000, 
-    #                                     step=6, 
-    #                                     precision=6)
 
     tsdf_voxel_size: bpy.props.FloatProperty(name="TSDF Voxel Size (m)", 
                                             description="Voxel size for truncated signed distance function, in meter", 
@@ -345,13 +338,6 @@ class KinectfusionConfig(bpy.types.PropertyGroup):
                                             max=10.00, 
                                             step=4, 
                                             precision=4)  
-    # depth_ignore: bpy.props.FloatProperty(name="Ignore depth range (m)", 
-    #                                         description="Depth beyond this value would be ignore, in meter", 
-    #                                         default=1.5, 
-    #                                         min=0.0, 
-    #                                         max=10.0, 
-    #                                         step=3, 
-    #                                         precision=3)      
     DISPLAY: bpy.props.BoolProperty(
         name="Display during reconstruction",
         description="During reconstruction simutaneously display the reconstruction result in Blender",
@@ -374,7 +360,10 @@ class ORBSLAMConfig(bpy.types.PropertyGroup):
                                             min=0.0, 
                                             max=100.0, 
                                             step=1, 
-                                            precision=1)    
+                                            precision=1)  
+    display:  bpy.props.BoolProperty(name="Display reconstruction", 
+                                      description="Display reconstruction using OPRB_SLAM2's UI", 
+                                      default=False)   
 
 class ScaleAlignment(bpy.types.PropertyGroup):
     THRESHOLD: bpy.props.FloatProperty(name="variance threshold for scale alignment", 

@@ -2,7 +2,7 @@
 
 using namespace std;
 
-int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, string strAssociationFilename, string recon_path, float image_frequence)
+int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, string strAssociationFilename, string recon_path, float image_frequence, float display)
 {
 
     // Retrieve paths to images
@@ -26,9 +26,14 @@ int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, s
     }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
+    bool DISPALY;
+    if (display == 1){
+        DISPALY = true;
+    } else{
+        DISPALY = false;
+    }
     
-    ORB_SLAM2::System SLAM(ORBvoc_path, ORB_slam_config, ORB_SLAM2::System::RGBD, false);
-
+    ORB_SLAM2::System SLAM(ORBvoc_path, ORB_slam_config, ORB_SLAM2::System::RGBD, DISPALY);
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
     vTimesTrack.resize(nImages);
@@ -52,12 +57,6 @@ int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, s
                  << string(datasrc) << "/" << vstrImageFilenamesRGB[ni] << endl;
             return 1;
         }
-
-// #ifdef COMPILEDWITHC11
-//         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-// #else
-//         std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
-// #endif
         auto t1 = std::chrono::system_clock::now();
 
         // Pass the image to the SLAM system
@@ -65,12 +64,6 @@ int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, s
         SLAM.TrackRGBD(imRGB,imD,tframe);
 
         auto t2 = std::chrono::system_clock::now();
-
-// #ifdef COMPILEDWITHC11
-//         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-// #else
-//         std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
-// #endif
 
         double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
 

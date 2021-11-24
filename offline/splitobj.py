@@ -59,16 +59,3 @@ def split_obj(filepath):
         print("Successfully split {0}".format(file_name))
         f.close()
         total_from_last = total_v
-
-if __name__ == "__main__":
-    # print("Starting split .obj file in directory {0}\n".format(sys.argv[1]))
-    # package = os.listdir(sys.argv[1])
-    # package.sort()
-    # for p in package:
-    #     print("Starting split .obj file for {0}\n".format(p))
-    #     path = os.path.join(sys.argv[1], p, "split")
-    #     files = os.listdir(path)
-    #     for f in files:
-    #         if f[-4:] == ".obj":
-    #             split_obj(os.path.join(sys.argv[1], p, "split", f))
-    split_obj("/home/huijie/research/ACF/data/models_w_parts/ACFmodel/blue_mug/split/blue_mug_split.obj")

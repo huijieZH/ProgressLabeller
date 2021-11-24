@@ -46,19 +46,6 @@ def _parsePoints3D(filename, PointsDict):
                 PointsDict[int(words[0])]["location"] = np.array([float(words[1]), float(words[2]), float(words[3])])
                 PointsDict[int(words[0])]["error"] = float(words[7])
 
-# def _depthInterpolation(depth, px, py):
-#     px_0 = int(np.floor(px))
-#     px_1 = int(np.ceil(px))
-#     py_0 = int(np.floor(py))
-#     py_1 = int(np.ceil(py))
-#     if (px_1 == px_0): px_1 += 1
-#     if (py_1 == py_0): py_1 += 1
-#     depth_inter = depth[px_0, py_0] * (px_1 - px) * (py_1 - py) +\
-#                   depth[px_1, py_0] * (px - px_0) * (py_1 - py) +\
-#                   depth[px_0, py_1] * (px_1 - px) * (py - py_0) +\
-#                   depth[px_1, py_1] * (px - px_0) * (py - py_0)
-#     return depth_inter
-
 def _depthInterpolation(depth, px, py):
     px_0 = int(np.floor(px))
     py_0 = int(np.floor(py))

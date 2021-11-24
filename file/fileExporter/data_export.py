@@ -14,16 +14,15 @@ from kernel.exporter import configuration_export, objectposes_export
 
 class DataOutput(Operator, ExportHelper):
     """This appears in the tooltip of the operator and in the generated docs"""
-    bl_idname = "export_data.dataoutput"  # important since its how bpy.ops.import_test.some_data is constructed
+    bl_idname = "export_data.dataoutput" 
     bl_label = "Output Data"
 
-    # ExportHelper mixin class uses this
     filename_ext = "/"
 
     filter_glob: StringProperty(
         default="/",
         options={'HIDDEN'},
-        maxlen=255,  # Max internal buffer length, longer would be clamped.
+        maxlen=255,  
     )
 
     dataformatType: EnumProperty(
@@ -55,7 +54,6 @@ class DataOutput(Operator, ExportHelper):
             )
         else:
             configuration_export(config, "/tmp/progresslabeler.json")
-            # objectposes_export(config.projectname, os.path.join(config.reconstructionsrc, "label_pose.yaml"))
             log_report(
                 "Info", "Export data to" + self.filepath, None
             )

@@ -15,7 +15,6 @@ class offlineRender:
         print("Start offline rendering")
         self.param = param
         self.interpolation_type = interpolation_type
-        # self.outputpath = os.path.join(self.param.dir, outputdir)
         self.outputpath = outputdir
         self.modelsrc = self.param.modelsrc
         self.reconstructionsrc = self.param.reconstructionsrc
@@ -24,7 +23,6 @@ class offlineRender:
         self.objects = self.param.objs
         
         self._parsecamfile()
-        # self._applytrans2cam()
         if pkg_type == "ProgressLabeller":
             self._prepare_scene()
             self._createallpkgs()

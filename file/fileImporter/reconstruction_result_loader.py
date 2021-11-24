@@ -10,16 +10,15 @@ from bpy.types import Operator
 
 class ImportReconstruction(Operator, ImportHelper):
     """Load model for pose alignment and segmentation"""
-    bl_idname = "import_data.reconstruction"  # important since its how bpy.ops.import_test.some_data is constructed
+    bl_idname = "import_data.reconstruction"  
     bl_label = "Import Reconstruction Result"
 
-    # ImportHelper mixin class uses this
     filename_ext = "/"
 
     filter_glob: StringProperty(
         default="/",
         options={'HIDDEN'},
-        maxlen=255,  # Max internal buffer length, longer would be clamped.
+        maxlen=255,  
     )
 
     reconstruction_method: EnumProperty(
@@ -45,9 +44,6 @@ class ImportReconstruction(Operator, ImportHelper):
         default=0.1, min=0.00, 
         max=1.00, step=2, precision=2)
 
-    # List of operator properties, the attributes will be assigned
-    # to the class instance from the operator settings before calling.
-
     def execute(self, context):
         load_reconstruction_result(filepath = self.filepath, 
                                    reconstruction_method = self.reconstruction_method,
@@ -60,7 +56,6 @@ class ImportReconstruction(Operator, ImportHelper):
         context.window_manager.fileselect_add(self)
         if hasattr(bpy.context.scene.configuration, 'reconstructionsrc'):
             self.filepath = bpy.context.scene.configuration.reconstructionsrc
-        # Tells Blender to hang on for the slow user input
         return {'RUNNING_MODAL'}
 
 def _menu_func_import(self, context):
@@ -70,9 +65,7 @@ def _menu_func_import(self, context):
 
 def register():
     bpy.utils.register_class(ImportReconstruction)
-    # bpy.types.TOPBAR_MT_file_import.append(_menu_func_import)
 
 
 def unregister():
     bpy.utils.unregister_class(ImportReconstruction)
-    # bpy.types.TOPBAR_MT_file_import.remove(_menu_func_import)

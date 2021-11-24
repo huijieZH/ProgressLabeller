@@ -375,7 +375,6 @@ def create_workspace(path, name,
 def init_package(path, config):
     create_packages(path, ["model", "recon", "data"])
     config.modelsrc = os.path.join(path, "model")
-    config.modelposesrc = os.path.join(path, "recon")
     config.datasrc = os.path.join(path, "data")
     config.reconstructionsrc = os.path.join(path, "recon")
 

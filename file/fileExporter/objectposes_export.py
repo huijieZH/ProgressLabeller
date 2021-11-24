@@ -37,7 +37,7 @@ class ExportObjectPoses(Operator, ExportHelper):
         config_id = context.object['config_id']
         config = bpy.context.scene.configuration[config_id]
         if "dir" in context.object:
-            self.filepath = (config.modelposesrc if config.modelposesrc.endswith("/") else config.modelposesrc + "/") + "label_pose.yaml"
+            self.filepath = (config.reconstructionsrc if config.reconstructionsrc.endswith("/") else config.reconstructionsrc + "/") + "label_pose.yaml"
         # Tells Blender to hang on for the slow user input
         return {'RUNNING_MODAL'}
 

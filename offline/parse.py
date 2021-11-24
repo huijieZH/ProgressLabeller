@@ -29,7 +29,7 @@ class offlineParam:
 
     def parseenv(self):
         self.modelsrc = self.config["environment"]["modelsrc"]
-        self.modelposesrc = self.config["environment"]["modelposesrc"]
+        self.modelposesrc = self.config["environment"]["reconstructionsrc"]
         self.reconstructionsrc = self.config["environment"]["reconstructionsrc"]
         self.datasrc = self.config["environment"]["datasrc"]
 

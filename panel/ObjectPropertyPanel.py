@@ -101,7 +101,7 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 row.operator("import_data.model")
 
                 row = layout.row()
-                row.prop(config, 'modelposesrc')
+                # row.prop(config, 'modelposesrc')
                 row.operator("import_data.modelfrompose")
                 row.operator("export_data.objectposes")
 

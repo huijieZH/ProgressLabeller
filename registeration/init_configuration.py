@@ -9,7 +9,7 @@ from kernel.blender_utility import _is_progresslabeller_object, _get_allrgb_insa
 config_json_dict = {
     'projectname': [['projectname']],
     'modelsrc': [['environment', 'modelsrc']],
-    'modelposesrc': [['environment', 'modelposesrc']],
+    # 'modelposesrc': [['environment', 'modelposesrc']],
     'reconstructionsrc':[['environment', 'reconstructionsrc']] ,
     'datasrc': [['environment', 'datasrc']],
     'resX':[['camera', 'resolution'], ['0']],  
@@ -43,7 +43,6 @@ def encode_dict(configuration):
         'projectname': configuration.projectname,
         'environment': {
             'modelsrc':configuration.modelsrc,
-            "modelposesrc": configuration.modelposesrc,
             "reconstructionsrc":configuration.reconstructionsrc,
             "datasrc": configuration.datasrc,           
         },
@@ -75,8 +74,6 @@ class config(bpy.types.PropertyGroup):
     projectname: bpy.props.StringProperty(name = "projectname")
     modelsrc: bpy.props.StringProperty(name = "modelsrc", 
                 subtype = "DIR_PATH")
-    modelposesrc: bpy.props.StringProperty(name = "modelposesrc", 
-                subtype = "DIR_PATH")   
     reconstructionsrc: bpy.props.StringProperty(name = "reconstructionsrc", 
                 subtype = "DIR_PATH") 
     datasrc: bpy.props.StringProperty(name = "datasrc", 

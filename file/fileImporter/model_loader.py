@@ -61,11 +61,11 @@ class ImportModelfromPoseFile(Operator, ImportHelper):
     
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
-        if hasattr(bpy.context.scene.configuration[context.object["config_id"]], 'modelposesrc'):
-            if bpy.context.scene.configuration[context.object["config_id"]].modelposesrc[-1] != "/":
-                self.filepath = bpy.context.scene.configuration[context.object["config_id"]].modelposesrc + "/"
+        if hasattr(bpy.context.scene.configuration[context.object["config_id"]], 'reconstructionsrc'):
+            if bpy.context.scene.configuration[context.object["config_id"]].reconstructionsrc[-1] != "/":
+                self.filepath = bpy.context.scene.configuration[context.object["config_id"]].reconstructionsrc + "/"
             else:
-                self.filepath = bpy.context.scene.configuration[context.object["config_id"]].modelposesrc
+                self.filepath = bpy.context.scene.configuration[context.object["config_id"]].reconstructionsrc
         # Tells Blender to hang on for the slow user input
         return {'RUNNING_MODAL'}
 

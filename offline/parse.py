@@ -9,16 +9,18 @@ from kernel.utility import _transstring2trans
 from kernel.geometry import _pose2Rotation, _rotation2Pose
 
 class offlineParam:
-    def __init__(self, config_path) -> None:
+    def __init__(self, config_path, object_label = None) -> None:
         f = open(config_path)
         configuration = json.load(f)
         self.config = configuration
         self.dir = os.path.dirname(config_path)
+        self.object_label = object_label
         self.parsecamera()
         self.parseenv()
         self.parsereconpara()
         self.parsedatapara()
         self.parseobj()
+        
 
 
     def parsecamera(self):
@@ -46,13 +48,19 @@ class offlineParam:
     
     def parseobj(self):
         self.objs = {}
+        objnames_list = []
         if os.path.exists(os.path.join(self.modelposesrc, "label_pose.yaml")):
             f = open(os.path.join(self.modelposesrc, "label_pose.yaml"))
             poses = yaml.safe_load(f)
             model_dir = os.listdir(self.modelsrc)
-            for objname in poses:
+            for obj_instancename in poses:
+                objname = obj_instancename.split(".")[0]
+                if objname not in objnames_list:
+                    objnames_list.append(objname)
                 if objname in model_dir:
-                    self.objs[objname] = {}
-                    self.objs[objname]['type'] = poses[objname]['type']
-                    self.objs[objname]['trans'] = _pose2Rotation(poses[objname]['pose'])
+                    self.objs[obj_instancename] = {}
+                    self.objs[obj_instancename]['type'] = poses[obj_instancename]['type']
+                    self.objs[obj_instancename]['trans'] = _pose2Rotation(poses[obj_instancename]['pose'])
+        if self.object_label is None:
+            self.object_label = {objnames_list[i] : i for i in range(1, len(objnames_list) + 1)}
 

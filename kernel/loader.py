@@ -19,7 +19,8 @@ from kernel.utility import _transstring2trans, _parse_camfile
 from kernel.logging_utility import log_report
 from registeration.init_configuration import config_json_dict, decode_dict
 from kernel.blender_utility import \
-    _get_configuration, _get_obj_insameworkspace, _apply_trans2obj, _clear_allrgbdcam_insameworkspace
+    _get_configuration, _get_obj_insameworkspace, _apply_trans2obj, \
+    _clear_allrgbdcam_insameworkspace, _getsameinstance, _getnextperfixforinstance
 from kernel.utility import _select_sample_files, _generate_image_list
 import time
 
@@ -45,57 +46,60 @@ def load_configuration(filepath):
 
 
 def load_model(filepath, config_id):
-    workspace_name = bpy.context.scene.configuration[config_id].projectname
+    config = bpy.context.scene.configuration[config_id]
+    workspace_name = config.projectname
     objFilename = filepath.split("/")[-1]
-    objName = workspace_name + ":" + objFilename.split(".")[0]
-    if objName in bpy.data.objects:
-        print("Unsupported for same object loaded several times")
+    objname = objFilename.split(".")[0]
+    obj_instancename = workspace_name + ":" + objname + ".instance{0:03d}".format(_getnextperfixforinstance(config, objname))
+    # if objName in bpy.data.objects:
+    #     print("Unsupported for same object loaded several times")
+    bpy.ops.import_scene.obj(filepath=filepath)
+    bpy.context.selected_objects[0].name = obj_instancename
+    bpy.ops.object.select_all(action='DESELECT')
+    bpy.data.objects[obj_instancename].rotation_mode = 'QUATERNION'
+    bpy.data.objects[obj_instancename].rotation_quaternion = [1., 0., 0., 0.]
+    bpy.data.objects[obj_instancename]["type"] = "model"
+    bpy.data.objects[obj_instancename]["path"] = filepath
+    ## first unlink all collection, then link to Model collection
+    for collection in bpy.data.objects[obj_instancename].users_collection:
+        collection.objects.unlink(bpy.data.objects[obj_instancename])
+
+    create_collection(workspace_name + ":Model", parent_collection = workspace_name)
+
+    bpy.data.collections[workspace_name + ":Model"].objects.link(bpy.data.objects[obj_instancename])
+
+    ### check whether the object is normal, split or URDF
+    files = os.listdir(os.path.dirname(filepath))
+    if 'split' in files:
+        bpy.data.objects[obj_instancename]["modeltype"] = "split"
     else:
-        bpy.ops.import_scene.obj(filepath=filepath)
-        bpy.context.selected_objects[0].name = objName
-        bpy.ops.object.select_all(action='DESELECT')
-        bpy.data.objects[objName].rotation_mode = 'QUATERNION'
-        bpy.data.objects[objName].rotation_quaternion = [1., 0., 0., 0.]
-        bpy.data.objects[objName]["type"] = "model"
-        bpy.data.objects[objName]["path"] = filepath
-        ## first unlink all collection, then link to Model collection
-        for collection in bpy.data.objects[objName].users_collection:
-            collection.objects.unlink(bpy.data.objects[objName])
-
-        create_collection(workspace_name + ":Model", parent_collection = workspace_name)
-
-        bpy.data.collections[workspace_name + ":Model"].objects.link(bpy.data.objects[objName])
-
-        ### check whether the object is normal, split or URDF
-        files = os.listdir(os.path.dirname(filepath))
-        if 'split' in files:
-            bpy.data.objects[objName]["modeltype"] = "split"
-        else:
-            bpy.data.objects[objName]["modeltype"] = "normal"
+        bpy.data.objects[obj_instancename]["modeltype"] = "normal"
 
     
 
 def load_model_from_pose(filepath, config_id):
-    workspace_name = bpy.context.scene.configuration[config_id].projectname
+    config = bpy.context.scene.configuration[config_id]
+    workspace_name = config.projectname
     with open(filepath, 'r') as file:
         poses = yaml.load(file, Loader=yaml.FullLoader)
-    if bpy.context.scene.configuration[config_id].modelsrc == "":
+    if config.modelsrc == "":
         log_report(
             "INFO", "You should initialize the modelsrc before using this function", None
         )       
     else:
-        model_dir = os.listdir(bpy.context.scene.configuration[config_id].modelsrc)
-        for objname in poses:
+        model_dir = os.listdir(config.modelsrc)
+        print(poses)
+        for obj_instancename in poses:
+            objname = obj_instancename.split(".")[0]
             if objname in model_dir:
-                objworkspacename = workspace_name + ":" + objname
+                objworkspacename = workspace_name + ":" + obj_instancename
                 if objworkspacename in bpy.data.objects:
-                    print("hi")
-                    bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
-                    bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
+                    bpy.data.objects[objworkspacename].location = poses[obj_instancename]['pose'][0]
+                    bpy.data.objects[objworkspacename].rotation_quaternion = poses[obj_instancename]['pose'][1]/np.linalg.norm(poses[obj_instancename]['pose'][1])
                 else:
-                    load_model(os.path.join(bpy.context.scene.configuration[config_id].modelsrc, objname, objname + ".obj" ), config_id)
-                    bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
-                    bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
+                    load_model(os.path.join(config.modelsrc, objname, objname + ".obj" ), config_id)
+                    bpy.data.objects[objworkspacename].location = poses[obj_instancename]['pose'][0]
+                    bpy.data.objects[objworkspacename].rotation_quaternion = poses[obj_instancename]['pose'][1]/np.linalg.norm(poses[obj_instancename]['pose'][1])
 
 
 def load_pc(filepath, pointcloudscale, config_id):

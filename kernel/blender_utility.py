@@ -156,3 +156,22 @@ def _align_reconstruction(config, scene, THRESHOLD = 0.01, NUM_THRESHOLD = 5):
     scale = _calculateDepth(THRESHOLD = THRESHOLD, NUM_THRESHOLD = NUM_THRESHOLD, PointsDepth = PointsDepth)
     print("The scale is : {0}".format(scale))
     return scale
+
+def _getsameinstance(config, objName): 
+    workspace_name = config.projectname
+    objlists = bpy.data.objects.keys()
+    objNameStart = workspace_name + ":" + objName
+    goalobjlist = []
+    for objname in objlists:
+        if objname.startswith(objNameStart):
+            goalobjlist.append(objname)
+    return goalobjlist
+
+def _getnextperfixforinstance(config, objName):
+    goalobjlist = _getsameinstance(config, objName)
+    perfixlist = [int(name[-3:]) for name in goalobjlist]
+    if len(perfixlist) == 0:
+        return 1
+    else:
+        return (np.array(perfixlist)).max() + 1
+

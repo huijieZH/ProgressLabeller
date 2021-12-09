@@ -29,34 +29,13 @@ class offlineRender:
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
             self.renderAll()
         elif pkg_type == "BOP":
-            self.object_label = { # according to 21 objects in ycbv
-            "002_master_chef_can" : 1,
-            "003_cracker_box" : 2,
-            "004_sugar_box" : 3,
-            "005_tomato_soup_can" : 4,
-            "006_mustard_bottle" : 5,
-            "007_tuna_fish_can" : 6,
-            "009_gelatin_box" : 8,
-            "010_potted_meat_can" : 9,
-            "025_mug" : 14,
-            "040_large_marker" : 18
-            }
+            self.object_label = param.object_label
             self._prepare_scene_BOP()
-            self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0] + 640, self.param.camera["resolution"][1] + 240)
+            # self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0] + 640, self.param.camera["resolution"][1] + 240)
+            self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
             self.renderBOP()
-        elif pkg_type == "YCBV":
-            self.object_label = { # according to 21 objects in ycbv
-            "002_master_chef_can" : 1,
-            "003_cracker_box" : 2,
-            "004_sugar_box" : 3,
-            "005_tomato_soup_can" : 4,
-            "006_mustard_bottle" : 5,
-            "007_tuna_fish_can" : 6,
-            "009_gelatin_box" : 8,
-            "010_potted_meat_can" : 9,
-            "025_mug" : 14,
-            "040_large_marker" : 18
-            }
+        elif pkg_type == "YCBV":    
+            self.object_label = param.object_label
             self._prepare_scene()
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
             self.renderYCBV()
@@ -77,26 +56,27 @@ class offlineRender:
                                                znear=0.05, zfar=100.0, name=None)
         self.nc = pyrender.Node(camera=cam, matrix=np.eye(4))
         self.scene.add_node(self.nc)
-        for obj in self.objects:
+        for obj_instancename in self.objects:
+            obj = obj_instancename.split(".")[0]
             ## for full model
-            if self.objects[obj]['type'] == 'normal':
+            if self.objects[obj_instancename]['type'] == 'normal':
                 tm = trimesh.load(os.path.join(self.modelsrc, obj, obj+".obj"))
                 mesh = pyrender.Mesh.from_trimesh(tm)
-                node = pyrender.Node(mesh=mesh, matrix=self.objects[obj]['trans'])
-                self.objectmap[node] = {"index":object_index, "name":obj, "trans":self.objects[obj]['trans']}
+                node = pyrender.Node(mesh=mesh, matrix=self.objects[obj_instancename]['trans'])
+                self.objectmap[node] = {"index":object_index, "name":obj_instancename, "trans":self.objects[obj_instancename]['trans']}
                 self.scene.add_node(node)
                 object_index += 1
             ## for split model
-            if self.objects[obj]['type'] == 'split':
-                splitobjfiles = os.listdir(os.path.join(self.modelsrc, obj, "split"))
-                for f in splitobjfiles:
-                    if f.endswith(".obj"):
-                        tm = trimesh.load(os.path.join(self.modelsrc, obj, "split", f))
-                        mesh = pyrender.Mesh.from_trimesh(tm)
-                        node = pyrender.Node(mesh=mesh, matrix=self.objects[obj]['trans'])
-                        self.objectmap[node] = {"index":object_index, "name":f.split(".")[0], "trans":self.objects[obj]['trans']}
-                        self.scene.add_node(node)
-                        object_index += 1
+            # if self.objects[obj_instancename]['type'] == 'split':
+            #     splitobjfiles = os.listdir(os.path.join(self.modelsrc, obj, "split"))
+            #     for f in splitobjfiles:
+            #         if f.endswith(".obj"):
+            #             tm = trimesh.load(os.path.join(self.modelsrc, obj, "split", f))
+            #             mesh = pyrender.Mesh.from_trimesh(tm)
+            #             node = pyrender.Node(mesh=mesh, matrix=self.objects[obj]['trans'])
+            #             self.objectmap[node] = {"index":object_index, "name":f.split(".")[0], "trans":self.objects[obj]['trans']}
+            #             self.scene.add_node(node)
+            #             object_index += 1
     
     def _parsecamfile(self):
         self.camposes = {}
@@ -244,9 +224,12 @@ class offlineRender:
                 mask = np.logical_and(
                     (np.abs(depth - full_depth) < 1e-6), np.abs(full_depth) > 0
                 )
-                mask_trim = (np.abs(depth) > 0)[120:600, 320:960]
-                mask_visiable_trim = mask[120:600, 320:960] 
-                depth_pillow = Image.fromarray((mask_trim * 255).astype('uint8'))
+                # mask_trim = (np.abs(depth) > 0)[120:600, 320:960] 
+                # mask_visiable_trim = mask[120:600, 320:960] 
+                mask_trim = (np.abs(depth) > 0)
+                mask_visiable_trim = mask
+                # depth_pillow = Image.fromarray((mask_trim * 255).astype('uint8'))
+                depth_pillow = Image.fromarray((depth * 10000).astype(np.uint16))
                 depth_pillow.save(os.path.join(self.outputpath, "mask", "{0:06d}_{1:06d}.png".format(idx ,obj_idx)))
                 mask_pillow = Image.fromarray((mask_visiable_trim * 255).astype('uint8'))
                 mask_pillow.save(os.path.join(self.outputpath, "mask_visib", "{0:06d}_{1:06d}.png".format(idx ,obj_idx)))
@@ -282,18 +265,19 @@ class offlineRender:
         self.scene = pyrender.Scene()
         cam = pyrender.camera.IntrinsicsCamera(self.param.camera["intrinsic"][0, 0],
                                             self.param.camera["intrinsic"][1, 1], 
-                                            self.param.camera["intrinsic"][0, 2] + 320, 
-                                            self.param.camera["intrinsic"][1, 2] + 120, 
+                                            self.param.camera["intrinsic"][0, 2], 
+                                            self.param.camera["intrinsic"][1, 2], 
                                             znear=0.05, zfar=100.0, name=None)
         self.nc = pyrender.Node(camera=cam, matrix=np.eye(4))
         self.scene.add_node(self.nc)
-        for obj in self.objects:
+        for obj_instancename in self.objects:
             ## for full model
-            if self.objects[obj]['type'] == 'normal':
+            obj = obj_instancename.split(".")[0]
+            if self.objects[obj_instancename]['type'] == 'normal':
                 tm = trimesh.load(os.path.join(self.modelsrc, obj, obj+".obj"))
                 mesh = pyrender.Mesh.from_trimesh(tm)
-                node = pyrender.Node(mesh=mesh, matrix=self.objects[obj]['trans'])
-                self.objectmap[node] = {"index":self.object_label[obj], "name":obj, "trans":self.objects[obj]['trans']}
+                node = pyrender.Node(mesh=mesh, matrix=self.objects[obj_instancename]['trans'])
+                self.objectmap[node] = {"index":self.object_label[obj], "name":obj_instancename , "trans":self.objects[obj_instancename ]['trans']}
                 self.scene.add_node(node)
     
     def _getbbx(self, mask):
@@ -348,14 +332,14 @@ class offlineRender:
                     (np.abs(depth - full_depth) < 1e-6), np.abs(full_depth) > 0
                 )
                 mask_visiable = (mask * 255).astype('uint8')
-                segimg[mask] = self.object_label[self.objectmap[node]["name"]]
+                segimg[mask] = self.object_label[self.objectmap[node]["name"].split(".")[0]]
                 node.mesh.is_visible = False
                 if not self._getbbxycb(mask_visiable)[0]:
                     continue
                 else:
                     bbx = self._getbbxycb(mask_visiable)[1]
                     txtfile.write(self.objectmap[node]["name"] + f' {bbx[0]} {bbx[1]} {bbx[2]} {bbx[3]}\n')
-                    mat['cls_indexes'] = np.vstack((mat['cls_indexes'], np.array([[self.object_label[self.objectmap[node]["name"]]]], dtype = np.uint8)))
+                    mat['cls_indexes'] = np.vstack((mat['cls_indexes'], np.array([[self.object_label[self.objectmap[node]["name"].split(".")[0]]]], dtype = np.uint8)))
                     
                     modelT = self.objectmap[node]["trans"]
                     model_camT = np.linalg.inv(self.camposes[cam_name]).dot(modelT)

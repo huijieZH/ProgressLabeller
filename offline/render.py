@@ -149,20 +149,23 @@ class offlineRender:
                                [0, 0, -1, 0],
                                [0, 0, 0, 1],]
                                 )
+        i = 0             
         for cam in tqdm(self.camposes):
-            camT = self.camposes[cam].dot(Axis_align)
-            segment = self._render(camT, self.scene)
-            perfix = cam.split(".")[0]
-            inputrgb = np.array(Image.open(os.path.join(self.datasrc, "rgb", cam)))
+            if (i%100) == 0:
+                camT = self.camposes[cam].dot(Axis_align)
+                segment = self._render(camT, self.scene)
+                perfix = cam.split(".")[0]
+                inputrgb = np.array(Image.open(os.path.join(self.datasrc, "rgb", cam)))
 
-            for node in self.objectmap:
-                posepath = os.path.join(self.outputpath, self.objectmap[node]["name"], "pose")
-                rgbpath = os.path.join(self.outputpath, self.objectmap[node]["name"], "rgb")
-                modelT = self.objectmap[node]["trans"]
-                # model_camT = np.linalg.inv(camT.dot(Axis_align)).dot(modelT)
-                model_camT = np.linalg.inv(self.camposes[cam]).dot(modelT)
-                self._createpose(posepath, perfix, model_camT)
-                self._createrbg(inputrgb, segment, os.path.join(rgbpath, cam), self.objectmap[node]["index"] + 1)
+                for node in self.objectmap:
+                    posepath = os.path.join(self.outputpath, self.objectmap[node]["name"], "pose")
+                    rgbpath = os.path.join(self.outputpath, self.objectmap[node]["name"], "rgb")
+                    modelT = self.objectmap[node]["trans"]
+                    # model_camT = np.linalg.inv(camT.dot(Axis_align)).dot(modelT)
+                    model_camT = np.linalg.inv(self.camposes[cam]).dot(modelT)
+                    self._createpose(posepath, perfix, model_camT)
+                    self._createrbg(inputrgb, segment, os.path.join(rgbpath, cam), self.objectmap[node]["index"] + 1)
+            i+=1
 
 
 
@@ -174,6 +177,8 @@ class offlineRender:
     def _createrbg(self, inputrgb, segment, outputpath, segment_index):
         rgb = inputrgb.copy()
         mask = np.repeat((segment != segment_index)[:, :, np.newaxis], 3, axis=2)
+        mask[:,:,1] = False
+        mask[:,:,2] = False
         rgb[mask] = 0
         img = Image.fromarray(rgb)
         img.save(outputpath)

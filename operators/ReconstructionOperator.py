@@ -33,9 +33,10 @@ class Reconstruction(Operator):
         items=(
             ('KinectFusion', "KinectFusion", "Need depth & rgb data information"),
             ('COLMAP', "COLMAP", "Need depth & rgb data information"),
-            ('ORB_SLAM2', "ORB_SLAM2", "Need depth & rgb data information")
+            ('ORB_SLAM2', "ORB_SLAM2", "Need depth & rgb data information"),
+            ('ORB_SLAM3', "ORB_SLAM3", "Need depth & rgb data information")
         ),
-        default='ORB_SLAM2',
+        default='ORB_SLAM3',
     )
 
     PerfixList = list()
@@ -145,9 +146,49 @@ class Reconstruction(Operator):
                                            IMPORT_RATIO = config.sample_rate,
                                            CAMPOSE_INVERSE= config.inverse_pose
                                            )
+
+        elif self.ReconstructionType == "ORB_SLAM3":
+            try: 
+                from kernel.orb_slam3.build import orb3_extension
+                from kernel.orb_slam3.orbslam3_utility import orbslam3_yaml, orbslam3_associatefile
+            except:
+                log_report(
+                    "Error", "Please successfully install ORB_SLAM3, pybind11 and complie orb_extension", None
+                )            
+            else:
+                _clear_recon_output(config.reconstructionsrc)    
+                orbslam3_yaml(os.path.join(config.reconstructionsrc, "orb_slam3.yaml"), 
+                             config.fx, config.fy, config.cx, config.cy, 
+                             config.resX, config.resY, config.depth_scale, 
+                             scene.orbslamparas.timestampfrenquency)
+                orbslam3_associatefile(os.path.join(config.reconstructionsrc, "associate.txt"), 
+                                      config.datasrc, 
+                                      scene.orbslamparas.timestampfrenquency)
+                source = os.path.dirname(os.path.dirname(__file__))
+                code_path = os.path.join(source, "kernel", "orb_slam3", "orb_slam3.py")
+                os.system(sys.executable + " {0} {1} {2} {3} {4} {5} {6} {7}".format(code_path, 
+                    scene.orbslamparas.orb_vocabularysrc, 
+                    os.path.join(config.reconstructionsrc,"orb_slam3.yaml"),
+                    config.datasrc,
+                    os.path.join(config.reconstructionsrc, "associate.txt"),
+                    config.reconstructionsrc,
+                    scene.orbslamparas.timestampfrenquency,
+                    float(scene.orbslamparas.display)
+                    ))
+                config.inverse_pose = False
+                config.reconstructionscale = 1.0
+                _initreconpose(config)
+                load_reconstruction_result(filepath = config.reconstructionsrc, 
+                                           pointcloudscale = 1.0, 
+                                           datasrc = config.datasrc,
+                                           config_id = config_id,
+                                           camera_display_scale = config.cameradisplayscale,
+                                           IMPORT_RATIO = config.sample_rate,
+                                           CAMPOSE_INVERSE= config.inverse_pose
+                                           )
         
         ### whatever pose reconstruction method, estimate an volume
-        if self.ReconstructionType == "ORB_SLAM2":
+        if self.ReconstructionType == "ORB_SLAM2" or self.ReconstructionType == "ORB_SLAM3":
             dir = os.path.dirname(config.reconstructionsrc)
             configuration_export(config, os.path.join(dir, "configuration.json"))
             poseFusion(
@@ -266,6 +307,56 @@ class Reconstruction(Operator):
             box = layout.box() 
         
         elif self.ReconstructionType == "ORB_SLAM2":
+            layout.label(text="Set Camera Parameters:")
+            box = layout.box() 
+            row = box.row(align=True)
+            row.prop(config, "fx")
+            row.prop(config, "fy")
+            row = box.row(align=True)
+            row.prop(config, "cx")
+            row.prop(config, "cy")
+            row = box.row(align=True)
+            row.prop(config, "resX")
+            row.prop(config, "resY")
+            layout.label(text="Set Reconstruction Loading Parameters:")        
+            layout.label(text="Set Plane Alignment (ICP) Parameters:")
+            box = layout.box() 
+            row = box.row()
+            row.prop(scene.planalignmentparas, "threshold") 
+            row = box.row()
+            row.prop(scene.planalignmentparas, "n") 
+            row = box.row()
+            row.prop(scene.planalignmentparas, "iteration") 
+            box = layout.box() 
+            box.label(text="Point Cloud Scale:")
+            row = box.row()
+            row.prop(config, "depth_scale")
+            row = layout.row()
+            row.prop(config, "cameradisplayscale")
+            row = layout.row()
+            row.prop(scene.scalealign, "THRESHOLD")
+            row = layout.row()
+            row.prop(scene.scalealign, "NUM_THRESHOLD") 
+            layout.label(text="Set ORB_SLAM2 Parameters:")   
+            box = layout.box() 
+            row = box.row()
+            row.prop(scene.orbslamparas, "orb_vocabularysrc") 
+            row = box.row()
+            row.prop(scene.orbslamparas, "timestampfrenquency")   
+            row = box.row()
+            row.prop(scene.orbslamparas, "display")            
+            layout.label(text="Set Depth Fusion Parameters:")
+            row = layout.row() 
+            row.prop(scene.kinectfusionparas, "tsdf_voxel_size")
+            row = layout.row() 
+            row.prop(scene.kinectfusionparas, "tsdf_trunc_margin")
+            row = layout.row() 
+            row.prop(scene.kinectfusionparas, "pcd_voxel_size")
+            row = layout.row() 
+            row.prop(config, "depth_ignore")
+            box = layout.box() 
+
+        elif self.ReconstructionType == "ORB_SLAM3":
             layout.label(text="Set Camera Parameters:")
             box = layout.box() 
             row = box.row(align=True)

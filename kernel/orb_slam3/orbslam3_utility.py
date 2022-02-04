@@ -1,6 +1,6 @@
 import os
 
-def orbslam_yaml(file_path, fx, fy, cx,cy, width, height, depthscale, frequency):
+def orbslam3_yaml(file_path, fx, fy, cx,cy, width, height, depthscale, frequency):
     f = open(file_path, "w")
     f.write("%YAML:1.0\n")
     f.write("\n")
@@ -8,32 +8,32 @@ def orbslam_yaml(file_path, fx, fy, cx,cy, width, height, depthscale, frequency)
     f.write("# Camera Parameters. Adjust them!\n")
     f.write("#--------------------------------------------------------------------------------------------\n")
     f.write("\n")
+    f.write("File.version: \"1.0\"\n\n")
+    f.write("Camera.type: \"PinHole\"\n")
     f.write("# Camera calibration and distortion parameters (OpenCV)\n")
-    f.write("Camera.fx: {0:.3f}\n".format(fx))
-    f.write("Camera.fy: {0:.3f}\n".format(fy))
-    f.write("Camera.cx: {0:.3f}\n".format(cx))
-    f.write("Camera.cy: {0:.3f}\n\n".format(cy))
+    f.write("Camera1.fx: {0:.3f}\n".format(fx))
+    f.write("Camera1.fy: {0:.3f}\n".format(fy))
+    f.write("Camera1.cx: {0:.3f}\n".format(cx))
+    f.write("Camera1.cy: {0:.3f}\n\n".format(cy))
 
-    f.write("Camera.k1: 0\n")
-    f.write("Camera.k2: 0\n")
-    f.write("Camera.p1: 0\n")
-    f.write("Camera.p2: 0\n")
-    f.write("Camera.k3: 0\n\n")
+    f.write("Camera1.k1: 0\n")
+    f.write("Camera1.k2: 0\n")
+    f.write("Camera1.p1: 0\n")
+    f.write("Camera1.p2: 0\n")
+    f.write("Camera1.k3: 0\n\n")
 
     f.write("Camera.width: {0}\n".format(width))
     f.write("Camera.height: {0}\n\n".format(height))
 
+    f.write("# Close/Far threshold. Baseline times.\n")
+    f.write("Stereo.ThDepth: 40.0.\n")
+    f.write("Stereo.b: 0.0745\n")
+
     f.write("# Camera frames per second\n") 
     f.write("Camera.fps: {0:.1f}\n\n".format(frequency))
 
-    f.write("# IR projector baseline times fx (aprox.)\n")
-    f.write("Camera.bf: 40.0\n\n")
-
     f.write("# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)\n")
     f.write("Camera.RGB: 1\n\n")
-
-    f.write("# Close/Far threshold. Baseline times.\n")
-    f.write("ThDepth: 40.0\n\n")
 
     f.write("# Deptmap values factor\n") 
     f.write("DepthMapFactor: {0:.1f}\n".format(1/depthscale))
@@ -66,14 +66,14 @@ def orbslam_yaml(file_path, fx, fy, cx,cy, width, height, depthscale, frequency)
     f.write("Viewer.GraphLineWidth: 0.9\n")
     f.write("Viewer.PointSize: 2\n")
     f.write("Viewer.CameraSize: 0.08\n")
-    f.write("Viewer.CameraLineWidth: 3\n")
+    f.write("Viewer.CameraLineWidth: 3.0\n")
     f.write("Viewer.ViewpointX: 0\n")
     f.write("Viewer.ViewpointY: -0.7\n")
-    f.write("Viewer.ViewpointZ: -1.8\n")
-    f.write("Viewer.ViewpointF: 500\n")
+    f.write("Viewer.ViewpointZ: -3.5\n")
+    f.write("Viewer.ViewpointF: 500.0\n")
     f.close()
 
-def orbslam_associatefile(file_path, dataset_path, frequency):
+def orbslam3_associatefile(file_path, dataset_path, frequency):
     rgb_files = os.listdir(os.path.join(dataset_path, "rgb"))
     depth_files = os.listdir(os.path.join(dataset_path, "depth"))
     rgb_files.sort()

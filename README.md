@@ -99,15 +99,15 @@ make
 ```
 
 
-### Build ORB-SLAM3_extension(only needed when you want to use ORB_SLAM2)
+### Build ORB-SLAM3_extension(only needed when you want to use ORB_SLAM3)
 
 To enableing ORB-SLAM3 reconstruction, you should clone [my branch](https://github.com/ZerenYu/ORB_SLAM3.git), containing a little modification from official version. Please follow the guidance to install ORB_SLAM3.
 
 Then to build the interface between ORB-SLAM3 and Progresslabeler. 
 ```bash
-export ORB_SOURCE_DIR=</PATH/TO/ORB_SLAM3>
-cd $PROGRESSLABELER_PATH/kernel/orb_slam
-tar -xf ORBvoc.txt.tar.gz
+export ORB3_SOURCE_DIR=</PATH/TO/ORB_SLAM3>
+cd $PROGRESSLABELER_PATH/kernel/orb_slam3
+tar -xf ../orb_slam/ORBvoc.txt.tar.gz
 conda activate progresslabeler
 mkdir build
 cd build

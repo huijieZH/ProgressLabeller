@@ -21,6 +21,7 @@ class offlineRender:
         self.datasrc = self.param.datasrc
         self.intrinsic = self.param.camera["intrinsic"]
         self.objects = self.param.objs
+        self.objs_kp = self.param.objs_kp
         
         self._parsecamfile()
         if pkg_type == "ProgressLabeller":
@@ -28,10 +29,11 @@ class offlineRender:
             self._createallpkgs()
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
             self.renderAll()
+        
+        ## TODO only add key points to BOP
         elif pkg_type == "BOP":
             self.object_label = param.object_label
             self._prepare_scene_BOP()
-            # self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0] + 640, self.param.camera["resolution"][1] + 240)
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
             self.renderBOP()
         elif pkg_type == "YCBV":    
@@ -229,15 +231,20 @@ class offlineRender:
                 mask = np.logical_and(
                     (np.abs(depth - full_depth) < 1e-6), np.abs(full_depth) > 0
                 )
-                # mask_trim = (np.abs(depth) > 0)[120:600, 320:960] 
-                # mask_visiable_trim = mask[120:600, 320:960] 
+
+                ## calculate ketpoints location
+                instance_name = self.objectmap[node]['name']
+                kp = self.objs_kp[instance_name]
+                cam_world_T = np.linalg.inv(self.camposes[cam_name])
+                kp_pixel_homo = self.intrinsic.dot(cam_world_T[:3, :3].dot(kp.T) + cam_world_T[:3, [3]])
+                kp_pixel = (kp_pixel_homo[:2]/kp_pixel_homo[2]).T
+
                 mask_trim = (np.abs(depth) > 0)
                 mask_visiable_trim = mask
-                # depth_pillow = Image.fromarray((mask_trim * 255).astype('uint8'))
-                depth_pillow = Image.fromarray((depth * 10000).astype(np.uint16))
-                depth_pillow.save(os.path.join(self.outputpath, "mask", "{0:06d}_{1:06d}.png".format(idx ,obj_idx)))
-                mask_pillow = Image.fromarray((mask_visiable_trim * 255).astype('uint8'))
-                mask_pillow.save(os.path.join(self.outputpath, "mask_visib", "{0:06d}_{1:06d}.png".format(idx ,obj_idx)))
+                mask_pillow = Image.fromarray((mask_trim * 255).astype('uint8'))
+                mask_pillow.save(os.path.join(self.outputpath, "mask", "{0:06d}_{1:06d}.png".format(idx ,obj_idx)))
+                mask_visiable_pillow = Image.fromarray((mask_visiable_trim * 255).astype('uint8'))
+                mask_visiable_pillow.save(os.path.join(self.outputpath, "mask_visib", "{0:06d}_{1:06d}.png".format(idx ,obj_idx)))
                 node.mesh.is_visible = False
                 if not self._getbbx(mask_trim)[0]:
                     continue
@@ -248,6 +255,7 @@ class offlineRender:
                     "px_count_valid": int(np.sum(np.array(inputdepth)[mask_trim] != 0)),
                     "px_count_visib": int(np.sum(mask_visiable_trim)),
                     "visib_fract": float(np.sum(mask_visiable_trim)/np.sum(depth > 0)),
+                    "kps": kp_pixel.tolist(),
                 })
                 modelT = self.objectmap[node]["trans"]
                 model_camT = np.linalg.inv(modelT).dot(self.camposes[cam_name])
@@ -284,6 +292,12 @@ class offlineRender:
                 node = pyrender.Node(mesh=mesh, matrix=self.objects[obj_instancename]['trans'])
                 self.objectmap[node] = {"index":self.object_label[obj], "name":obj_instancename , "trans":self.objects[obj_instancename ]['trans']}
                 self.scene.add_node(node)
+            if obj_instancename in self.objs_kp:
+                trans = self.objects[obj_instancename]['trans']
+                points = self.objs_kp[obj_instancename].T
+                points_transed = trans[:3, :3].dot(points) + trans[:3, [3]]
+                self.objs_kp[obj_instancename] = points_transed.T
+
     
     def _getbbx(self, mask):
         pixel_list = np.where(mask)
@@ -343,7 +357,7 @@ class offlineRender:
                     continue
                 else:
                     bbx = self._getbbxycb(mask_visiable)[1]
-                    txtfile.write(self.objectmap[node]["name"] + f' {bbx[0]} {bbx[1]} {bbx[2]} {bbx[3]}\n')
+                    txtfile.write(self.objectmap[node]["name"].split(".")[0] + f' {bbx[0]} {bbx[1]} {bbx[2]} {bbx[3]}\n')
                     mat['cls_indexes'] = np.vstack((mat['cls_indexes'], np.array([[self.object_label[self.objectmap[node]["name"].split(".")[0]]]], dtype = np.uint8)))
                     
                     modelT = self.objectmap[node]["trans"]

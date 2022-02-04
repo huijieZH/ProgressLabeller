@@ -301,6 +301,9 @@ class RemoveWorkspace(Operator):
         assert context.object['type'] == 'setting'
         name  = _get_workspace_name(context.object)
         removeworkspace(name)
+        for area in registeration.register.area_image_pair:
+            bpy.types.SpaceView3D.draw_handler_remove(registeration.register.area_image_pair[area]["handler"], 'WINDOW')
+        registeration.register.area_image_pair = {}
         return {'FINISHED'}  
 
 class ModelICP(Operator):

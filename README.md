@@ -99,6 +99,22 @@ make
 ```
 
 
+### Build ORB-SLAM3_extension(only needed when you want to use ORB_SLAM3)
+
+To enableing ORB-SLAM3 reconstruction, you should clone [my branch](https://github.com/ZerenYu/ORB_SLAM3.git), containing a little modification from official version. Please follow the guidance to install ORB_SLAM3.
+
+Then to build the interface between ORB-SLAM3 and Progresslabeler. 
+```bash
+export ORB3_SOURCE_DIR=</PATH/TO/ORB_SLAM3>
+cd $PROGRESSLABELER_PATH/kernel/orb_slam3
+tar -xf ../orb_slam/ORBvoc.txt.tar.gz
+conda activate progresslabeler
+mkdir build
+cd build
+cmake ..
+make
+```
+
 ### Install add-on in blender
 
 In order to see some running message about our pipeline, it is recommended to run the blender in the terminal. Just run:

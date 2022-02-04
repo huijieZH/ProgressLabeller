@@ -5,8 +5,8 @@ pyyaml
 tqdm 
 trimesh 
 pyrender 
-scikit-image 
 pyntcloud
 pycuda
 pybind11
 numba
+scikit-image == 0.18.3 

@@ -49,6 +49,7 @@ class offlineParam:
     def parseobj(self):
         self.objs = {}
         objnames_list = []
+        self.objs_kp = {}
         if os.path.exists(os.path.join(self.modelposesrc, "label_pose.yaml")):
             f = open(os.path.join(self.modelposesrc, "label_pose.yaml"))
             poses = yaml.safe_load(f)
@@ -61,6 +62,19 @@ class offlineParam:
                     self.objs[obj_instancename] = {}
                     self.objs[obj_instancename]['type'] = poses[obj_instancename]['type']
                     self.objs[obj_instancename]['trans'] = _pose2Rotation(poses[obj_instancename]['pose'])
+                    files = os.listdir(os.path.join(self.modelsrc, objname))
+                    if "keypoints.txt" in files:
+                        self.objs_kp[obj_instancename] = []
+                        kp_file = open(os.path.join(self.modelsrc, objname, "keypoints.txt")).readlines()
+                        for line in kp_file:
+                            point_char = line.split(" ")[:3]
+                            point_char = [float(p.split(",")[0]) for p in point_char]
+                            self.objs_kp[obj_instancename].append(point_char)
+                        self.objs_kp[obj_instancename] = np.array(self.objs_kp[obj_instancename])
+
+                
         if self.object_label is None:
             self.object_label = {objnames_list[i] : i for i in range(1, len(objnames_list) + 1)}
+        
+
 

@@ -174,6 +174,7 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
 
     rgb_files.sort()
     rgb_sample_files = _select_sample_files(rgb_files, sample_rate)
+    os.system("mkdir -p " + bpy.context.scene.configuration[config_id].reconstructionsrc)
     _generate_image_list(bpy.context.scene.configuration[config_id].reconstructionsrc, rgb_sample_files)
     _clear_allrgbdcam_insameworkspace(bpy.context.scene.configuration[config_id])
     log_report(
@@ -257,6 +258,9 @@ def load_reconstruction_result(filepath,
     reconstruction_path = os.path.join(filepath, "fused.ply")
     load_pc(reconstruction_path, pointcloudscale, config_id)
     bpy.ops.object.select_all(action='DESELECT')
+
+    rgb_files = os.listdir(rgb_path)
+    depth_files = os.listdir(depth_path)
     
     ## load camera and image result
     camera_lines = _parse_camfile(camera_rgb_file)
@@ -282,7 +286,7 @@ def load_reconstruction_result(filepath,
                 cam_object = bpy.data.objects[cam_name]
                 cam_object.location = pose[0]
                 cam_object.rotation_quaternion = pose[1]
-            elif perfix + ".png" in os.listdir(rgb_path) and perfix + ".png" in os.listdir(depth_path):
+            elif perfix + ".png" in rgb_files and perfix + ".png" in depth_files:
                 cam_data = bpy.data.cameras.new(cam_name)
                 cam_data.lens = bpy.context.scene.configuration[config_id].lens
                 f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2

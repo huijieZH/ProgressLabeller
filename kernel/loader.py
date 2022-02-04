@@ -174,6 +174,7 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
 
     rgb_files.sort()
     rgb_sample_files = _select_sample_files(rgb_files, sample_rate)
+    os.system("mkdir -p " + bpy.context.scene.configuration[config_id].reconstructionsrc)
     _generate_image_list(bpy.context.scene.configuration[config_id].reconstructionsrc, rgb_sample_files)
     _clear_allrgbdcam_insameworkspace(bpy.context.scene.configuration[config_id])
     log_report(

@@ -140,6 +140,7 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 box = layout.box() 
                 row = box.row(align=True)
                 row.operator("reconstruction.methodselect")  
+                row.operator("reconstruction.depthfusion")
 
                 layout.label(text="Data Output:")
                 box = layout.box() 

@@ -39,7 +39,7 @@ def draw():
                     alpha = depthfilter(obj["depth"]["depth"], config.depth_scale, config.depth_ignore, scene.floatscreenproperty.IGNORE_ZERODEPTH)
                     pixels = list(show_frame.pixels) 
                     for i in range(0, int(len(pixels)/4)):
-                        pixels[4 * i + 3] = float(alpha[i]) * 0.5
+                        pixels[4 * i + 3] = float(alpha[i]) * 1
                     show_frame.pixels[:] = pixels                   
                 obj.data.show_background_images = scene.floatscreenproperty.BACKGROUND
                 obj.data.background_images[0].image = show_frame
@@ -80,13 +80,14 @@ def draw_for_area(area, camera_obj):
         camera_obj.data.background_images[0].image = show_frame
         camera_obj.data.background_images[0].alpha = scene.floatscreenproperty.background_alpha   
         bpy.context.scene.render.resolution_x = bpy.context.scene.configuration[config_id].resX
-        bpy.context.scene.render.resolution_y = bpy.context.scene.configuration[config_id].resY                             
-        area.spaces[0].use_local_camera = True
-        area.spaces[0].region_3d.view_perspective = 'CAMERA'
-        area.spaces[0].camera = camera_obj
-        # 
-        area.spaces[0].overlay.show_wireframes = True
-        area.spaces[0].overlay.wireframe_threshold = 0
+        bpy.context.scene.render.resolution_y = bpy.context.scene.configuration[config_id].resY
+        if len(area.spaces) > 0:
+            area.spaces[0].use_local_camera = True
+            area.spaces[0].region_3d.view_perspective = 'CAMERA'
+            area.spaces[0].camera = camera_obj
+            # 
+            area.spaces[0].overlay.show_wireframes = True
+            area.spaces[0].overlay.wireframe_threshold = 0
         show_frame["UPDATEALPHA"] = False        
 
 

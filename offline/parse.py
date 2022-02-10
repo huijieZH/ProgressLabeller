@@ -72,7 +72,7 @@ class offlineParam:
                             self.objs_kp[obj_instancename].append(point_char)
                         self.objs_kp[obj_instancename] = np.array(self.objs_kp[obj_instancename])
 
-                
+        # print(objnames_list)
         if self.object_label is None:
             self.object_label = {objnames_list[i] : i for i in range(1, len(objnames_list) + 1)}
         

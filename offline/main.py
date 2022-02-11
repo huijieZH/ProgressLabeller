@@ -7,9 +7,9 @@ from offlineRecon import offlineRecon
 
 
 if __name__ == "__main__":
-    config_path = '/media/cxt/PortableSSD/trans_data/515_realsense/set5/scene1/configuration_cxt.json' # sys.argv[1]
-    output_dir = sys.argv[2]
-    data_format = 'YCBV' # sys.argv[3]
+    config_path = '/media/huijie/HUIJIE/dataset/Transparentdataset/trans_data/set2/scene1/configuration_zhj.json' # sys.argv[1]
+    output_dir = '/home/huijie/Desktop/test'
+    data_format = 'Transparent_YCBV' # sys.argv[3]
     print(sys.argv)
     # object_label = {
     #     "cham_cup_correct" :1, 

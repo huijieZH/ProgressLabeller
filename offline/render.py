@@ -9,6 +9,7 @@ from PIL import Image
 from tqdm import tqdm
 from scipy.io import savemat
 import copy
+import cv2
 import open3d as o3d
 
 class offlineRender:
@@ -398,9 +399,12 @@ class offlineRender:
 
     def renderTransparent_YCBV(self):
         self._createpkg(self.outputpath)
+        H, W = self.param.camera["resolution"][1], self.param.camera["resolution"][0]
+        U, V = np.tile(np.arange(W), (H, 1)), np.tile(np.arange(H), (W, 1)).T
+        fx, fy, cx, cy = self.intrinsic[0, 0], self.intrinsic[1, 1], self.intrinsic[0, 2], self.intrinsic[1, 2]
         for idx, cam_name in tqdm(enumerate(self.camposes)):
-            os.system('cp ' + os.path.join(self.datasrc, "rgb", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-color.png".format(idx)))
-            os.system('cp ' + os.path.join(self.datasrc, "depth", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-depth.png".format(idx)))
+            # os.system('cp ' + os.path.join(self.datasrc, "rgb", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-color.png".format(idx)))
+            # os.system('cp ' + os.path.join(self.datasrc, "depth", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-depth.png".format(idx)))
             ## render
             Axis_align = np.array([[1, 0, 0, 0],
                                [0, -1, 0, 0],
@@ -419,47 +423,47 @@ class offlineRender:
 
             # normals, _ = self.render.render(self.scene)
 
-            for node in self.objectmap:
-                node.mesh.is_visible = False
+            # for node in self.objectmap:
+            #     node.mesh.is_visible = False
             
-            ## create -label.txt
-            txtfile = open(os.path.join(self.outputpath, "{0:06d}-box.txt".format(idx)),"w+")
-            ## create -meta.mat
-            mat = {}
-            mat['cls_indexes'] = np.empty((0, 1), dtype = np.uint8)
-            mat['center'] = np.empty((0, 2))
-            mat['factor_depth'] = np.array([[np.around(1/self.param.data['depth_scale'])]], dtype = np.uint16)
-            mat['intrinsic_matrix'] = self.intrinsic
-            mat['poses'] = np.empty((3, 4, 0))
-            mat['rotation_translation_matrix'] = self.camposes[cam_name][:3, :]
-            for obj_idx, node in enumerate(self.objectmap):
-                node.mesh.is_visible = True
-                depth = self.render.render(self.scene, flags = flags)
-                mask = np.logical_and(
-                    (np.abs(depth - full_depth) < 1e-6), np.abs(full_depth) > 0
-                )
-                mask_visiable = (mask * 255).astype('uint8')
-                segimg[mask] = self.object_label[self.objectmap[node]["name"].split(".")[0]]
-                node.mesh.is_visible = False
-                if not self._getbbxycb(mask_visiable)[0]:
-                    continue
-                else:
-                    bbx = self._getbbxycb(mask_visiable)[1]
-                    txtfile.write(self.objectmap[node]["name"].split(".")[0] + f' {bbx[0]} {bbx[1]} {bbx[2]} {bbx[3]}\n')
-                    mat['cls_indexes'] = np.vstack((mat['cls_indexes'], np.array([[self.object_label[self.objectmap[node]["name"].split(".")[0]]]], dtype = np.uint8)))
+            # ## create -label.txt
+            # txtfile = open(os.path.join(self.outputpath, "{0:06d}-box.txt".format(idx)),"w+")
+            # ## create -meta.mat
+            # mat = {}
+            # mat['cls_indexes'] = np.empty((0, 1), dtype = np.uint8)
+            # mat['center'] = np.empty((0, 2))
+            # mat['factor_depth'] = np.array([[np.around(1/self.param.data['depth_scale'])]], dtype = np.uint16)
+            # mat['intrinsic_matrix'] = self.intrinsic
+            # mat['poses'] = np.empty((3, 4, 0))
+            # mat['rotation_translation_matrix'] = self.camposes[cam_name][:3, :]
+            # for obj_idx, node in enumerate(self.objectmap):
+            #     node.mesh.is_visible = True
+            #     depth = self.render.render(self.scene, flags = flags)
+            #     mask = np.logical_and(
+            #         (np.abs(depth - full_depth) < 1e-6), np.abs(full_depth) > 0
+            #     )
+            #     mask_visiable = (mask * 255).astype('uint8')
+            #     segimg[mask] = self.object_label[self.objectmap[node]["name"].split(".")[0]]
+            #     node.mesh.is_visible = False
+            #     if not self._getbbxycb(mask_visiable)[0]:
+            #         continue
+            #     else:
+            #         bbx = self._getbbxycb(mask_visiable)[1]
+            #         txtfile.write(self.objectmap[node]["name"].split(".")[0] + f' {bbx[0]} {bbx[1]} {bbx[2]} {bbx[3]}\n')
+            #         mat['cls_indexes'] = np.vstack((mat['cls_indexes'], np.array([[self.object_label[self.objectmap[node]["name"].split(".")[0]]]], dtype = np.uint8)))
                     
-                    modelT = self.objectmap[node]["trans"]
-                    model_camT = np.linalg.inv(self.camposes[cam_name]).dot(modelT)
-                    center_homo = self.intrinsic @ model_camT[:3, 3]
-                    center = center_homo[:2]/center_homo[2]
-                    mat['center'] = np.vstack((mat['center'], center))
-                    mat['poses'] = np.concatenate((mat['poses'], model_camT[:3, :, np.newaxis]), axis = 2)
-                    pass
+            #         modelT = self.objectmap[node]["trans"]
+            #         model_camT = np.linalg.inv(self.camposes[cam_name]).dot(modelT)
+            #         center_homo = self.intrinsic @ model_camT[:3, 3]
+            #         center = center_homo[:2]/center_homo[2]
+            #         mat['center'] = np.vstack((mat['center'], center))
+            #         mat['poses'] = np.concatenate((mat['poses'], model_camT[:3, :, np.newaxis]), axis = 2)
+            #         pass
 
-            txtfile.close()
-            savemat(os.path.join(self.outputpath, "{0:06d}-meta.mat".format(idx)), mat)
-            segimg_pillow = Image.fromarray(segimg)
-            segimg_pillow.save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
+            # txtfile.close()
+            # savemat(os.path.join(self.outputpath, "{0:06d}-meta.mat".format(idx)), mat)
+            # segimg_pillow = Image.fromarray(segimg)
+            # segimg_pillow.save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
 
             depth_img = np.array(Image.open(os.path.join(self.datasrc, "depth", cam_name))).astype(np.uint16)
             obj_true_depth = (full_depth * 1000).astype(np.uint16)
@@ -468,22 +472,24 @@ class offlineRender:
             depth_true_pillow.save(os.path.join(self.outputpath, "{0:06d}-depth_true.png".format(idx)))
             # norm_img = Image.fromarray(normals)
             # norm_img.save(os.path.join(self.outputpath, "{0:06d}-normal.png".format(idx)))
-            pcd = o3d.geometry.PointCloud.create_from_depth_image(o3d.geometry.Image(depth_img),                                                        
-                                                                  o3d.camera.PinholeCameraIntrinsic(self.param.camera['resolution'][0], self.param.camera['resolution'][1], self.intrinsic[0, 0], self.intrinsic[1, 1], self.intrinsic[0, 2], self.intrinsic[1, 2]), 
-                                                                  self.camposes[cam_name]
-                                                                  )
-            pcd.estimate_normals(
-                search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
-            
-            normal = ((np.array(pcd.normals) + 1)*255/2).astype(np.uint8)
-            points = np.array(pcd.points)
-            pose = self.camposes[cam_name]
-            points_world = pose[:3, :3].dot(points.T) + pose[:3, [3]]
-            points_world_homo = points_world/points_world[2]
-            pixel_homo = self.intrinsic.dot(points_world_homo)
-            pixel = (pixel_homo[:2]/pixel_homo[2]).astype(np.uint32)
-            normals_map = np.zeros((self.param.camera['resolution'][1],self.param.camera['resolution'][0], 3), dtype=np.uint8)
-            normals_map[pixel[1], pixel[0], :] = normal
+            # pcd = o3d.geometry.PointCloud.create_from_depth_image(o3d.geometry.Image(depth_img),                                                        
+                                                                #   o3d.camera.PinholeCameraIntrinsic(self.param.camera['resolution'][0], self.param.camera['resolution'][1], self.intrinsic[0, 0], self.intrinsic[1, 1], self.intrinsic[0, 2], self.intrinsic[1, 2]), 
+                                                                #   self.camposes[cam_name]
+                                                                #   )
+            # pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.01, max_nn=30))
+            # downpcd = pcd.voxel_down_sample(voxel_size=0.01)
+            # o3d.visualization.draw_geometries([downpcd]) 
+            # o3d.visualization.draw_geometries([downpcd], point_show_normal=True)
+            # o3d.io.write_point_cloud(os.path.join(self.outputpath, "{0:06d}-pcd_true.ply".format(idx)), pcd, write_ascii=True)
+            # normal = ((np.array(pcd.normals) + 1)*255/2).astype(np.uint8)
+            # points = np.array(pcd.points)
+            # pose = self.camposes[cam_name]
+            # points_world = pose[:3, :3].dot(points.T) + pose[:3, [3]]
+            # points_world_homo = points_world/points_world[2]
+            # pixel_homo = self.intrinsic.dot(points_world_homo)
+            # pixel = (pixel_homo[:2]/pixel_homo[2]).astype(np.uint32)
+            # normals_map = np.zeros((self.param.camera['resolution'][1],self.param.camera['resolution'][0], 3), dtype=np.uint8)
+            # normals_map[pixel[1], pixel[0], :] = normal
             # # pcd.colors = o3d.utility.Vector3dVector()
             # # normals = np.array(pcd.normals)*255
             # # norm_img = Image.fromarray(normals)
@@ -491,9 +497,19 @@ class offlineRender:
             # self.normal_render.setup_camera(o3d.camera.PinholeCameraIntrinsic(self.param.camera['resolution'][0], self.param.camera['resolution'][1], self.intrinsic[0, 0], self.intrinsic[1, 1], self.intrinsic[0, 2], self.intrinsic[1, 2]), 
             #                                 self.camposes[cam_name])
             # normals = self.normal_render.render_to_image()        
-            norm_img = Image.fromarray(np.array(normals_map))
-            norm_img.save(os.path.join(self.outputpath, "{0:06d}-normal.png".format(idx)))
-            break
+            # norm_img = Image.fromarray(np.array(normals_map))
+            # norm_img.save(os.path.join(self.outputpath, "{0:06d}-normal.png".format(idx)))
+            X, Y = depth_img * (U - cx) / fx, depth_img * (V - cy) / fy
+            vx, vy, vz = np.gradient(X), np.gradient(Y), np.gradient(depth_img)
+            vu, vv = np.array([vx[0], vy[0], vz[0]]), np.array([vx[1], vy[1], vz[1]])
+            vn = np.cross(vu, vv, axisa=0, axisb=0)
+            vn_norm = np.linalg.norm(vn, axis=2)
+            vn[:, :, 0] /= vn_norm
+            vn[:, :, 1] /= vn_norm
+            vn[:, :, 2] /= vn_norm
+            normal = ((vn + 1)*255/2).astype(np.uint8)
+            cv2.imwrite('test_normal.png', normal)
+            # break
 
     def _getbbxycb(self, mask):
         pixel_list = np.where(mask)

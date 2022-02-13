@@ -7,8 +7,8 @@ from offlineRecon import offlineRecon
 
 
 if __name__ == "__main__":
-    config_path = '/media/huijie/HUIJIE/dataset/Transparentdataset/trans_data/set2/scene1/configuration_zhj.json' # sys.argv[1]
-    output_dir = '/home/huijie/Desktop/test'
+    config_path = '/media/cxt/PortableSSD/trans_data/515_realsense/set5/scene1/configuration_cxt.json' # sys.argv[1]
+    output_dir = '/media/cxt/PortableSSD/trans_data/515_realsense/set5/scene1/output1'
     data_format = 'Transparent_YCBV' # sys.argv[3]
     print(sys.argv)
     # object_label = {
@@ -65,33 +65,35 @@ if __name__ == "__main__":
         "knife_1": 32,
         "knife_2": 33,
         "mug_1": 34,
-        "pitcher_1": 35,
-        "plate_1": 36,
-        "plate_2": 37,
-        "spoon_1": 38,
-        "spoon_2": 39,
-        "water_cup_1": 40,
-        "water_cup_2": 41,
-        "water_cup_3": 42,
-        "water_cup_4": 43,
-        "water_cup_5": 44,
-        "water_cup_6": 45,
-        "water_cup_7": 46,
-        "water_cup_8": 47,
-        "water_cup_9": 48,
-        "water_cup_10": 49,
-        "water_cup_11": 50,
-        "water_cup_12": 51,
-        "water_cup_13": 52,
-        "water_cup_14": 53,
-        "wine_cup_1": 54,
-        "wine_cup_2": 55,
-        "wine_cup_3": 56,
-        "wine_cup_4": 57,
-        "wine_cup_5": 58,
-        "wine_cup_6": 59,
-        "wine_cup_7": 60,
-        "wine_cup_8": 61,
+        "mug_2": 35,
+        "pitcher_1": 36,
+        "plate_1": 37,
+        "plate_2": 38,
+        "spoon_1": 39,
+        "spoon_2": 40,
+        "water_cup_1": 41,
+        "water_cup_2": 42,
+        "water_cup_3": 43,
+        "water_cup_4": 44,
+        "water_cup_5": 45,
+        "water_cup_6": 46,
+        "water_cup_7": 47,
+        "water_cup_8": 48,
+        "water_cup_9": 49,
+        "water_cup_10": 50,
+        "water_cup_11": 51,
+        "water_cup_12": 52,
+        "water_cup_13": 53,
+        "water_cup_14": 54,
+        "wine_cup_1": 55,
+        "wine_cup_2": 56,
+        "wine_cup_3": 57,
+        "wine_cup_4": 58,
+        "wine_cup_5": 59,
+        "wine_cup_6": 60,
+        "wine_cup_7": 61,
+        "wine_cup_8": 62,
+        "wine_cup_9": 63,
     }
 
     # param = offlineParam(config_path, object_label= None)

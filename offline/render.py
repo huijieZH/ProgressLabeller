@@ -49,18 +49,18 @@ class offlineRender:
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
             self.normal_render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
 
-            # class CustomShaderCache():
-            #     ## from https://github.com/mmatl/pyrender/issues/39
-            #     def __init__(self):
-            #         self.program = None
+            class CustomShaderCache():
+                ## from https://github.com/mmatl/pyrender/issues/39
+                def __init__(self):
+                    self.program = None
 
-            #     def get_program(self, vertex_shader, fragment_shader, geometry_shader=None, defines=None):
-            #         if self.program is None:
-            #             self.program = pyrender.shader_program.ShaderProgram("./offline/shaders/mesh.vert", "./offline/shaders/mesh.frag", defines=defines)
-            #         return self.program
-            # # self.normal_render._renderer._program_cache = CustomShaderCache()    
-            # self.render._renderer._program_cache = CustomShaderCache()  
-            self.normal_render = o3d.visualization.rendering.OffscreenRenderer(self.param.camera['resolution'][0], self.param.camera['resolution'][1])      
+                def get_program(self, vertex_shader, fragment_shader, geometry_shader=None, defines=None):
+                    if self.program is None:
+                        self.program = pyrender.shader_program.ShaderProgram("./offline/shaders/mesh.vert", "./offline/shaders/mesh.frag", defines=defines)
+                    return self.program
+            # self.normal_render._renderer._program_cache = CustomShaderCache()    
+            self.render._renderer._program_cache = CustomShaderCache()  
+            # self.normal_render = o3d.visualization.rendering.OffscreenRenderer(self.param.camera['resolution'][0], self.param.camera['resolution'][1])      
             self.renderTransparent_YCBV()
 
     
@@ -417,7 +417,7 @@ class offlineRender:
                 node.mesh.is_visible = True
             full_depth = self.render.render(self.scene, flags = flags)
 
-            # normals, _ = self.render.render(self.scene)
+            normals, _ = self.render.render(self.scene)
 
             for node in self.objectmap:
                 node.mesh.is_visible = False
@@ -466,33 +466,33 @@ class offlineRender:
             depth_img[obj_true_depth!=0] = obj_true_depth[obj_true_depth!=0]
             depth_true_pillow = Image.fromarray(depth_img)
             depth_true_pillow.save(os.path.join(self.outputpath, "{0:06d}-depth_true.png".format(idx)))
-            # norm_img = Image.fromarray(normals)
-            # norm_img.save(os.path.join(self.outputpath, "{0:06d}-normal.png".format(idx)))
-            pcd = o3d.geometry.PointCloud.create_from_depth_image(o3d.geometry.Image(depth_img),                                                        
-                                                                  o3d.camera.PinholeCameraIntrinsic(self.param.camera['resolution'][0], self.param.camera['resolution'][1], self.intrinsic[0, 0], self.intrinsic[1, 1], self.intrinsic[0, 2], self.intrinsic[1, 2]), 
-                                                                  self.camposes[cam_name]
-                                                                  )
-            pcd.estimate_normals(
-                search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
-            
-            normal = ((np.array(pcd.normals) + 1)*255/2).astype(np.uint8)
-            points = np.array(pcd.points)
-            pose = self.camposes[cam_name]
-            points_world = pose[:3, :3].dot(points.T) + pose[:3, [3]]
-            points_world_homo = points_world/points_world[2]
-            pixel_homo = self.intrinsic.dot(points_world_homo)
-            pixel = (pixel_homo[:2]/pixel_homo[2]).astype(np.uint32)
-            normals_map = np.zeros((self.param.camera['resolution'][1],self.param.camera['resolution'][0], 3), dtype=np.uint8)
-            normals_map[pixel[1], pixel[0], :] = normal
-            # # pcd.colors = o3d.utility.Vector3dVector()
-            # # normals = np.array(pcd.normals)*255
-            # # norm_img = Image.fromarray(normals)
-            # o3d.visualization.draw_geometries([pcd])
-            # self.normal_render.setup_camera(o3d.camera.PinholeCameraIntrinsic(self.param.camera['resolution'][0], self.param.camera['resolution'][1], self.intrinsic[0, 0], self.intrinsic[1, 1], self.intrinsic[0, 2], self.intrinsic[1, 2]), 
-            #                                 self.camposes[cam_name])
-            # normals = self.normal_render.render_to_image()        
-            norm_img = Image.fromarray(np.array(normals_map))
+            norm_img = Image.fromarray(normals)
             norm_img.save(os.path.join(self.outputpath, "{0:06d}-normal.png".format(idx)))
+            # pcd = o3d.geometry.PointCloud.create_from_depth_image(o3d.geometry.Image(depth_img),                                                        
+            #                                                       o3d.camera.PinholeCameraIntrinsic(self.param.camera['resolution'][0], self.param.camera['resolution'][1], self.intrinsic[0, 0], self.intrinsic[1, 1], self.intrinsic[0, 2], self.intrinsic[1, 2]), 
+            #                                                       self.camposes[cam_name]
+            #                                                       )
+            # pcd.estimate_normals(
+            #     search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+            
+            # normal = ((np.array(pcd.normals) + 1)*255/2).astype(np.uint8)
+            # points = np.array(pcd.points)
+            # pose = self.camposes[cam_name]
+            # points_world = pose[:3, :3].dot(points.T) + pose[:3, [3]]
+            # points_world_homo = points_world/points_world[2]
+            # pixel_homo = self.intrinsic.dot(points_world_homo)
+            # pixel = (pixel_homo[:2]/pixel_homo[2]).astype(np.uint32)
+            # normals_map = np.zeros((self.param.camera['resolution'][1],self.param.camera['resolution'][0], 3), dtype=np.uint8)
+            # normals_map[pixel[1], pixel[0], :] = normal
+            # # # pcd.colors = o3d.utility.Vector3dVector()
+            # # # normals = np.array(pcd.normals)*255
+            # # # norm_img = Image.fromarray(normals)
+            # # o3d.visualization.draw_geometries([pcd])
+            # # self.normal_render.setup_camera(o3d.camera.PinholeCameraIntrinsic(self.param.camera['resolution'][0], self.param.camera['resolution'][1], self.intrinsic[0, 0], self.intrinsic[1, 1], self.intrinsic[0, 2], self.intrinsic[1, 2]), 
+            # #                                 self.camposes[cam_name])
+            # # normals = self.normal_render.render_to_image()        
+            # norm_img = Image.fromarray(np.array(normals_map))
+            # norm_img.save(os.path.join(self.outputpath, "{0:06d}-normal.png".format(idx)))
             break
 
     def _getbbxycb(self, mask):

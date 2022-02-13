@@ -8,7 +8,7 @@ from offlineRecon import offlineRecon
 
 if __name__ == "__main__":
     config_path = '/media/cxt/PortableSSD/trans_data/515_realsense/set5/scene1/configuration_cxt.json' # sys.argv[1]
-    output_dir = '/media/cxt/PortableSSD/trans_data/515_realsense/set5/scene1/output1'
+    output_dir = '/media/cxt/PortableSSD/trans_data/515_realsense/set5/scene1/output_test'
     data_format = 'Transparent_YCBV' # sys.argv[3]
     print(sys.argv)
     # object_label = {
@@ -94,6 +94,7 @@ if __name__ == "__main__":
         "wine_cup_7": 61,
         "wine_cup_8": 62,
         "wine_cup_9": 63,
+        "round_table": 64
     }
 
     # param = offlineParam(config_path, object_label= None)

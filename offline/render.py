@@ -10,6 +10,9 @@ from tqdm import tqdm
 from scipy.io import savemat
 import copy
 import open3d as o3d
+import cv2
+import normalSpeed
+import time
 os.environ['PYOPENGL_PLATFORM'] = 'egl'
 
 class offlineRender:
@@ -404,12 +407,44 @@ class offlineRender:
         fx, fy, cx, cy = self.intrinsic[0, 0], self.intrinsic[1, 1], self.intrinsic[0, 2], self.intrinsic[1, 2]
         flags = pyrender.constants.RenderFlags.DEPTH_ONLY
         Axis_align = np.array([[1, 0, 0, 0],
-                    [0, -1, 0, 0],
-                    [0, 0, -1, 0],
-                    [0, 0, 0, 1],])
+                            [0, -1, 0, 0],
+                            [0, 0, -1, 0],
+                            [0, 0, 0, 1],])
+        rescale = True # from  1280*720 to 640*480            
+        normalspeed_distance_threshold = 100000
+        normalspeed_difference_threshold = 100000
+        normalspeed_k_size = 1
         for idx, cam_name in tqdm(enumerate(self.camposes)):
-            os.system('cp ' + os.path.join(self.datasrc, "rgb", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-color.png".format(idx)))
-            os.system('cp ' + os.path.join(self.datasrc, "depth", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-depth.png".format(idx)))
+            t0 = time.time()
+            # t = time.time()
+            if rescale:
+                img_rgb = cv2.imread(os.path.join(self.datasrc, "rgb", cam_name))
+                img_depth = cv2.imread(os.path.join(self.datasrc, "depth", cam_name), -1)
+                img_rgb = cv2.resize(img_rgb[:, 160:-160], (640, 480))
+                img_depth = cv2.resize(img_depth[:, 160:-160], (640, 480))
+                cv2.imwrite(os.path.join(self.outputpath, "{0:06d}-color.png".format(idx)), img_rgb)
+                cv2.imwrite(os.path.join(self.outputpath, "{0:06d}-depth.png".format(idx)), img_depth)
+                # verify reshape intrinsics by projecting object point cloud and visualize on image
+                # for obj in self.objectmap:
+                #     obj_T = self.objectmap[obj]['trans']
+                #     obj_name = self.objectmap[obj]['name'].split('.')[0]
+                #     obj_points = np.array(trimesh.load_mesh(self.modelsrc + obj_name + '/' + obj_name + '.obj').vertices)
+                #     camT = self.camposes[cam_name]
+                #     obj_in_camT = np.linalg.inv(camT) @ obj_T
+                #     r, t = obj_in_camT[:3, :3], obj_in_camT[:3, 3]
+                #     obj_points_transform = obj_points @ r.T + t[np.newaxis, :]
+                #     obj_points_transform /= obj_points_transform[:, [-1]]
+                #     obj_points_on_image = obj_points_transform @ self.intrinsic.T
+                #     for pt in obj_points_on_image:
+                #         cv2.circle(img_rgb, (int(pt[0]), int(pt[1])), 1, (255, 0, 0), 1)
+                # cv2.imwrite(os.path.join(self.outputpath, "{0:06d}-color_test_resize.png".format(idx)), img_rgb)
+            else:
+                img_depth = cv2.imread(os.path.join(self.datasrc, "depth", cam_name), -1)
+                os.system('cp ' + os.path.join(self.datasrc, "rgb", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-color.png".format(idx)))
+                os.system('cp ' + os.path.join(self.datasrc, "depth", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-depth.png".format(idx)))
+            # t1 = time.time() - t
+            # print('save rescale rgb + depth', t1)
+            # t = time.time()
             ## render
             camT = self.camposes[cam_name].dot(Axis_align)
             self.scene.set_pose(self.nc, pose=camT)
@@ -420,15 +455,14 @@ class offlineRender:
                     node.mesh.is_visible = False
             table_depth = self.render.render(self.scene, flags=flags)
             Image.fromarray((table_depth*1000).astype('uint16')).save(os.path.join(self.outputpath, "{0:06d}-tableplane_depth.png".format(idx)))
-            
+            # t1 = time.time() - t
+            # print('render big tableplane and save', t1)
+            # t = time.time()
             segimg = np.zeros((self.param.camera["resolution"][1], self.param.camera["resolution"][0]), dtype=np.uint8)
             # vertmap = np.zeros((self.param.camera["resolution"][1], self.param.camera["resolution"][0]), dtype=np.float32)
             for node in self.objectmap:
-                node.mesh.is_visible = True
+                node.mesh.is_visible = not node.mesh.is_visible
             obj_depth = self.render.render(self.scene, flags=flags)
-
-            # for node in self.objectmap:
-            #     node.mesh.is_visible = False
             
             # ## create -label.txt
             txtfile = open(os.path.join(self.outputpath, "{0:06d}-box.txt".format(idx)),"w+")
@@ -465,27 +499,46 @@ class offlineRender:
 
             txtfile.close()
             savemat(os.path.join(self.outputpath, "{0:06d}-meta.mat".format(idx)), mat)
-            segimg_pillow = Image.fromarray(segimg)
-            segimg_pillow.save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
+            Image.fromarray(segimg).save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
+            # t1 = time.time() - t
+            # print('metadata and instance-label', t1)
+            # t = time.time()
 
-            depth_img = np.array(Image.open(os.path.join(self.datasrc, "depth", cam_name))).astype(np.uint16)
             obj_true_depth = (obj_depth * 1000).astype(np.uint16)
-            depth_img[obj_true_depth!=0] = obj_true_depth[obj_true_depth!=0]
-            depth_true_pillow = Image.fromarray(depth_img)
-            depth_true_pillow.save(os.path.join(self.outputpath, "{0:06d}-depth_true.png".format(idx)))
+            img_depth[obj_true_depth!=0] = obj_true_depth[obj_true_depth!=0]
+            Image.fromarray(img_depth).save(os.path.join(self.outputpath, "{0:06d}-depth_true.png".format(idx)))
+            # t1 = time.time() - t
+            # print('save depth true', t1)
+            # t = time.time()
 
-            X, Y = depth_img * (U - cx) / fx, depth_img * (V - cy) / fy
-            vx, vy, vz = np.gradient(X), np.gradient(Y), np.gradient(depth_img)
-            vu, vv = np.array([vx[0], vy[0], vz[0]]), np.array([vx[1], vy[1], vz[1]])
-            vn = np.cross(vu, vv, axisa=0, axisb=0)
-            vn_norm = np.linalg.norm(vn, axis=2)
-            vn[:, :, 0] /= vn_norm
-            vn[:, :, 1] /= vn_norm
-            vn[:, :, 2] /= vn_norm
+            # calculating normal, 3 ways
+            # X, Y = img_depth * (U - cx) / fx, img_depth * (V - cy) / fy
+            # way 1: use numpy to get neighbor difference
+            # vx, vy, vz = np.gradient(X), np.gradient(Y), np.gradient(img_depth)
+            # vu, vv = np.array([vx[0], vy[0], vz[0]]), np.array([vx[1], vy[1], vz[1]])
+
+            # way 2: use cv2 Sobel/Scharr to get neighbor difference
+            # vux = cv2.Scharr(X, cv2.CV_64F, 1, 0, borderType=cv2.BORDER_DEFAULT)
+            # vuy = cv2.Scharr(Y, cv2.CV_64F, 1, 0, borderType=cv2.BORDER_DEFAULT)
+            # vuz = cv2.Scharr(img_depth, cv2.CV_64F, 1, 0, borderType=cv2.BORDER_DEFAULT)
+            # vvx = cv2.Scharr(X, cv2.CV_64F, 0, 1, borderType=cv2.BORDER_DEFAULT)
+            # vvy = cv2.Scharr(Y, cv2.CV_64F, 0, 1, borderType=cv2.BORDER_DEFAULT)
+            # vvz = cv2.Scharr(img_depth, cv2.CV_64F, 0, 1, borderType=cv2.BORDER_DEFAULT)
+            # vu, vv = np.array([vux, vuy, vuz]), np.array([vvx, vvy, vvz])
+            # vn = np.cross(vu, vv, axisa=0, axisb=0)
+            # vn_norm = np.linalg.norm(vn, axis=2)
+            # vn[:, :, 0] /= vn_norm
+            # vn[:, :, 1] /= vn_norm
+            # vn[:, :, 2] /= vn_norm
+
+            # way 3: use normalSpeed library from github: (same result as way 2 + medianblur, 3x faster)
+
+            vn = normalSpeed.depth_normal(img_depth, fx, fy, normalspeed_k_size, normalspeed_distance_threshold, normalspeed_difference_threshold, True)
+            # vn = normalSpeed.depth_normal(img_depth, fx, fy, k_size, distance_threshold, difference_threshold, False)
             normal = ((vn + 1)*255/2).astype(np.uint8)
-            # normal[obj_normal!=255] = obj_normal[obj_normal!=255]
-            norm_img = Image.fromarray(normal)
-            norm_img.save(os.path.join(self.outputpath, "{0:06d}-normal_true.png".format(idx)))
+            Image.fromarray(normal).save(os.path.join(self.outputpath, "{0:06d}-normal_true.png".format(idx)))
+            # print('calculate and save normal', time.time() - t)
+            print('total time', time.time() - t0)
             # break
 
     def _getbbxycb(self, mask):

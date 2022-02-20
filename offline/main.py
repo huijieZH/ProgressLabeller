@@ -81,27 +81,30 @@ object_label = {
 }
 
 if __name__ == "__main__":
-    root_path = '/media/cxt/PortableSSD/trans_data/515_realsense/'
-    output_path = '/media/cxt/PortableSSD/trans_data/output'
-    data_format = 'Transparent_YCBV' # sys.argv[3]
+    root_path = '/media/cxt/Elements/trans_data/515_realsense/'
+    output_path = '/media/cxt/Elements/dataset/Transparentdataset/output_set123'
+    data_format = 'Transparent_YCBV' # sys.argv[3] Transparent_YCBV
     reshape_640_480 = True
     set_scene_list = [
-        'set1_scene1', 'set1_scene2', 'set1_scene3', 'set1_scene4', 'set1_scene5',
-        'set2_scene1', 'set2_scene6', 'set2_scene3', 'set2_scene4', 'set2_scene5',
-        'set3_scene1', 'set3_scene3', 'set3_scene4', 'set3_scene8', 'set3_scene11',
-        'set4_scene1', 'set4_scene2', 'set4_scene3', 'set4_scene4', 'set4_scene5', 'set4_scene6',
-        'set5_scene1', 'set5_scene2', 'set5_scene3', 'set5_scene4', 'set5_scene5', 'set5_scene6',
-        'set6_scene1', 'set6_scene2', 'set6_scene3', 'set6_scene4', 'set6_scene5', 'set6_scene6',
-        'set7_scene1', 'set7_scene2', 'set7_scene3', 'set7_scene4', 'set7_scene5', 'set7_scene6',
-        'set8_scene1', 'set8_scene2', 'set8_scene3', 'set8_scene4', 'set8_scene5', 'set8_scene6',
+        # 'set1_scene1', 'set1_scene2', 'set1_scene3', 'set1_scene4', 
+        'set1_scene5',
+        # 'set2_scene1', 
+        # 'set2_scene6', 'set2_scene3', 'set2_scene4', 'set2_scene5',
+        # 'set3_scene1', 'set3_scene3', 'set3_scene4', 'set3_scene8', 'set3_scene11',
+        # 'set4_scene1', 
+        # 'set4_scene2', 'set4_scene3', 'set4_scene4', 'set4_scene5', 'set4_scene6',
+        # 'set5_scene1', 'set5_scene2', 'set5_scene3', 'set5_scene4', 'set5_scene5', 'set5_scene6',
+        # 'set6_scene1', 'set6_scene2', 'set6_scene3', 'set6_scene4', 'set6_scene5', 'set6_scene6',
+        # 'set7_scene1', 'set7_scene2', 'set7_scene3', 'set7_scene4', 'set7_scene5', 'set7_scene6',
+        # 'set8_scene1', 'set8_scene2', 'set8_scene3', 'set8_scene4', 'set8_scene5', 'set8_scene6',
     ]
     # set_scene_list = [
     #     # 'set1_scene1',
-    #     'set2_scene3',
+    #     # 'set2_scene3',
     #     # 'set3_scene3',
     #     # 'set4_scene1',
     #     # 'set5_scene1',
-    #     # 'set6_scene1',
+    #     'set6_scene2',
     #     # 'set7_scene1',
     # ]
     for set_scene in set_scene_list:

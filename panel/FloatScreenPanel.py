@@ -86,8 +86,8 @@ def draw_for_area(area, camera_obj):
             area.spaces[0].region_3d.view_perspective = 'CAMERA'
             area.spaces[0].camera = camera_obj
             # 
-            area.spaces[0].overlay.show_wireframes = True
-            area.spaces[0].overlay.wireframe_threshold = 0
+            # area.spaces[0].overlay.show_wireframes = True
+            # area.spaces[0].overlay.wireframe_threshold = 06
         show_frame["UPDATEALPHA"] = False        
 
 

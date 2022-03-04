@@ -1,3 +1,4 @@
+from cv2 import INTER_NEAREST
 import pyrender
 import numpy as np
 import os
@@ -397,8 +398,6 @@ class offlineRender:
             savemat(os.path.join(self.outputpath, "{0:06d}-meta.mat".format(idx)), mat)
             segimg_pillow = Image.fromarray(segimg)
             segimg_pillow.save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
-            # if idx == 100: # TODO: remove later, rerun entire scene
-            #     break
 
     def renderTransparent_YCBV(self):
         self._createpkg(self.outputpath)
@@ -414,14 +413,13 @@ class offlineRender:
         normalspeed_distance_threshold = 100000
         normalspeed_difference_threshold = 100000
         normalspeed_k_size = 1
+
         for idx, cam_name in tqdm(enumerate(self.camposes)):
-            t0 = time.time()
-            # t = time.time()
             if rescale:
                 img_rgb = cv2.imread(os.path.join(self.datasrc, "rgb", cam_name))
                 img_depth = cv2.imread(os.path.join(self.datasrc, "depth", cam_name), -1)
                 img_rgb = cv2.resize(img_rgb[:, 160:-160], (640, 480))
-                img_depth = cv2.resize(img_depth[:, 160:-160], (640, 480))
+                img_depth = cv2.resize(img_depth[:, 160:-160], (640, 480), interpolation=cv2.INTER_NEAREST)
                 cv2.imwrite(os.path.join(self.outputpath, "{0:06d}-color.png".format(idx)), img_rgb)
                 cv2.imwrite(os.path.join(self.outputpath, "{0:06d}-depth.png".format(idx)), img_depth)
                 # verify reshape intrinsics by projecting object point cloud and visualize on image
@@ -474,7 +472,12 @@ class offlineRender:
             mat['intrinsic_matrix'] = self.intrinsic
             mat['poses'] = np.empty((3, 4, 0))
             mat['rotation_translation_matrix'] = self.camposes[cam_name][:3, :]
+            camT_inv = np.linalg.inv(self.camposes[cam_name])
+            for node in self.objectmap:
+                node.mesh.is_visible = False
             for obj_idx, node in enumerate(self.objectmap):
+                if self.objectmap[node]['name'] == 'round_table.instance001':
+                    continue
                 node.mesh.is_visible = True
                 depth = self.render.render(self.scene, flags = flags)
                 mask = np.logical_and(
@@ -491,7 +494,7 @@ class offlineRender:
                     mat['cls_indexes'] = np.vstack((mat['cls_indexes'], np.array([[self.object_label[self.objectmap[node]["name"].split(".")[0]]]], dtype = np.uint8)))
                     
                     modelT = self.objectmap[node]["trans"]
-                    model_camT = np.linalg.inv(self.camposes[cam_name]).dot(modelT)
+                    model_camT = camT_inv.dot(modelT)
                     center_homo = self.intrinsic @ model_camT[:3, 3]
                     center = center_homo[:2]/center_homo[2]
                     mat['center'] = np.vstack((mat['center'], center))
@@ -538,7 +541,7 @@ class offlineRender:
             normal = ((vn + 1)*255/2).astype(np.uint8)
             Image.fromarray(normal).save(os.path.join(self.outputpath, "{0:06d}-normal_true.png".format(idx)))
             # print('calculate and save normal', time.time() - t)
-            print('total time', time.time() - t0)
+            # print('total time', time.time() - t0)
             # break
 
     def _getbbxycb(self, mask):

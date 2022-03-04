@@ -47,7 +47,7 @@ def orbslam3_yaml(file_path, fx, fy, cx,cy, width, height, depthscale, frequency
     f.write("# ORB Parameters\n")
     f.write("#--------------------------------------------------------------------------------------------\n")
     f.write("# ORB Extractor: Number of features per image\n")
-    f.write("ORBextractor.nFeatures: 2000\n")
+    f.write("ORBextractor.nFeatures: 2500\n")
     f.write("\n")
     f.write("# ORB Extractor: Scale factor between levels in the scale pyramid\n") 	
     f.write("ORBextractor.scaleFactor: 1.2\n")

@@ -121,37 +121,48 @@ object_label = {
 #     'yellow_cup': 36,
 # }
 
+# gearpuller
+# object_label = {
+#     'arm': 1,
+#     'leg_plate': 2,
+#     'screw': 3,
+#     'spider': 4,
+# }
+
 if __name__ == "__main__":
     # root_path = '/media/cxt/PortableSSD/trans_data/515_realsense/'
     # output_path = '/media/cxt/PortableSSD/trans_data/output'
     data_format = 'Transparent_YCBV' # sys.argv[3]
     # data_format = 'ProgressLabeller' # sys.argv[3]
-    # reshape_640_480 = True
-    set_scene_list = [
-        'set9_scene3', 'set9_scene4', 'set9_scene7', 'set9_scene8', 'set9_scene9', 'set9_scene10'
-    ]
+    # data_format = 'YCBV'
     # set_scene_list = [
-    #     # 'set1_scene1', 'set1_scene2', 'set1_scene3', 'set1_scene4', 'set1_scene5',
-    #     # 'set2_scene1', 'set2_scene6', 'set2_scene3', 'set2_scene4', 'set2_scene5',
-    #     # 'set3_scene1', 'set3_scene3', 'set3_scene4', 'set3_scene8', 'set3_scene11',
-    #     # 'set4_scene1', 'set4_scene2', 'set4_scene3', 'set4_scene4', 'set4_scene5', 'set4_scene6',
-    #     # 'set5_scene1', 'set5_scene2', 'set5_scene3', 'set5_scene4', 'set5_scene5', 'set5_scene6',
-    #     # 'set6_scene1', 'set6_scene2', 'set6_scene3', 'set6_scene4', 'set6_scene5', 'set6_scene6',
-    #     # 'set7_scene1', 'set7_scene2', 'set7_scene3', 'set7_scene4', 'set7_scene5', 
-    #     'set7_scene6',
-    #     'set8_scene1', 'set8_scene2', 'set8_scene3', 'set8_scene4', 'set8_scene5', 'set8_scene6',
+    #     'gearpuller_1', 'gearpuller_2'
     # ]
+    reshape_640_480 = True
+    set_scene_list = [
+        'set1_scene1', 'set1_scene2', 'set1_scene3', 'set1_scene4', 'set1_scene5',
+        'set2_scene1', 'set2_scene6', 'set2_scene3', 'set2_scene4', 'set2_scene5',
+        'set3_scene1', 'set3_scene3', 'set3_scene4', 'set3_scene8', 'set3_scene11',
+        'set4_scene1', 'set4_scene2', 'set4_scene3', 'set4_scene4', 'set4_scene5', 'set4_scene6',
+        'set5_scene1', 'set5_scene2', 'set5_scene3', 'set5_scene4', 'set5_scene5', 'set5_scene6',
+        'set6_scene1', 'set6_scene2', 'set6_scene3', 'set6_scene4', 'set6_scene5', 'set6_scene6',
+        'set7_scene1', 'set7_scene2', 'set7_scene3', 'set7_scene4', 'set7_scene5', 'set7_scene6',
+        'set8_scene1', 'set8_scene2', 'set8_scene3', 'set8_scene4', 'set8_scene5', 'set8_scene6',
+        # 'set9_scene7', 'set9_scene8', 'set9_scene9', 'set9_scene10', 'set9_scene11', 'set9_scene12'
+    ]
     # set_scene_list = ['1', '2', '3', '4']
     # blank table setting
-    root_path = '/media/cxt/216F2E9C45E9E56E/'
-    output_path = '/media/cxt/216F2E9C45E9E56E/set9_output/'
+    root_path = '/media/cxt/Elements/trans_data/515_realsense/'
+    output_path = '/media/cxt/6358C6357FEBD1E6/clearpose_dataset/multilayer_depth_bbox/'
     reshape_640_480 = True
     for set_scene in set_scene_list:
         print(set_scene)
+        # path = os.path.join(root_path, set_scene)
+        # output_dir = os.path.join(output_path, set_scene)
         path = os.path.join(root_path, set_scene.split('_')[0], set_scene.split('_')[1])
-        config_path = path + '/configuration.json' # sys.argv[1]
         output_dir = os.path.join(output_path, set_scene.split('_')[0], set_scene.split('_')[1])
-        os.system('rm -rf {}/*'.format(output_dir))
+        config_path = path + '/configuration_cxt.json' # sys.argv[1]
+        # os.system('rm -rf {}/*'.format(output_dir))
         param = offlineParam(config_path, object_label=object_label)
         if reshape_640_480: # from 1280*720 to 640*480, first cut left and right (1280-640*3/2)/2=160 pixels, then do a 3->2 rescale
             int_mat = param.camera['intrinsic']
@@ -162,7 +173,7 @@ if __name__ == "__main__":
         interpolation_type = "all"
         offlineRecon(param, interpolation_type)
         offlineRender(param, output_dir, interpolation_type, pkg_type=data_format)
-
+        # break
     # object_label = { # according to 21 objects in ycbv
     # "002_master_chef_can" : 1,
     # "003_cracker_box" : 2,

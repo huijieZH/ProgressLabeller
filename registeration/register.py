@@ -11,14 +11,7 @@ from kernel.blender_utility import clear_initial_object
 area_image_pair = {
 }
 
-# def get_area_image_dict():
-#     return area_image_pair
-
-# def set_area_image_dict(new_dict:Dict):
-#     area_image_pair = new_dict
-
 def register():
-    # clear_initial_object()
     init_configuration.register()
     configuration_loader.register()
     model_loader.register()

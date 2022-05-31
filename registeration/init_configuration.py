@@ -9,7 +9,6 @@ from kernel.blender_utility import _is_progresslabeller_object, _get_allrgb_insa
 config_json_dict = {
     'projectname': [['projectname']],
     'modelsrc': [['environment', 'modelsrc']],
-    # 'modelposesrc': [['environment', 'modelposesrc']],
     'reconstructionsrc':[['environment', 'reconstructionsrc']] ,
     'datasrc': [['environment', 'datasrc']],
     'resX':[['camera', 'resolution'], ['0']],  

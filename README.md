@@ -4,7 +4,18 @@
 
 ## Overview
 
-**This is an developing repository**. The project is an blender add-on to an object pose annotation pipeline, Progresslabeler. Progresslabeler is a pipleine to generate ground truth object-centric poses and mask labels from sequential images.
+ProgressLabeller is a method for more efficiently generating large amounts of 6D pose training data from color images sequences for custom scenes in a scalable manner. ProgressLabeller is intended to also support transparent or translucent objects, for which the previous methods based on depth dense reconstruction will fail. The project is an blender add-on implementation of Progresslabeler. 
+
+If you use this project for your research, please cite:
+```bash
+@article{chen2022progresslabeller,
+  title={ProgressLabeller: Visual Data Stream Annotation for Training Object-Centric 3D Perception},
+  author={Chen, Xiaotong and Zhang, Huijie and Yu, Zeren and Lewis, Stanley and Jenkins, Odest Chadwicke},
+  journal={arXiv preprint arXiv:2203.00283},
+  year={2022}
+}
+```
+
 
 ## Table of contents
 -----
@@ -15,10 +26,7 @@
     * [Dataset](#dataset)
     * [Configuration](#configuration)
     * [Collection](#collection)
-  * [Quick Start](#quick-start)
-    * [Reconstruction from build-in KinectFusion](#reconstruction-from-build-in-kinectfusion)
-    * [Reconstruction from COLMAP](#reconstruction-from-colmap)
-    * [Tools for better alignment](#tools-for-better-alignment)
+
   * [Reference](#references)
 ------
 
@@ -128,9 +136,9 @@ cd $PROGRESSLABELER_PATH/..
 zip -r ProgressLabeler.zip ProgressLabeler/
 ```
 Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/ProgressLabeller.zip`` and install it. After successful installation, you could see Progress Labeller in your Add-ons lists.
-
+<p align="center">
 <img src='doc/fig/installadd-on.png' width="500"/>
-
+</p>
 
 
 ## Data structure
@@ -221,7 +229,7 @@ You could design your own configuration in a ``.json`` file, it could also be cr
       "intrinsic": [[fx, 0, cx],
                     [0, fy, cy],
                     [0, 0, 1]],
-      "inverse_pose": false, # inverse the cam pose when loading, used when output of reconstruction is world pose in camera coordinate
+      "inverse_pose": false, # inverse the cam pose when loading, used when output of reconstruction is world pose in camera coordinate. When using COLMAP, this should be true
       "lens": 30.0, # just leave this as 30.0
     },
     "reconstruction": {
@@ -230,7 +238,7 @@ You could design your own configuration in a ``.json`` file, it could also be cr
                       # You could also slightly change it for a better label result
        "cameradisplayscale": 0.01,
                       # display size for the camera, just use default
-       "recon_trans":[t11, t12, t13, t14; t21, t22, t23, t24; t31, t32, t33, t34; t41, t42, t43, t44;]
+       "recon_trans":[t11, t12, t13, t14; t21, t22, t23, t24; t31, t32, t33, t34; t41, t42, t43, t44;] ## 4X4 transformation matrix
     },
     "data": {
         "sample_rate": 0.1,
@@ -242,31 +250,40 @@ You could design your own configuration in a ``.json`` file, it could also be cr
 
 ### Collection
 
+
 We create new collections in blender for a better arrangement for our pipline, it has the following structure:
 
-```bash
+<p align="center">
+<img src='doc/fig/collection.png' width="300"/>
+</p>
 
+```bash
 |-- Scene Collection              # root cocllection in blender
-    |-- <Your project name>       # collection for your project workspace name, is same as 
-                                  # the projectname in the configuration.json file
+    |-- <Your project name>       # collection for your project workspace name, is same as the projectname in the configuration.json file.
         |-- <Your project name>:Model                     
-            |-- <Your project name>:object1                # model object
-            |-- <Your project name>:object2
+            |-- <Your project name>:object1.instance001                # model. we support loading same objects multiple times, they will be differed as <object>.instance001, <object>.instance002
+            |-- <Your project name>:object2.instance001
             ...
         |-- <Your project name>:Reconstruction  
             |-- <Your project name>:Pointcloud
-                |-- <Your project name>:reconstruction     # point cloud object
+                |-- <Your project name>:reconstruction     # point cloud of feature points from reconstruction
+                |-- <Your project name>:reconstruction_depthfusion # depth fusion using signed distance fuction based method.
             |-- <Your project name>:Camera
-                |-- <Your project name>:view0              # camera object 
+                |-- <Your project name>:view0              # camera 
                 |-- <Your project name>:view1
                 ...
-        |-- <Your project name>:Setting                    # setting object 
+        |-- <Your project name>:Setting                    # setting 
     ...
 ```
 
-<img src='doc/fig/collection.png' width="300"/>
 
 
 ## References
 [1] Marion, Pat, Peter R. Florence, Lucas Manuelli, and Russ Tedrake. **"Label fusion: A pipeline for generating ground truth labels for real rgbd data of cluttered scenes."** In 2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 3235-3242. IEEE, 2018.
+
+[2] Schonberger, Johannes L., and Jan-Michael Frahm. "Structure-from-motion revisited." In Proceedings of the IEEE conference on computer vision and pattern recognition, pp. 4104-4113. 2016.
+
+[3] Mur-Artal, Raul, and Juan D. Tardós. "Orb-slam2: An open-source slam system for monocular, stereo, and rgb-d cameras." IEEE transactions on robotics 33, no. 5 (2017): 1255-1262.
+
+[4] Campos, Carlos, Richard Elvira, Juan J. Gómez Rodríguez, José MM Montiel, and Juan D. Tardós. "Orb-slam3: An accurate open-source library for visual, visual–inertial, and multimap slam." IEEE Transactions on Robotics 37, no. 6 (2021): 1874-1890.
 

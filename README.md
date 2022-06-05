@@ -1,6 +1,6 @@
 # ProgressLabeller
 
-<img src='doc/fig/overview.png' width="1000"/>
+[<img src='doc/fig/overview.png' width="1000"/>](https://www.youtube.com/watch?v=GnahM0Z6A0U "Click to watch the ProgressLabeller usage")
 
 ## Overview
 
@@ -278,7 +278,7 @@ We create new collections in blender for a better arrangement for our pipline, i
 
 ## Usage
 
-[![Little red riding hood](https://img.youtube.com/vi/GnahM0Z6A0U/0.jpg)]((https://www.youtube.com/watch?v=GnahM0Z6A0U) "Little red riding hood - Click to Watch!")
+[<img src='doc/fig/video.png' width="1000"/>](https://www.youtube.com/watch?v=GnahM0Z6A0U "Click to watch the ProgressLabeller usage")
 
 ## References
 [1] Marion, Pat, Peter R. Florence, Lucas Manuelli, and Russ Tedrake. **"Label fusion: A pipeline for generating ground truth labels for real rgbd data of cluttered scenes."** In 2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 3235-3242. IEEE, 2018.

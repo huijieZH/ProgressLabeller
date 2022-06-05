@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.11)
 project(orb3_extension)
 
 set(PYBIND11_PYTHON_VERSION 3.7)
-set(pybind11_DIR "$ENV{PROGRESSLABELER_BLENDER_PATH}/2.92/python/lib/python3.7/site-packages/pybind11/share/cmake/pybind11")
+set(pybind11_DIR "$ENV{PROGRESSLABELLER_BLENDER_PATH}/2.92/python/lib/python3.7/site-packages/pybind11/share/cmake/pybind11")
 find_package(pybind11 REQUIRED)
 find_package(OpenCV 4 QUIET)
 find_package(Eigen3 3.1.0 REQUIRED)

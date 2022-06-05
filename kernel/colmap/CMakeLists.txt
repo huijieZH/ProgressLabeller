@@ -4,7 +4,7 @@ project(colmap_extension)
 
 find_package(COLMAP REQUIRED)
 set(PYBIND11_PYTHON_VERSION 3.7)
-set(pybind11_DIR "$ENV{PROGRESSLABELER_BLENDER_PATH}/2.92/python/lib/python3.7/site-packages/pybind11/share/cmake/pybind11")
+set(pybind11_DIR "$ENV{PROGRESSLABELLER_BLENDER_PATH}/2.92/python/lib/python3.7/site-packages/pybind11/share/cmake/pybind11")
 find_package(pybind11 REQUIRED)
 
 include_directories(${COLMAP_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})

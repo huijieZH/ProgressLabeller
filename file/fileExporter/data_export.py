@@ -53,12 +53,12 @@ class DataOutput(Operator, ExportHelper):
                 "Error", "Please allocate the object in the scene and save object poses", None
             )
         else:
-            configuration_export(config, "/tmp/progresslabeler.json")
+            configuration_export(config, "/tmp/progresslabeller.json")
             log_report(
                 "Info", "Export data to" + self.filepath, None
             )
-            data_export("/tmp/progresslabeler.json", self.filepath, self.dataformatType)
-            os.remove("/tmp/progresslabeler.json")
+            data_export("/tmp/progresslabeller.json", self.filepath, self.dataformatType)
+            os.remove("/tmp/progresslabeller.json")
         return {'FINISHED'}
 
     def invoke(self, context, event):

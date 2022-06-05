@@ -1,10 +1,10 @@
-# Progress Labeller
+# ProgressLabeller
 
 <img src='doc/fig/overview.png' width="1000"/>
 
 ## Overview
 
-ProgressLabeller is a method for more efficiently generating large amounts of 6D pose training data from color images sequences for custom scenes in a scalable manner. ProgressLabeller is intended to also support transparent or translucent objects, for which the previous methods based on depth dense reconstruction will fail. The project is an blender add-on implementation of Progresslabeler. 
+ProgressLabeller is a method for more efficiently generating large amounts of 6D pose training data from color images sequences for custom scenes in a scalable manner. ProgressLabeller is intended to also support transparent or translucent objects, for which the previous methods based on depth dense reconstruction will fail. The project is an blender add-on implementation of Progresslabeller. 
 
 If you use this project for your research, please cite:
 ```bash
@@ -26,7 +26,7 @@ If you use this project for your research, please cite:
     * [Dataset](#dataset)
     * [Configuration](#configuration)
     * [Collection](#collection)
-
+  * [Usage](#usage)
   * [Reference](#references)
 ------
 
@@ -53,15 +53,15 @@ Our add-on depends on the following python libraries:
 * scikit-image
 * pyntcloud
 
-It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, we use conda to install library, __please replace </PATH/TO/BLENDER>, <PATH/TO/Progresslabeler> to your own path__: 
+It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, we use conda to install library, __please replace </PATH/TO/BLENDER>, <PATH/TO/Progresslabeller> to your own path__: 
 ```bash
-echo "export PROGRESSLABELER_BLENDER_PATH=</PATH/TO/BLENDER>" >> ~/.bashrc
-echo "export PROGRESSLABELER_PATH=<PATH/TO/Progresslabeler>" >> ~/.bashrc
+echo "export PROGRESSLABELLER_BLENDER_PATH=</PATH/TO/BLENDER>" >> ~/.bashrc
+echo "export PROGRESSLABELLER_PATH=<PATH/TO/Progresslabeller>" >> ~/.bashrc
 source ~/.bashrc
-conda create -n progresslabeler python=3.7
-conda activate progresslabeler
+conda create -n progresslabeller python=3.7
+conda activate progresslabeller
 python -m pip install -r requirements.txt
-python -m pip install -r requirements.txt --target $PROGRESSLABELER_BLENDER_PATH/2.92/python/lib/python3.7/site-packages 
+python -m pip install -r requirements.txt --target $PROGRESSLABELLER_BLENDER_PATH/2.92/python/lib/python3.7/site-packages 
 ```
 
 For some reason, it is not recommended to directly use blender's python to install those package, you might meet some problems when install pycuda. Our way is to use the pip from python3.7 in conda.
@@ -74,10 +74,10 @@ To enableing [COLMAP reconstruction](https://colmap.github.io/), please also fol
 sudo make install
 ```
 
-We use pybind to transform COLMAP C++ code to python interface， so after installing COLMAP and pybind, we could build the interface in Progresslabeler. 
+We use pybind to transform COLMAP C++ code to python interface， so after installing COLMAP and pybind, we could build the interface in Progresslabeller. 
 ```bash
-cd $PROGRESSLABELER_PATH/kernel/colmap
-conda activate progresslabeler
+cd $PROGRESSLABELLER_PATH/kernel/colmap
+conda activate progresslabeller
 mkdir build
 cd build
 cmake ..
@@ -94,12 +94,12 @@ chmod +x build.sh
 ./build.sh
 ``` -->
 
-Then to build the interface between ORB-SLAM2 and Progresslabeler. 
+Then to build the interface between ORB-SLAM2 and Progresslabeller. 
 ```bash
 export ORB_SOURCE_DIR=</PATH/TO/ORB_SLAM2>
-cd $PROGRESSLABELER_PATH/kernel/orb_slam
+cd $PROGRESSLABELLER_PATH/kernel/orb_slam
 tar -xf ORBvoc.txt.tar.gz
-conda activate progresslabeler
+conda activate progresslabeller
 mkdir build
 cd build
 cmake ..
@@ -111,12 +111,12 @@ make
 
 To enableing ORB-SLAM3 reconstruction, you should clone [my branch](https://github.com/ZerenYu/ORB_SLAM3.git), containing a little modification from official version. Please follow the guidance to install ORB_SLAM3.
 
-Then to build the interface between ORB-SLAM3 and Progresslabeler. 
+Then to build the interface between ORB-SLAM3 and Progresslabeller. 
 ```bash
 export ORB3_SOURCE_DIR=</PATH/TO/ORB_SLAM3>
-cd $PROGRESSLABELER_PATH/kernel/orb_slam3
+cd $PROGRESSLABELLER_PATH/kernel/orb_slam3
 tar -xf ../orb_slam/ORBvoc.txt.tar.gz
-conda activate progresslabeler
+conda activate progresslabeller
 mkdir build
 cd build
 cmake ..
@@ -132,8 +132,8 @@ blender
 First prepare the zip file for blender:
 ```bash
 sudo apt-get install zip
-cd $PROGRESSLABELER_PATH/..
-zip -r ProgressLabeler.zip ProgressLabeler/
+cd $PROGRESSLABELLER_PATH/..
+zip -r ProgressLabeller.zip ProgressLabeller/
 ```
 Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/ProgressLabeller.zip`` and install it. After successful installation, you could see Progress Labeller in your Add-ons lists.
 <p align="center">
@@ -145,7 +145,7 @@ Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/Progr
 
 ### Dataset
 
-To prepare a new dataset, please follow the structure below. We also provide a **demo dataset** [here](https://www.dropbox.com/s/qrgare7rg579m48/ProgressLabellerDemoDateset.zip?dl=0)
+To prepare a new dataset, please follow the structure below. We also provide a **demo dataset** [here](https://www.dropbox.com/s/pwmr3qwiuomgc0d/progresslabellerdemo.zip?dl=0)
 
 ```bash
 <dataset>
@@ -276,7 +276,9 @@ We create new collections in blender for a better arrangement for our pipline, i
     ...
 ```
 
+## Usage
 
+[![Little red riding hood](https://img.youtube.com/vi/GnahM0Z6A0U/0.jpg)]((https://www.youtube.com/watch?v=GnahM0Z6A0U) "Little red riding hood - Click to Watch!")
 
 ## References
 [1] Marion, Pat, Peter R. Florence, Lucas Manuelli, and Russ Tedrake. **"Label fusion: A pipeline for generating ground truth labels for real rgbd data of cluttered scenes."** In 2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 3235-3242. IEEE, 2018.

@@ -32,10 +32,12 @@ def objectposes_export(name, path):
         documents = yaml.dump(pose, file)
 
 
-def data_export(config_path, target_dir, data_format):
+def data_export(config_path, target_dir, data_format, object_label_file):
     source = os.path.dirname(os.path.dirname(__file__))
     code_path = os.path.join(source, "offline", "main.py")
-    subprocess.call("{} {} {} {} {}".format(sys.executable, code_path, config_path, target_dir, data_format), shell=True)
+    with open(object_label_file) as objlabelf:
+        object_label = json.load(objlabelf)
+    subprocess.call("{} {} {} {} {} {}".format(sys.executable, code_path, config_path, target_dir, data_format, object_label), shell=True)
 
 
 

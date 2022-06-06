@@ -174,6 +174,7 @@ To prepare a new dataset, please follow the structure below. We also provide a *
     |-- object2
         |-- object2.obj
     ...
+    |-- object_label.json # dictionary file contain all objects name and the label you defined them
 |-- <path/to/recon>     # reconstruction result, the package store the intermediate results from reconstruction.
     |-- campose.txt            # Name should be the same. Camera poses file, stored camera pose for each images
     |-- fused.ply              # Name should be the same. Reconstructed point clound

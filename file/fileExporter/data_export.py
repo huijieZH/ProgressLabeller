@@ -53,12 +53,16 @@ class DataOutput(Operator, ExportHelper):
             log_report(
                 "Error", "Please allocate the object in the scene and save object poses", None
             )
+        if not os.path.exists(os.path.join(config.modelsrc, "object_label.json")):
+            log_report(
+                "Error", "Please define your models' label fine in <PATH/TO/MODEL>/object_label.json", None
+            )            
         else:
             configuration_export(config, "/tmp/progresslabeller.json")
             log_report(
                 "Info", "Export data to" + self.filepath, None
             )
-            data_export("/tmp/progresslabeller.json", self.filepath, self.dataformatType)
+            data_export("/tmp/progresslabeller.json", self.filepath, self.dataformatType, os.path.join(config.modelsrc, "object_label.json"))
             os.remove("/tmp/progresslabeller.json")
         return {'FINISHED'}
 

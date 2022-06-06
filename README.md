@@ -53,6 +53,8 @@ Our add-on depends on the following python libraries:
 * trimesh
 * scikit-image
 * pyntcloud
+* opencv-python
+* normalSpeed
 
 It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, we use conda to install library, __please replace </PATH/TO/BLENDER>, <PATH/TO/Progresslabeller> to your own root directories of Progresslabeller and Blender__: 
 ```bash
@@ -126,12 +128,14 @@ cmake ..
 make
 ```
 
-### Install add-on in blender
-
+### Run in terminal
 In order to see some running message about our pipeline, it is recommended to run the blender in the terminal. Just run:
 ```bash
-blender
+cd $PROGRESSLABELLER_PATH
+blender --python __init__.py ## remember to add blender to your bash first.
 ```
+### Install add-on in blender
+
 First prepare the zip file for blender:
 ```bash
 sudo apt-get install zip
@@ -143,9 +147,6 @@ Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/Progr
 <img src='doc/fig/installadd-on.png' width="500"/>
 </p>
 
-### Run in terminal
-
-An alternative way to run progresslabeller is in terminal. The running info would display
 
 ## Data structure
 

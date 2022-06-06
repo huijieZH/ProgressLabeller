@@ -12,13 +12,12 @@ from scipy.io import savemat
 import copy
 import open3d as o3d
 import cv2
-import normalSpeed
 import time
 os.environ['PYOPENGL_PLATFORM'] = 'egl'
 
 class offlineRender:
     def __init__(self, param, outputdir, interpolation_type, pkg_type = "BOP") -> None:
-        assert(pkg_type in ["ProgressLabeller", "BOP", "YCBV", "Transparent_YCBV"])
+        assert(pkg_type in ["ProgressLabeller", "BOP", "YCBV", "Transparent_YCBV", "Yourtype"])
         print("Start offline rendering")
         self.param = param
         self.interpolation_type = interpolation_type
@@ -52,22 +51,13 @@ class offlineRender:
             self.object_label = param.object_label
             self._prepare_scene()
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
-            self.normal_render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
-
-            # class CustomShaderCache():
-            #     ## from https://github.com/mmatl/pyrender/issues/39
-            #     def __init__(self):
-            #         self.program = None
-
-            #     def get_program(self, vertex_shader, fragment_shader, geometry_shader=None, defines=None):
-            #         if self.program is None:
-            #             self.program = pyrender.shader_program.ShaderProgram("./offline/shaders/mesh.vert", "./offline/shaders/mesh.frag", defines=defines)
-            #         return self.program
-            # self.normal_render._renderer._program_cache = CustomShaderCache()    
-            # self.render._renderer._program_cache = CustomShaderCache()  
-            # self.normal_render = o3d.visualization.rendering.OffscreenRenderer(self.param.camera['resolution'][0], self.param.camera['resolution'][1])      
+            self.normal_render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1]) 
             self.renderTransparent_YCBV()
-
+        elif pkg_type == "Yourtype":
+            self.object_label = param.object_label
+            self._prepare_scene()
+            self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])            
+            self.renderYourtype()
     
     def data_export(self, target_dir):
         if not os.path.exists(target_dir):
@@ -94,18 +84,7 @@ class offlineRender:
                 self.objectmap[node] = {"index":object_index, "name":obj_instancename, "trans":self.objects[obj_instancename]['trans']}
                 self.scene.add_node(node)
                 object_index += 1
-            ## for split model
-            # if self.objects[obj_instancename]['type'] == 'split':
-            #     splitobjfiles = os.listdir(os.path.join(self.modelsrc, obj, "split"))
-            #     for f in splitobjfiles:
-            #         if f.endswith(".obj"):
-            #             tm = trimesh.load(os.path.join(self.modelsrc, obj, "split", f))
-            #             mesh = pyrender.Mesh.from_trimesh(tm)
-            #             node = pyrender.Node(mesh=mesh, matrix=self.objects[obj]['trans'])
-            #             self.objectmap[node] = {"index":object_index, "name":f.split(".")[0], "trans":self.objects[obj]['trans']}
-            #             self.scene.add_node(node)
-            #             object_index += 1
-        # self.scenefornormal = copy.deepcopy(self.scene) 
+
     def _parsecamfile(self):
         self.camposes = {}
         f = open(os.path.join(self.reconstructionsrc, "campose_all_{0}.txt".format(self.interpolation_type)))
@@ -400,6 +379,7 @@ class offlineRender:
             segimg_pillow.save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
 
     def renderTransparent_YCBV(self):
+        import normalSpeed
         self._createpkg(self.outputpath)
         H, W = self.param.camera["resolution"][1], self.param.camera["resolution"][0]
         U, V = np.tile(np.arange(W), (H, 1)), np.tile(np.arange(H), (W, 1)).T
@@ -422,20 +402,7 @@ class offlineRender:
                 img_depth = cv2.resize(img_depth[:, 160:-160], (640, 480), interpolation=cv2.INTER_NEAREST)
                 cv2.imwrite(os.path.join(self.outputpath, "{0:06d}-color.png".format(idx)), img_rgb)
                 cv2.imwrite(os.path.join(self.outputpath, "{0:06d}-depth.png".format(idx)), img_depth)
-                # verify reshape intrinsics by projecting object point cloud and visualize on image
-                # for obj in self.objectmap:
-                #     obj_T = self.objectmap[obj]['trans']
-                #     obj_name = self.objectmap[obj]['name'].split('.')[0]
-                #     obj_points = np.array(trimesh.load_mesh(self.modelsrc + obj_name + '/' + obj_name + '.obj').vertices)
-                #     camT = self.camposes[cam_name]
-                #     obj_in_camT = np.linalg.inv(camT) @ obj_T
-                #     r, t = obj_in_camT[:3, :3], obj_in_camT[:3, 3]
-                #     obj_points_transform = obj_points @ r.T + t[np.newaxis, :]
-                #     obj_points_transform /= obj_points_transform[:, [-1]]
-                #     obj_points_on_image = obj_points_transform @ self.intrinsic.T
-                #     for pt in obj_points_on_image:
-                #         cv2.circle(img_rgb, (int(pt[0]), int(pt[1])), 1, (255, 0, 0), 1)
-                # cv2.imwrite(os.path.join(self.outputpath, "{0:06d}-color_test_resize.png".format(idx)), img_rgb)
+        
             else:
                 img_depth = cv2.imread(os.path.join(self.datasrc, "depth", cam_name), -1)
                 os.system('cp ' + os.path.join(self.datasrc, "rgb", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-color.png".format(idx)))
@@ -503,46 +470,14 @@ class offlineRender:
             txtfile.close()
             savemat(os.path.join(self.outputpath, "{0:06d}-meta.mat".format(idx)), mat)
             Image.fromarray(segimg).save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
-            # t1 = time.time() - t
-            # print('metadata and instance-label', t1)
-            # t = time.time()
 
             obj_true_depth = (obj_depth * 1000).astype(np.uint16)
             img_depth[obj_true_depth!=0] = obj_true_depth[obj_true_depth!=0]
             Image.fromarray(img_depth).save(os.path.join(self.outputpath, "{0:06d}-depth_true.png".format(idx)))
-            # t1 = time.time() - t
-            # print('save depth true', t1)
-            # t = time.time()
-
-            # calculating normal, 3 ways
-            # X, Y = img_depth * (U - cx) / fx, img_depth * (V - cy) / fy
-            # way 1: use numpy to get neighbor difference
-            # vx, vy, vz = np.gradient(X), np.gradient(Y), np.gradient(img_depth)
-            # vu, vv = np.array([vx[0], vy[0], vz[0]]), np.array([vx[1], vy[1], vz[1]])
-
-            # way 2: use cv2 Sobel/Scharr to get neighbor difference
-            # vux = cv2.Scharr(X, cv2.CV_64F, 1, 0, borderType=cv2.BORDER_DEFAULT)
-            # vuy = cv2.Scharr(Y, cv2.CV_64F, 1, 0, borderType=cv2.BORDER_DEFAULT)
-            # vuz = cv2.Scharr(img_depth, cv2.CV_64F, 1, 0, borderType=cv2.BORDER_DEFAULT)
-            # vvx = cv2.Scharr(X, cv2.CV_64F, 0, 1, borderType=cv2.BORDER_DEFAULT)
-            # vvy = cv2.Scharr(Y, cv2.CV_64F, 0, 1, borderType=cv2.BORDER_DEFAULT)
-            # vvz = cv2.Scharr(img_depth, cv2.CV_64F, 0, 1, borderType=cv2.BORDER_DEFAULT)
-            # vu, vv = np.array([vux, vuy, vuz]), np.array([vvx, vvy, vvz])
-            # vn = np.cross(vu, vv, axisa=0, axisb=0)
-            # vn_norm = np.linalg.norm(vn, axis=2)
-            # vn[:, :, 0] /= vn_norm
-            # vn[:, :, 1] /= vn_norm
-            # vn[:, :, 2] /= vn_norm
-
-            # way 3: use normalSpeed library from github: (same result as way 2 + medianblur, 3x faster)
 
             vn = normalSpeed.depth_normal(img_depth, fx, fy, normalspeed_k_size, normalspeed_distance_threshold, normalspeed_difference_threshold, True)
-            # vn = normalSpeed.depth_normal(img_depth, fx, fy, k_size, distance_threshold, difference_threshold, False)
             normal = ((vn + 1)*255/2).astype(np.uint8)
             Image.fromarray(normal).save(os.path.join(self.outputpath, "{0:06d}-normal_true.png".format(idx)))
-            # print('calculate and save normal', time.time() - t)
-            # print('total time', time.time() - t0)
-            # break
 
     def _getbbxycb(self, mask):
         pixel_list = np.where(mask)
@@ -555,6 +490,29 @@ class offlineRender:
         else:
             return False, []
     
-    def _getvertmap(self):
-        ##TODO
-        pass
+    def renderYourtype(self):
+        '''
+        Define your own type
+        Parameters you might needed
+            self.camposes: dictionary with camera name(image_name) as key and camera
+            self.objectmap: dictionary with object_node (node for pyrender) as key
+                            you could access the:
+                                 name: self.objectmap[node]["name"]
+                                 Transformation (objec poses in the world frame): self.objectmap[node]["trans"]
+            self.intrinsic: camera intrinsic
+            os.path.join(self.datasrc, "rgb", cam_name): path to the original rgb
+            os.path.join(self.datasrc, "depth", cam_name): path to the original depth
+
+            Remember to use the following because the camera pose we use and the camera pose for pyrender have different coordinate system:
+            Axis_align = np.array([[1, 0, 0, 0],
+                                [0, -1, 0, 0],
+                                [0, 0, -1, 0],
+                                [0, 0, 0, 1],]
+            )
+            camT = self.camposes[cam_name].dot(Axis_align)
+
+        '''
+        raise NotImplementedError
+
+
+        

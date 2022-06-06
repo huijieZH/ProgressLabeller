@@ -11,3 +11,5 @@ pycuda
 pybind11
 numba
 scikit-image == 0.18.3
+opencv-python
+normalSpeed

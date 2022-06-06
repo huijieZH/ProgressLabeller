@@ -60,7 +60,7 @@ echo "export PROGRESSLABELLER_BLENDER_PATH=</PATH/TO/BLENDER>" >> ~/.bashrc
 echo "export PROGRESSLABELLER_PATH=<PATH/TO/Progresslabeller>" >> ~/.bashrc
 source ~/.bashrc
 cd $PROGRESSLABELLER_PATH
-conda create -n progresslabeller python=3.7
+conda create -n progresslabeller python=3.7 ## note that the version of python here should be consistent with the version of your blender's python. For blender 2.92, its python version is 3.7
 conda activate progresslabeller
 python -m pip install -r requirements.txt
 python -m pip install -r requirements.txt --target $PROGRESSLABELLER_BLENDER_PATH/2.92/python/lib/python3.7/site-packages 

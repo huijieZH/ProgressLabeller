@@ -152,7 +152,7 @@ Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/Progr
 
 ### Dataset
 
-To prepare a new dataset, please follow the structure below. We also provide a **demo dataset** [here](https://www.dropbox.com/s/pwmr3qwiuomgc0d/progresslabellerdemo.zip?dl=0)
+To prepare a new dataset, please follow the structure below. We also provide a **demo dataset** [here](https://www.dropbox.com/s/3z7ky2q1izdywm9/progresslabellerdemo.zip?dl=0)
 
 ```bash
 <dataset>

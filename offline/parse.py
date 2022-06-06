@@ -19,7 +19,7 @@ class offlineParam:
         self.parsereconpara()
         self.parsedatapara()
         self.parseobj()
-        with open(os.path.join(self.config['modelsrc'], "object_label.json")) as objlabelf:
+        with open(os.path.join(self.config["environment"]["modelsrc"], "object_label.json")) as objlabelf:
             object_label = json.load(objlabelf)
         for obj in object_label:
             object_label[obj] = int(object_label[obj])  

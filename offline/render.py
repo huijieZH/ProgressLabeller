@@ -27,7 +27,6 @@ class offlineRender:
         self.datasrc = self.param.datasrc
         self.intrinsic = self.param.camera["intrinsic"]
         self.objects = self.param.objs
-        self.objs_kp = self.param.objs_kp
         
         self._parsecamfile()
         if pkg_type == "ProgressLabeller":
@@ -239,10 +238,7 @@ class offlineRender:
 
                 ## calculate ketpoints location
                 instance_name = self.objectmap[node]['name']
-                kp = self.objs_kp[instance_name]
                 cam_world_T = np.linalg.inv(self.camposes[cam_name])
-                kp_pixel_homo = self.intrinsic.dot(cam_world_T[:3, :3].dot(kp.T) + cam_world_T[:3, [3]])
-                kp_pixel = (kp_pixel_homo[:2]/kp_pixel_homo[2]).T
 
                 mask_trim = (np.abs(depth) > 0)
                 mask_visiable_trim = mask
@@ -260,7 +256,6 @@ class offlineRender:
                     "px_count_valid": int(np.sum(np.array(inputdepth)[mask_trim] != 0)),
                     "px_count_visib": int(np.sum(mask_visiable_trim)),
                     "visib_fract": float(np.sum(mask_visiable_trim)/np.sum(depth > 0)),
-                    "kps": kp_pixel.tolist(),
                 })
                 modelT = self.objectmap[node]["trans"]
                 model_camT = np.linalg.inv(modelT).dot(self.camposes[cam_name])
@@ -297,11 +292,6 @@ class offlineRender:
                 node = pyrender.Node(mesh=mesh, matrix=self.objects[obj_instancename]['trans'])
                 self.objectmap[node] = {"index":self.object_label[obj], "name":obj_instancename , "trans":self.objects[obj_instancename ]['trans']}
                 self.scene.add_node(node)
-            if obj_instancename in self.objs_kp:
-                trans = self.objects[obj_instancename]['trans']
-                points = self.objs_kp[obj_instancename].T
-                points_transed = trans[:3, :3].dot(points) + trans[:3, [3]]
-                self.objs_kp[obj_instancename] = points_transed.T
 
     
     def _getbbx(self, mask):

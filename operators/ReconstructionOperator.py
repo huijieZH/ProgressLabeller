@@ -299,17 +299,6 @@ class Reconstruction(Operator):
             row.prop(scene.scalealign, "THRESHOLD")
             row = layout.row()
             row.prop(scene.scalealign, "NUM_THRESHOLD")     
-
-            # layout.label(text="Set Depth Fusion Parameters:")
-            # row = layout.row() 
-            # row.prop(scene.kinectfusionparas, "tsdf_voxel_size")
-            # row = layout.row() 
-            # row.prop(scene.kinectfusionparas, "tsdf_trunc_margin")
-            # row = layout.row() 
-            # row.prop(scene.kinectfusionparas, "pcd_voxel_size")
-            # row = layout.row() 
-            # row.prop(config, "depth_ignore")
-            # box = layout.box() 
         
         elif self.ReconstructionType == "ORB_SLAM2":
             layout.label(text="Set Camera Parameters:")
@@ -350,16 +339,6 @@ class Reconstruction(Operator):
             row.prop(scene.orbslamparas, "timestampfrenquency")   
             row = box.row()
             row.prop(scene.orbslamparas, "display")            
-            # layout.label(text="Set Depth Fusion Parameters:")
-            # row = layout.row() 
-            # row.prop(scene.kinectfusionparas, "tsdf_voxel_size")
-            # row = layout.row() 
-            # row.prop(scene.kinectfusionparas, "tsdf_trunc_margin")
-            # row = layout.row() 
-            # row.prop(scene.kinectfusionparas, "pcd_voxel_size")
-            # row = layout.row() 
-            # row.prop(config, "depth_ignore")
-            # box = layout.box() 
 
         elif self.ReconstructionType == "ORB_SLAM3":
             layout.label(text="Set Camera Parameters:")

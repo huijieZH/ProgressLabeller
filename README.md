@@ -2,7 +2,7 @@
 
 <img src='doc/fig/overview.png' width="1000"/>
 
-## Overview
+# Overview
 
 ProgressLabeller is a method for more efficiently generating large amounts of 6D pose training data from color images sequences for custom scenes in a scalable manner. ProgressLabeller is intended to also support transparent or translucent objects, for which the previous methods based on depth dense reconstruction will fail. The project is an blender add-on implementation of Progresslabeller. 
 
@@ -17,7 +17,7 @@ If you use this project for your research, please cite:
 ```
 
 
-## Table of contents
+# Table of contents
 -----
   * [Installation](#installation)
     * [Install denpencies](#install-denpencies)
@@ -32,14 +32,14 @@ If you use this project for your research, please cite:
   * [Reference](#references)
 ------
 
-## Installation
+# Installation
 
 Our blender add-on has been tested in the following environment:
 
 * Ubuntu 18.04/20.04
 * Blender 2.92/2.93
 
-### Install denpencies
+## Install denpencies
 
 Our add-on depends on the following python libraries:
 * numpy>=1.18
@@ -55,7 +55,6 @@ Our add-on depends on the following python libraries:
 * scikit-image
 * pyntcloud
 * opencv-python
-* normalSpeed
 
 It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, we use conda to install library, __please replace </PATH/TO/BLENDER>, <PATH/TO/Progresslabeller> to your own root directories of Progresslabeller and Blender__: 
 ```bash
@@ -73,7 +72,7 @@ python -m pip install -r requirements.txt --target $PROGRESSLABELLER_BLENDER_PAT
 For some reason, it is not recommended to directly use blender's python to install those package, you might meet some problems when install pycuda. Our way is to use the pip from python3.7 in conda.
 
 
-### Build COLMAP_extension(only needed when you want to use COLMAP [2])
+## Build COLMAP_extension(only needed when you want to use COLMAP [2])
 
 To enableing [COLMAP reconstruction](https://colmap.github.io/), please also following its official guidance to install COLMAP. Remember install the make file to the system use:
 ```bash
@@ -90,7 +89,7 @@ cmake ..
 make
 ```
 
-### Build ORB-SLAM2_extension(only needed when you want to use ORB_SLAM2 [3])
+## Build ORB-SLAM2_extension(only needed when you want to use ORB_SLAM2 [3])
 
 To enableing ORB-SLAM2 reconstruction, you should clone [my branch](https://github.com/huijieZH/ORB_SLAM2), containing a little modification from official version. Please follow the guidance to install ORB_SLAM2.
 <!-- ```bash
@@ -113,7 +112,7 @@ make
 ```
 
 
-### Build ORB-SLAM3_extension(only needed when you want to use ORB_SLAM3 [4])
+## Build ORB-SLAM3_extension(only needed when you want to use ORB_SLAM3 [4])
 
 To enableing ORB-SLAM3 reconstruction, you should clone [my branch](https://github.com/ZerenYu/ORB_SLAM3.git), containing a little modification from official version. Please follow the guidance to install ORB_SLAM3.
 
@@ -129,13 +128,13 @@ cmake ..
 make
 ```
 
-### Run in terminal
+## Run in terminal
 In order to see some running message about our pipeline, it is recommended to run the blender in the terminal. Just run:
 ```bash
 cd $PROGRESSLABELLER_PATH
 blender --python __init__.py ## remember to add blender to your bash first.
 ```
-### Install add-on in blender
+## Install add-on in blender
 
 First prepare the zip file for blender:
 ```bash
@@ -149,9 +148,9 @@ Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/Progr
 </p>
 
 
-## Data structure
+# Data structure
 
-### Dataset
+## Dataset
 
 To prepare a new dataset, please follow the structure below. We also provide a **demo dataset** [here](https://www.dropbox.com/s/3z7ky2q1izdywm9/progresslabellerdemo.zip?dl=0)
 
@@ -184,7 +183,7 @@ To prepare a new dataset, please follow the structure below. We also provide a *
     ...
 |-- <path/to/output>           # Stored output labelled objects poses and segmentation per frame, generated from our pipline.
 ```
-#### Object poses file
+### Object poses file
 
 Object pose file is a ``.yaml`` file stored all labelled pose in world coordinate. It will be created or stored every time you click "Save Object Poses":
 
@@ -204,7 +203,7 @@ object2.instance001:
 ...   
 ```
 
-#### Camera poses file
+### Camera poses file
 
 Object pose file is a ``.txt`` file stored camera poses for every image. It is generated from our pipeline. It is be aranged as:
 
@@ -216,7 +215,7 @@ Object pose file is a ``.txt`` file stored camera poses for every image. It is g
 ...   
 ```
 
-### Configuration
+## Configuration
 
 You could design your own configuration in a ``.json`` file, it could also be created by ProgressLabeller
 ```python
@@ -257,7 +256,7 @@ You could design your own configuration in a ``.json`` file, it could also be cr
 }
 ```
 
-### Collection
+## Collection
 
 
 We create new collections in blender for a better arrangement for our pipline, it has the following structure:
@@ -285,15 +284,15 @@ We create new collections in blender for a better arrangement for our pipline, i
     ...
 ```
 
-## Usage
+# Usage
 
 [<img src='doc/fig/video.png' width="1000"/>](https://www.youtube.com/watch?v=GnahM0Z6A0U "Click to watch the ProgressLabeller usage")
 
-## Output
+# Output
 
 There are several formats for the ouput data. We have provide BOP [5] format, YCB-V format [6], our own Progresslabeller format.
 
-### Progresslabeller format
+## Progresslabeller format
 
 ```bash
 <outputpath>
@@ -318,11 +317,11 @@ There are several formats for the ouput data. We have provide BOP [5] format, YC
 ...  
 ```
 
-### Define your own format
+## Define your own format
 
 You could also specify your own format In function renderYourtype() in the file ``offline/render.py``. There are some guidances in the function to help you get access to parameters you need. 
 
-### Offline data generation
+## Offline data generation
 
 It is also possible to generate the dataset offline for fully annotation workspace. 
 ```bash
@@ -332,7 +331,7 @@ python offline/main.py [path/to/configuration.json] [path/to/outputdir] [data_fo
 ```
 
 
-## References
+# References
 [1] Marion, Pat, Peter R. Florence, Lucas Manuelli, and Russ Tedrake. "Label fusion: A pipeline for generating ground truth labels for real rgbd data of cluttered scenes." In 2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 3235-3242. IEEE, 2018.
 
 [2] Schonberger, Johannes L., and Jan-Michael Frahm. "Structure-from-motion revisited." In Proceedings of the IEEE conference on computer vision and pattern recognition, pp. 4104-4113. 2016.

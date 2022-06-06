@@ -4,11 +4,11 @@ import os
 import numpy as np
 from mathutils import Vector
 from kernel.geometry import _pose2Rotation, _rotation2Pose
+from kernel.blender_utility import _is_progresslabeller_object, _get_allrgb_insameworkspace, _get_configuration, _get_obj_insameworkspace
 
 config_json_dict = {
     'projectname': [['projectname']],
     'modelsrc': [['environment', 'modelsrc']],
-    'modelposesrc': [['environment', 'modelposesrc']],
     'reconstructionsrc':[['environment', 'reconstructionsrc']] ,
     'datasrc': [['environment', 'datasrc']],
     'resX':[['camera', 'resolution'], ['0']],  
@@ -24,6 +24,7 @@ config_json_dict = {
     'recon_trans': [['reconstruction', 'recon_trans']],
     'sample_rate': [['data', 'sample_rate']],
     'depth_scale': [['data', 'depth_scale']],
+    'depth_ignore': [['data', 'depth_ignore']],
 
 }
 
@@ -41,7 +42,6 @@ def encode_dict(configuration):
         'projectname': configuration.projectname,
         'environment': {
             'modelsrc':configuration.modelsrc,
-            "modelposesrc": configuration.modelposesrc,
             "reconstructionsrc":configuration.reconstructionsrc,
             "datasrc": configuration.datasrc,           
         },
@@ -61,6 +61,7 @@ def encode_dict(configuration):
         'data':{
         "sample_rate": configuration.sample_rate,
         "depth_scale": configuration.depth_scale,
+        "depth_ignore": configuration.depth_ignore,
         }
     }
     return output_dict
@@ -72,8 +73,6 @@ class config(bpy.types.PropertyGroup):
     projectname: bpy.props.StringProperty(name = "projectname")
     modelsrc: bpy.props.StringProperty(name = "modelsrc", 
                 subtype = "DIR_PATH")
-    modelposesrc: bpy.props.StringProperty(name = "modelposesrc", 
-                subtype = "DIR_PATH")   
     reconstructionsrc: bpy.props.StringProperty(name = "reconstructionsrc", 
                 subtype = "DIR_PATH") 
     datasrc: bpy.props.StringProperty(name = "datasrc", 
@@ -90,7 +89,7 @@ class config(bpy.types.PropertyGroup):
     cy: bpy.props.FloatProperty(name="cy", description="camera intrinsic cy.", 
         min=0.00, max=1000.00, step=10, precision=2)
     lens: bpy.props.FloatProperty(name="lens", description="camera lens length", 
-        min=0.000, max=1.000, step=3, precision=3, default = 0.025)
+        min=0.000, max=1000.000, step=3, precision=3, default = 30)
 
     inverse_pose: bpy.props.BoolProperty(
         name="Inverse Camera Pose",
@@ -105,32 +104,43 @@ class config(bpy.types.PropertyGroup):
                                         default=0.10, 
                                         min=0.00, 
                                         max=1.00, 
-                                        step=0.01, 
+                                        step=0.1, 
                                         precision=2)
+    
+    def depthInfoUpdate(self, context):
+        if context.object != None and _is_progresslabeller_object(context.object):
+            _, config = _get_configuration(context.object)
+            im_list = _get_allrgb_insameworkspace(config)
+            for im in im_list:
+                im["UPDATEALPHA"] = True
                         
     depth_scale: bpy.props.FloatProperty(name="Depth Scale", 
                                         description="Scale for depth image", 
                                         default=0.00025, 
                                         min=0.000000, 
-                                        max=1.000000, 
+                                        max=10.000000, 
                                         step=6, 
-                                        precision=6)  
+                                        precision=6,
+                                        update=depthInfoUpdate)  
 
-    reconstructionscale: bpy.props.FloatProperty(name="reconstruction scale", 
-                                        description="reconstruction scale for the fused.ply", 
-                                        default=1.00, 
-                                        min=0.00, 
-                                        max=2.00, 
-                                        step=0.01, 
-                                        precision=2)      
+    depth_ignore: bpy.props.FloatProperty(name="Depth Ignore (m)", 
+                                        description="Use depth as a filter for rgb", 
+                                        default=1.5, 
+                                        min=0.0, 
+                                        max=10000.0, 
+                                        step=3, 
+                                        precision=3,
+                                        update=depthInfoUpdate)  
 
     cameradisplayscale: bpy.props.FloatProperty(name="reconstruction scale", 
                                         description="reconstruction scale for the fused.ply", 
-                                        default=0.1, 
+                                        default=0.05, 
                                         min=0.00, 
-                                        max=1.00, 
+                                        max=1000.00, 
                                         step=0.01, 
-                                        precision=2)    
+                                        precision=2)   
+
+
 
     def scale_update(self, context):
         
@@ -157,12 +167,15 @@ class config(bpy.types.PropertyGroup):
                         scaled_location = origin_location * new_scale
                         current_scaled_location = (alignT[:3, :3].dot(scaled_location) + alignT[:3, [3]]).reshape((3, ))
                         obj.location = Vector(current_scaled_location)
-                        
-            recon["scale"] = self.reconstructionscale   
+
+            recons = _get_obj_insameworkspace(recon, ["reconstruction"])
+
+            for obj in recons:
+                obj["scale"] = self.reconstructionscale   
 
     
     reconstructionscale: bpy.props.FloatProperty(name="reconstruction scale", description="scale of the reconstruction model", 
-        min=0.01, max=10.000, step=3, precision=3, default = 1.000, 
+        min=0.01, max=1000.000, step=3, precision=3, default = 1.000, 
         update=scale_update)
 
     def cameradisplayscale_update(self, context):

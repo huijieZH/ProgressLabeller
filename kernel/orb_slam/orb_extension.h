@@ -10,9 +10,9 @@
 #include<System.h>
 #include<MapPoint.h>
 
-#include <pybind11/pybind11.h>
+#include<pybind11/pybind11.h>
 
-int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, string strAssociationFilename, string recon_path, float image_frequence);
+int orb_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, string strAssociationFilename, string recon_path, float image_frequence, float display);
 
 void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
                 vector<string> &vstrImageFilenamesD, vector<double> &vTimestamps);

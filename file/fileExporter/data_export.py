@@ -8,22 +8,33 @@ from kernel.logging_utility import log_report
 # ImportHelper is a helper class, defines filename and
 # invoke() function which calls the file selector.
 from bpy_extras.io_utils import ExportHelper
-from bpy.props import StringProperty
+from bpy.props import StringProperty, EnumProperty
 from bpy.types import Operator
-from kernel.exporter import configuration_export
+from kernel.exporter import configuration_export, objectposes_export
 
 class DataOutput(Operator, ExportHelper):
     """This appears in the tooltip of the operator and in the generated docs"""
-    bl_idname = "export_data.dataoutput"  # important since its how bpy.ops.import_test.some_data is constructed
+    bl_idname = "export_data.dataoutput" 
     bl_label = "Output Data"
 
-    # ExportHelper mixin class uses this
     filename_ext = "/"
 
     filter_glob: StringProperty(
         default="/",
         options={'HIDDEN'},
-        maxlen=255,  # Max internal buffer length, longer would be clamped.
+        maxlen=255,  
+    )
+
+    dataformatType: EnumProperty(
+        name="Output format",
+        description="Choose a output format",
+        items=(
+            ('BOP', "BOP", "BOP challenge format"),
+            ('YCBV', "YCBV", "YCBV dataset format"),
+            ('ProgressLabeller', "ProgressLabeller", "ProgressLabeller format")
+            ('Yourtype', "Yourtype", "Your own form (please define your own type first)")
+        ),
+        default='ProgressLabeller',
     )
 
     def execute(self, context):
@@ -43,9 +54,12 @@ class DataOutput(Operator, ExportHelper):
                 "Error", "Please allocate the object in the scene and save object poses", None
             )
         else:
-            configuration_export(config, "/tmp/progresslabeler.json")
-            data_export("/tmp/progresslabeler.json", self.filepath)
-            os.remove("/tmp/progresslabeler.json")
+            configuration_export(config, "/tmp/progresslabeller.json")
+            log_report(
+                "Info", "Export data to" + self.filepath, None
+            )
+            data_export("/tmp/progresslabeller.json", self.filepath, self.dataformatType)
+            os.remove("/tmp/progresslabeller.json")
         return {'FINISHED'}
 
     def invoke(self, context, event):

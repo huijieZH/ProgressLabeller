@@ -46,19 +46,6 @@ def _parsePoints3D(filename, PointsDict):
                 PointsDict[int(words[0])]["location"] = np.array([float(words[1]), float(words[2]), float(words[3])])
                 PointsDict[int(words[0])]["error"] = float(words[7])
 
-# def _depthInterpolation(depth, px, py):
-#     px_0 = int(np.floor(px))
-#     px_1 = int(np.ceil(px))
-#     py_0 = int(np.floor(py))
-#     py_1 = int(np.ceil(py))
-#     if (px_1 == px_0): px_1 += 1
-#     if (py_1 == py_0): py_1 += 1
-#     depth_inter = depth[px_0, py_0] * (px_1 - px) * (py_1 - py) +\
-#                   depth[px_1, py_0] * (px - px_0) * (py_1 - py) +\
-#                   depth[px_0, py_1] * (px_1 - px) * (py - py_0) +\
-#                   depth[px_1, py_1] * (px - px_0) * (py - py_0)
-#     return depth_inter
-
 def _depthInterpolation(depth, px, py):
     px_0 = int(np.floor(px))
     py_0 = int(np.floor(py))
@@ -103,10 +90,10 @@ def _calculateDepth(THRESHOLD, NUM_THRESHOLD, PointsDepth):
             if si < THRESHOLD and si > 0 and number_point > NUM_THRESHOLD:
                 number += number_point
                 total_scale += np.sum(np.array(scale_point))
+    print("remain {0:.2f}% vaild points".format(number * 100/len(PointsDepth)))
     if number == 0:
         return 0
     else:
-        # print(number)
         return total_scale/number
 
 
@@ -133,5 +120,4 @@ if __name__ == "__main__":
             _scaleFordepth(depth, camera_idx, intrinsic, Camera_dict, PointsDict, PointsDepth)
     
     scale = _calculateDepth(THRESHOLD = 0.005, NUM_THRESHOLD = 3, PointsDepth = PointsDepth)
-    print(scale)
     pass

@@ -1,3 +1,4 @@
+from PIL import Image
 import bpy
 import os
 import yaml
@@ -13,12 +14,13 @@ from kernel.ply_importer.point_data_file_handler import(
 from kernel.ply_importer.utility import(
     draw_points
 )
-from kernel.utility import _transstring2trans
+from kernel.utility import _transstring2trans, _parse_camfile
 
 from kernel.logging_utility import log_report
 from registeration.init_configuration import config_json_dict, decode_dict
 from kernel.blender_utility import \
-    _get_configuration, _get_obj_insameworkspace, _apply_trans2obj
+    _get_configuration, _get_obj_insameworkspace, _apply_trans2obj, \
+    _clear_allrgbdcam_insameworkspace, _getsameinstance, _getnextperfixforinstance
 from kernel.utility import _select_sample_files, _generate_image_list
 import time
 
@@ -44,79 +46,114 @@ def load_configuration(filepath):
 
 
 def load_model(filepath, config_id):
-    workspace_name = bpy.context.scene.configuration[config_id].projectname
+    config = bpy.context.scene.configuration[config_id]
+    workspace_name = config.projectname
     objFilename = filepath.split("/")[-1]
-    objName = workspace_name + ":" + objFilename.split(".")[0]
-    if objName in bpy.data.objects:
-        print("Unsupported for same object loaded several times")
+    objname = objFilename.split(".")[0]
+    obj_instancename = workspace_name + ":" + objname + ".instance{0:03d}".format(_getnextperfixforinstance(config, objname))
+    # if objName in bpy.data.objects:
+    #     print("Unsupported for same object loaded several times")
+    bpy.ops.import_scene.obj(filepath=filepath)
+    bpy.context.selected_objects[0].name = obj_instancename
+    bpy.ops.object.select_all(action='DESELECT')
+    bpy.data.objects[obj_instancename].rotation_mode = 'QUATERNION'
+    bpy.data.objects[obj_instancename].rotation_quaternion = [1., 0., 0., 0.]
+    bpy.data.objects[obj_instancename]["type"] = "model"
+    bpy.data.objects[obj_instancename]["path"] = filepath
+    ## first unlink all collection, then link to Model collection
+    for collection in bpy.data.objects[obj_instancename].users_collection:
+        collection.objects.unlink(bpy.data.objects[obj_instancename])
+
+    create_collection(workspace_name + ":Model", parent_collection = workspace_name)
+
+    bpy.data.collections[workspace_name + ":Model"].objects.link(bpy.data.objects[obj_instancename])
+
+    ### check whether the object is normal, split or URDF
+    files = os.listdir(os.path.dirname(filepath))
+    if 'split' in files:
+        bpy.data.objects[obj_instancename]["modeltype"] = "split"
     else:
-        bpy.ops.import_scene.obj(filepath=filepath)
-        bpy.context.selected_objects[0].name = objName
-        bpy.ops.object.select_all(action='DESELECT')
-        bpy.data.objects[objName].rotation_mode = 'QUATERNION'
-        bpy.data.objects[objName].rotation_quaternion = [1., 0., 0., 0.]
-        bpy.data.objects[objName]["type"] = "model"
-        bpy.data.objects[objName]["path"] = filepath
-        ## first unlink all collection, then link to Model collection
-        for collection in bpy.data.objects[objName].users_collection:
-            collection.objects.unlink(bpy.data.objects[objName])
-
-        create_collection(workspace_name + ":Model", parent_collection = workspace_name)
-
-        bpy.data.collections[workspace_name + ":Model"].objects.link(bpy.data.objects[objName])
-
-        ### check whether the object is normal, split or URDF
-        files = os.listdir(os.path.dirname(filepath))
-        if 'split' in files:
-            bpy.data.objects[objName]["modeltype"] = "split"
-        else:
-            bpy.data.objects[objName]["modeltype"] = "normal"
+        bpy.data.objects[obj_instancename]["modeltype"] = "normal"
 
     
 
 def load_model_from_pose(filepath, config_id):
-    workspace_name = bpy.context.scene.configuration[config_id].projectname
+    config = bpy.context.scene.configuration[config_id]
+    workspace_name = config.projectname
     with open(filepath, 'r') as file:
         poses = yaml.load(file, Loader=yaml.FullLoader)
-    if bpy.context.scene.configuration[config_id].modelsrc == "":
+    if config.modelsrc == "":
         log_report(
             "INFO", "You should initialize the modelsrc before using this function", None
         )       
     else:
-        model_dir = os.listdir(bpy.context.scene.configuration[config_id].modelsrc)
-        for objname in poses:
+        model_dir = os.listdir(config.modelsrc)
+        print(poses)
+        for obj_instancename in poses:
+            objname = obj_instancename.split(".")[0]
             if objname in model_dir:
-                objworkspacename = workspace_name + ":" + objname
+                objworkspacename = workspace_name + ":" + obj_instancename
                 if objworkspacename in bpy.data.objects:
-                    bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
-                    bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
+                    bpy.data.objects[objworkspacename].location = poses[obj_instancename]['pose'][0]
+                    bpy.data.objects[objworkspacename].rotation_quaternion = poses[obj_instancename]['pose'][1]/np.linalg.norm(poses[obj_instancename]['pose'][1])
                 else:
-                    load_model(os.path.join(bpy.context.scene.configuration[config_id].modelsrc, objname, objname + ".obj" ), config_id)
-                    bpy.data.objects[objworkspacename].location = poses[objname]['pose'][0]
-                    bpy.data.objects[objworkspacename].rotation_quaternion = poses[objname]['pose'][1]/np.linalg.norm(poses[objname]['pose'][1])
+                    load_model(os.path.join(config.modelsrc, objname, objname + ".obj" ), config_id)
+                    bpy.data.objects[objworkspacename].location = poses[obj_instancename]['pose'][0]
+                    bpy.data.objects[objworkspacename].rotation_quaternion = poses[obj_instancename]['pose'][1]/np.linalg.norm(poses[obj_instancename]['pose'][1])
 
 
 def load_pc(filepath, pointcloudscale, config_id):
     workspace_name = bpy.context.scene.configuration[config_id].projectname
-    if workspace_name + ":" + 'reconstruction' not in bpy.data.objects:
+
+    if workspace_name + ":" + 'reconstruction' in bpy.data.objects:
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.data.objects[workspace_name + ":" + 'reconstruction'].select_set(True)
+        bpy.ops.object.delete() 
+    points = PointDataFileHandler.parse_point_data_file(filepath)
+    draw_points(points = points, 
+                point_size = 3, 
+                add_points_to_point_cloud_handle = True, 
+                reconstruction_collection = bpy.data.collections[workspace_name + ":" + "Pointcloud"], 
+                object_anchor_handle_name=workspace_name + ":" + "reconstruction", op=None)
+    bpy.data.objects[workspace_name + ":" + 'reconstruction']["type"] = "reconstruction"
+    bpy.data.objects[workspace_name + ":" + 'reconstruction'].scale = Vector((pointcloudscale, 
+                                                        pointcloudscale, 
+                                                        pointcloudscale))
+
+    bpy.data.objects[workspace_name + ":" + 'reconstruction']["path"] = filepath
+    bpy.data.objects[workspace_name + ":" + 'reconstruction']["scale"] = pointcloudscale
+    bpy.data.objects[workspace_name + ":" + 'reconstruction'].rotation_mode = 'QUATERNION'
+    bpy.data.objects[workspace_name + ":" + 'reconstruction']["alignT"] = [[1., 0., 0., 0.],
+                                                                            [0., 1., 0., 0.], 
+                                                                            [0., 0., 1., 0.], 
+                                                                            [0., 0., 0., 1.]]
+
+def load_pc(filepath, pointcloudscale, config_id, name = 'reconstruction'):
+    if os.path.exists(filepath):
+        workspace_name = bpy.context.scene.configuration[config_id].projectname
+
+        if workspace_name + ":" + name in bpy.data.objects:
+            bpy.ops.object.select_all(action='DESELECT')
+            bpy.data.objects[workspace_name + ":" + name].select_set(True)
+            bpy.ops.object.delete() 
         points = PointDataFileHandler.parse_point_data_file(filepath)
         draw_points(points = points, 
                     point_size = 3, 
                     add_points_to_point_cloud_handle = True, 
                     reconstruction_collection = bpy.data.collections[workspace_name + ":" + "Pointcloud"], 
-                    object_anchor_handle_name=workspace_name + ":" + "reconstruction", op=None)
-        bpy.data.objects[workspace_name + ":" + 'reconstruction']["type"] = "reconstruction"
-        bpy.data.objects[workspace_name + ":" + 'reconstruction'].scale = Vector((pointcloudscale, 
-                                                            pointcloudscale, 
-                                                            pointcloudscale))
+                    object_anchor_handle_name=workspace_name + ":" + name, op=None)
+        bpy.data.objects[workspace_name + ":" + name]["type"] = "reconstruction"
+        bpy.data.objects[workspace_name + ":" + name].scale = Vector((pointcloudscale, 
+                                                                    pointcloudscale, 
+                                                                    pointcloudscale))
 
-        bpy.data.objects[workspace_name + ":" + 'reconstruction']["path"] = filepath
-        bpy.data.objects[workspace_name + ":" + 'reconstruction']["scale"] = pointcloudscale
-        bpy.data.objects[workspace_name + ":" + 'reconstruction'].rotation_mode = 'QUATERNION'
-        bpy.data.objects[workspace_name + ":" + 'reconstruction']["alignT"] = [[1., 0., 0., 0.],
-                                                                              [0., 1., 0., 0.], 
-                                                                              [0., 0., 1., 0.], 
-                                                                              [0., 0., 0., 1.]]
+        bpy.data.objects[workspace_name + ":" + name]["path"] = filepath
+        bpy.data.objects[workspace_name + ":" + name]["scale"] = pointcloudscale
+        bpy.data.objects[workspace_name + ":" + name].rotation_mode = 'QUATERNION'
+        bpy.data.objects[workspace_name + ":" + name]["alignT"] = [[1., 0., 0., 0.],
+                                                                    [0., 1., 0., 0.], 
+                                                                    [0., 0., 1., 0.], 
+                                                                    [0., 0., 0., 1.]]
 
 def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate):
 
@@ -137,7 +174,9 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
 
     rgb_files.sort()
     rgb_sample_files = _select_sample_files(rgb_files, sample_rate)
+    os.system("mkdir -p " + bpy.context.scene.configuration[config_id].reconstructionsrc)
     _generate_image_list(bpy.context.scene.configuration[config_id].reconstructionsrc, rgb_sample_files)
+    _clear_allrgbdcam_insameworkspace(bpy.context.scene.configuration[config_id])
     log_report(
         "INFO", "Loading camera, rgb and depth images", None
     )
@@ -154,7 +193,6 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
                 
                 cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX/2 - bpy.context.scene.configuration[config_id].cx)/bpy.context.scene.configuration[config_id].resX
                 cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/bpy.context.scene.configuration[config_id].resX
-                ## allow background display
                 cam_data.background_images.new()
                 
                 cam_object = bpy.data.objects.new(cam_name, cam_data)
@@ -168,15 +206,10 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
             ## load rgb
             rgb_name = workspace_name + ":rgb" + perfix
             if rgb_name not in bpy.data.images:
-                # bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), 
-                #                     directory=rgb_path, 
-                #                     files=[{"name":perfix + ".png"}], 
-                #                     relative_path=True, show_multiview=False)
                 bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), show_multiview=False)
                 bpy.data.images[perfix + ".png"].name = rgb_name
             bpy.data.images[rgb_name]["UPDATEALPHA"] = True
             bpy.data.images[rgb_name]["alpha"] = [0.5]
-            # bpy.data.images[rgb_name].filepath = rgb_name
             ## load depth
             depth_name = workspace_name + ":depth" + perfix
             if depth_name not in bpy.data.images:
@@ -185,10 +218,13 @@ def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate
                                     files=[{"name":perfix + ".png"}], 
                                     relative_path=True, show_multiview=False)
                 bpy.data.images[perfix + ".png"].name = depth_name
+                
+                depth = np.array(Image.open(os.path.join(depth_path, perfix + ".png")))
+                depth = depth[::-1, ::]
+                bpy.data.images[depth_name]["depth"] = depth.flatten().astype(np.float32)
                 ## change transparency
             bpy.data.images[depth_name]["UPDATEALPHA"] = True
             bpy.data.images[depth_name]["alpha"] = [0.5]
-            # bpy.data.images[depth_name].filepath = depth_name
             cam_object["depth"] = bpy.data.images[depth_name]
             cam_object["rgb"] = bpy.data.images[rgb_name]
             cam_object["type"] = "camera"
@@ -222,16 +258,14 @@ def load_reconstruction_result(filepath,
     reconstruction_path = os.path.join(filepath, "fused.ply")
     load_pc(reconstruction_path, pointcloudscale, config_id)
     bpy.ops.object.select_all(action='DESELECT')
+
+    rgb_files = os.listdir(rgb_path)
+    depth_files = os.listdir(depth_path)
     
     ## load camera and image result
-    camera_lines = []
-    file = open(camera_rgb_file, "r")
-    lines = file.read().split("\n")
-    for l in lines:
-        data = l.split(" ")
-        if data[0].isnumeric():
-            camera_lines.append(l)
+    camera_lines = _parse_camfile(camera_rgb_file)
     camera_selected_lines = _select_sample_files(camera_lines, IMPORT_RATIO)
+    _clear_allrgbdcam_insameworkspace(bpy.context.scene.configuration[config_id])
     for l in tqdm(camera_selected_lines):
         data = l.split(" ")
         if data[0].isnumeric():
@@ -252,7 +286,7 @@ def load_reconstruction_result(filepath,
                 cam_object = bpy.data.objects[cam_name]
                 cam_object.location = pose[0]
                 cam_object.rotation_quaternion = pose[1]
-            elif perfix + ".png" in os.listdir(rgb_path) and perfix + ".png" in os.listdir(depth_path):
+            elif perfix + ".png" in rgb_files and perfix + ".png" in depth_files:
                 cam_data = bpy.data.cameras.new(cam_name)
                 cam_data.lens = bpy.context.scene.configuration[config_id].lens
                 f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2
@@ -279,7 +313,6 @@ def load_reconstruction_result(filepath,
                     bpy.data.images[perfix + ".png"].name = rgb_name
                 bpy.data.images[rgb_name]["UPDATEALPHA"] = True
                 bpy.data.images[rgb_name]["alpha"] = [0.5]
-                # bpy.data.images[rgb_name].filepath = rgb_name
                 ## load depth
                 depth_name = workspace_name + ":depth" + perfix
                 if depth_name not in bpy.data.images:
@@ -288,9 +321,11 @@ def load_reconstruction_result(filepath,
                                         files=[{"name":perfix + ".png"}], 
                                         relative_path=True, show_multiview=False)
                     bpy.data.images[perfix + ".png"].name = depth_name
+                    depth = np.array(Image.open(os.path.join(depth_path, perfix + ".png")))
+                    depth = depth[::-1, ::]
+                    bpy.data.images[depth_name]["depth"] = depth.flatten().astype(np.float32)
                 bpy.data.images[depth_name]["UPDATEALPHA"] = True
                 bpy.data.images[depth_name]["alpha"] = [0.5]
-                # bpy.data.images[depth_name].filepath = depth_name
                 cam_object["depth"] = bpy.data.images[depth_name]
                 cam_object["rgb"] = bpy.data.images[rgb_name]
                 cam_object["type"] = "camera" 
@@ -319,7 +354,6 @@ def create_workspace(path, name,
     
     work_space_collection = create_collection(name, parent_collection = None)
     setting = setting_init(name + ":Setting", work_space_collection, path)
-    # setting_config_init(setting, config)
     setting["config_id"] = config_id
     model_collection = create_collection(name + ":Model", 
                                          parent_collection = work_space_collection)
@@ -333,7 +367,6 @@ def create_workspace(path, name,
 def init_package(path, config):
     create_packages(path, ["model", "recon", "data"])
     config.modelsrc = os.path.join(path, "model")
-    config.modelposesrc = os.path.join(path, "recon")
     config.datasrc = os.path.join(path, "data")
     config.reconstructionsrc = os.path.join(path, "recon")
 
@@ -355,7 +388,6 @@ def create_collection(new_name, parent_collection = None):
             raise Exception("parent collection not exists")
         return new_collection
     else: 
-        # print(new_name + " Collection is currently in the Blender")
         return bpy.data.collections[new_name]
 
 def setting_init(name, collection, path):

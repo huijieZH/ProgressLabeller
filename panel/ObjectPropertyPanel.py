@@ -1,5 +1,7 @@
 import bpy
+from kernel.blender_utility import _get_configuration
 
+import numpy as np
 
 class ObjectPropertyPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
@@ -14,9 +16,8 @@ class ObjectPropertyPanel(bpy.types.Panel):
         scene = context.scene
         if "type" in bpy.data.objects[current_object]:
             name = current_object.split(":")[0]
-            config_id =  bpy.data.objects[name + ":Setting"]['config_id']
-            config = scene.configuration[config_id]
             object_type = bpy.data.objects[current_object]["type"]
+            config_id, config = _get_configuration(context.object)
             if object_type == "model":
                 layout = self.layout
                 scene = context.scene
@@ -56,6 +57,8 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 if scene.floatscreenproperty.TRACK:
                     row = box.row()
                     row.prop(scene.floatscreenproperty, "ALIGN")
+                    # row.operator("object_property.current3darea")
+                    
                 row = box.row(align=True)
                 row.prop(scene.floatscreenproperty, "BACKGROUND")
                 row.prop(scene.floatscreenproperty, "background_alpha")
@@ -66,6 +69,23 @@ class ObjectPropertyPanel(bpy.types.Panel):
                     row = box.row(align=True)
                     row.prop(scene.floatscreenproperty, "display_X")
                     row.prop(scene.floatscreenproperty, "display_Y")
+                
+                layout.label(text="Set depth filter parameter:")
+                
+                box = layout.box() 
+                row = box.row(align=True)
+                row = box.row()
+                row.prop(scene.floatscreenproperty, "UPDATE_DEPTHFILTER")
+                row = box.row()
+                row.prop(scene.floatscreenproperty, "IGNORE_ZERODEPTH")
+                row = box.row()
+                row.prop(config, "depth_scale")
+                row = box.row()
+                row.prop(config, "depth_ignore")
+                meandepth = np.mean(np.array(context.object["depth"]["depth"])) * config.depth_scale
+                box.label(text="Mean depth for current image is : {0:.3f}m".format(meandepth))
+                
+
             elif object_type == "setting":
                 object = bpy.data.objects[current_object]
                 scene = context.scene
@@ -81,7 +101,7 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 row.operator("import_data.model")
 
                 row = layout.row()
-                row.prop(config, 'modelposesrc')
+                # row.prop(config, 'modelposesrc')
                 row.operator("import_data.modelfrompose")
                 row.operator("export_data.objectposes")
 
@@ -120,6 +140,7 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 box = layout.box() 
                 row = box.row(align=True)
                 row.operator("reconstruction.methodselect")  
+                row.operator("reconstruction.depthfusion")
 
                 layout.label(text="Data Output:")
                 box = layout.box() 

@@ -11,16 +11,15 @@ from bpy.types import Operator
 
 class ExportObjectPoses(Operator, ExportHelper):
     """This appears in the tooltip of the operator and in the generated docs"""
-    bl_idname = "export_data.objectposes"  # important since its how bpy.ops.import_test.some_data is constructed
+    bl_idname = "export_data.objectposes"  
     bl_label = "Save Object Poses"
 
-    # ExportHelper mixin class uses this
     filename_ext = ".yaml"
 
     filter_glob: StringProperty(
         default="*.yaml",
         options={'HIDDEN'},
-        maxlen=255,  # Max internal buffer length, longer would be clamped.
+        maxlen=255,  
     )
 
     def execute(self, context):
@@ -37,8 +36,7 @@ class ExportObjectPoses(Operator, ExportHelper):
         config_id = context.object['config_id']
         config = bpy.context.scene.configuration[config_id]
         if "dir" in context.object:
-            self.filepath = (config.modelposesrc if config.modelposesrc.endswith("/") else config.modelposesrc + "/") + "label_pose.yaml"
-        # Tells Blender to hang on for the slow user input
+            self.filepath = (config.reconstructionsrc if config.reconstructionsrc.endswith("/") else config.reconstructionsrc + "/") + "label_pose.yaml"
         return {'RUNNING_MODAL'}
 
 def register():

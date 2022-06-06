@@ -1,0 +1,15 @@
+numpy >= 1.18
+open3d 
+Pillow 
+scipy 
+pyyaml 
+tqdm 
+trimesh 
+pyrender 
+pyntcloud
+pycuda
+pybind11
+numba
+scikit-image == 0.18.3
+opencv-python
+normalSpeed

@@ -237,11 +237,6 @@ def get_view_frustum(depth_im, cam_intr, cam_pose):
 
 
 if __name__ == '__main__':
-    # roi = np.array([11, 30, 80, 90])
-    # pts = np.random.random((1000, 2)) * 50  # randomly sample top left points of bboxes
-    # proposals = np.hstack([pts, pts + 150])
-    # timed_batch_compute_iou = timeit(batch_compute_iou, n=1, need_compile=True)
-    # timed_batch_compute_iou(roi, proposals)
 
     pcd = o3d.io.read_point_cloud('demo.pcd')
     clusters = timeit(extract_euclidean_clusters)(pcd, search_radius=0.05)

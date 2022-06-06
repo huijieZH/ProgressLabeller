@@ -1,5 +1,6 @@
 import bpy
 from bpy.props import StringProperty, EnumProperty, FloatProperty, IntProperty
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.types import Operator
 import numpy as np
 from PIL import Image
@@ -13,29 +14,27 @@ import tqdm
 from kernel.render import save_img
 from kernel.geometry import plane_alignment, transform_from_plane, _pose2Rotation, _rotation2Pose, modelICP, globalRegisteration
 from kernel.logging_utility import log_report
-from kernel.loader import load_cam_img_depth, load_reconstruction_result, updateprojectname, removeworkspace
+from kernel.loader import load_cam_img_depth, load_reconstruction_result, updateprojectname, removeworkspace, load_pc
 from kernel.blender_utility import \
     _get_configuration, _get_reconstruction_insameworkspace, _get_obj_insameworkspace, _get_workspace_name, _apply_trans2obj, \
     _align_reconstruction
 from registeration.init_configuration import config
-from kernel.utility import _trans2transstring
-
+from kernel.utility import _trans2transstring,  _parse_camfile, _select_sample_files
+from kernel.blender_utility import _is_progresslabeller_object, _initreconpose, _get_obj_insameworkspace
+from panel.FloatScreenPanel import draw_for_area
+import registeration.register 
 
 class PlaneAlignment(Operator):
     """Using RANSAC to detect the plane and align it"""
-    bl_idname = "object_property.planealignment"  # important since its how bpy.ops.import_test.some_data is constructed
+    bl_idname = "object_property.planealignment"  
     bl_label = "Plane Alignment"
 
     def execute(self, context):
-        # current_object = bpy.context.object.name
-        # workspace_name = current_object.split(":")[0]
-        recon = _get_reconstruction_insameworkspace(context.object)
-
+        recon = context.object
         log_report(
             "INFO", "Starting calculate the plane function", None
         )      
         
-
         [a, b, c, d], plane_center = plane_alignment(recon["path"], 
                                                      recon["scale"],
                                                      np.array(recon["alignT"]),
@@ -59,11 +58,14 @@ class PlaneAlignment(Operator):
             _apply_trans2obj(obj, trans)
 
 
-        
-        recon["alignT"] = (trans.dot(np.array(recon["alignT"]))).tolist()
+        recons = _get_obj_insameworkspace(recon, ["reconstruction"])
+
+        for obj in recons:
+            print(obj.name)
+            obj["alignT"] = (trans.dot(np.array(obj["alignT"]))).tolist()
 
         _, config = _get_configuration(context.object)
-        config.recon_trans = _trans2transstring(np.array(recon["alignT"]))
+        config.recon_trans = _trans2transstring(np.array(obj["alignT"]))
 
         return {'FINISHED'}
 
@@ -83,7 +85,6 @@ class PlaneAlignment(Operator):
         row.prop(scene.planalignmentparas, "iteration") 
 
 class PlaneAlignmentConfig(bpy.types.PropertyGroup):
-    # The properties for this class which is referenced as an 'entry' below.
     threshold: bpy.props.FloatProperty(name="Inlier Threshold", 
                                         description="Inlier threshold for points aligned to plane", 
                                         default=0.01, 
@@ -108,8 +109,9 @@ class PlaneAlignmentConfig(bpy.types.PropertyGroup):
 
 class ImportCamRGBDepth(Operator):
     """This appears in the tooltip of the operator and in the generated docs"""
-    bl_idname = "object_property.importcamrgbdepth"  # important since its how bpy.ops.import_test.some_data is constructed
+    bl_idname = "object_property.importcamrgbdepth"  
     bl_label = "Import RGB & Depth"
+
 
     def execute(self, context): 
         config_id, config = _get_configuration(context.object)
@@ -131,6 +133,9 @@ class ImportCamRGBDepth(Operator):
         return {'FINISHED'}
     
     def invoke(self, context, event):
+        config_id, config = _get_configuration(context.object)
+        files = os.listdir(os.path.join(config.datasrc, "rgb"))
+        self.total_files = len(files)
         return context.window_manager.invoke_props_dialog(self, width = 400)
 
     def draw(self, context):
@@ -141,6 +146,8 @@ class ImportCamRGBDepth(Operator):
         box = layout.box() 
         row = box.row()
         row.prop(config, "sample_rate") 
+        row = box.row()
+        row.label(text="You would load around {0} cameras".format(int(self.total_files * config.sample_rate)))
 
 
 class ImportReconResult(Operator):
@@ -157,6 +164,7 @@ class ImportReconResult(Operator):
         # config.cameradisplayscale = scene.loadreconparas.camera_display_scale
 
         if not scene.loadreconparas.AUTOALIGN:
+            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), scene.loadreconparas.pointcloud_scale, config_id, "reconstruction_depthfusion")
             load_reconstruction_result(filepath = filepath, 
                                         pointcloudscale = scene.loadreconparas.pointcloud_scale, 
                                         datasrc = datasrc,
@@ -170,9 +178,9 @@ class ImportReconResult(Operator):
             "INFO", "Starting aligning the point cloud", None
             )     
 
-            scale = _align_reconstruction(config, scene)
-                
+            scale =  _align_reconstruction(config, scene, scene.scalealign.THRESHOLD, scene.scalealign.NUM_THRESHOLD)
             config.reconstructionscale = scale
+            load_pc(os.path.join(config.reconstructionsrc, "depthfused.ply"), scale, config_id, "reconstruction_depthfusion")
             load_reconstruction_result(filepath = filepath, 
                                         pointcloudscale = scale, 
                                         datasrc = datasrc,
@@ -182,6 +190,7 @@ class ImportReconResult(Operator):
                                         CAMPOSE_INVERSE = config.inverse_pose
                                         )
             
+
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -209,6 +218,9 @@ class ImportReconResult(Operator):
             )   
             return {'FINISHED'}
         else:
+            camera_rgb_file = os.path.join(config.reconstructionsrc, "campose.txt")  
+            camera_lines = _parse_camfile(camera_rgb_file)
+            self.total_cam_num = len(camera_lines)
             return context.window_manager.invoke_props_dialog(self, width = 400)
 
     def draw(self, context):
@@ -234,12 +246,18 @@ class ImportReconResult(Operator):
         else:
             row = box.row()
             row.prop(config, "depth_scale")
+            row = layout.row()
+            row.prop(scene.scalealign, "THRESHOLD")
+            row = layout.row()
+            row.prop(scene.scalealign, "NUM_THRESHOLD") 
         row = layout.row()
         row.prop(config, "cameradisplayscale")
         row = layout.row()
         row.prop(config, "inverse_pose")  
         row = layout.row()
-        row.prop(scene.loadreconparas, "Import_ratio")     
+        row.prop(scene.loadreconparas, "Import_ratio")  
+        row = layout.row()
+        row.label(text="You would load around {0} cameras".format(int(self.total_cam_num*scene.loadreconparas.Import_ratio)))
             
 class LoadRecon(bpy.types.PropertyGroup):
     # The properties for this class which is referenced as an 'entry' below.
@@ -261,16 +279,7 @@ class LoadRecon(bpy.types.PropertyGroup):
                                           max=1.00, 
                                           step=2, 
                                           precision=2)   
-                                                      
-    # depth_scale: bpy.props.FloatProperty(name="Depth Data Scale", 
-    #                                         description="Scale for depth", 
-    #                                         default=0.00025)  
-                                        
-    # CAMPOSE_INVERSE: bpy.props.BoolProperty(
-    #     name="Inverse Camera Pose",
-    #     description="Need when given poses are from world to camera",
-    #     default=False,
-    # )       
+                                                     
   
 
 
@@ -292,6 +301,9 @@ class RemoveWorkspace(Operator):
         assert context.object['type'] == 'setting'
         name  = _get_workspace_name(context.object)
         removeworkspace(name)
+        for area in registeration.register.area_image_pair:
+            bpy.types.SpaceView3D.draw_handler_remove(registeration.register.area_image_pair[area]["handler"], 'WINDOW')
+        registeration.register.area_image_pair = {}
         return {'FINISHED'}  
 
 class ModelICP(Operator):
@@ -311,6 +323,7 @@ class ModelICP(Operator):
             return {'FINISHED'}
         else:
             recon = _get_reconstruction_insameworkspace(obj)
+            print(recon.name)
             recon_vertices = np.array(recon["particle_coords"])
             rot = np.array(recon.matrix_world)
             recon_vertices_rotated = (rot[:3, :3].dot(recon_vertices.T) + rot[:3, [3]]).T
@@ -335,8 +348,124 @@ class AllModelsICP(Operator):
             recon_vertices_rotated = (rot[:3, :3].dot(recon_vertices.T) + rot[:3, [3]]).T
             trans_obj_icp = modelICP(recon_vertices_rotated, model_vertices)
             _apply_trans2obj(obj, trans_obj_icp)
-        return {'FINISHED'}         
+        return {'FINISHED'}    
 
+class CurrentDepthOperator(bpy.types.Operator):
+    """Move an object with the mouse, example"""
+    bl_idname = "object_property.current_depth_operator"
+    bl_label = "Current depth operator"
+
+    current_depth: FloatProperty()
+
+    def modal(self, context, event):
+        if _is_progresslabeller_object(context.object) and context.object["type"] == "camera" and event.type == 'MOUSEMOVE':
+            print(event.mouse_x, event.mouse_y)
+            config_id, config = _get_configuration(context.object)
+            for area in context.screen.areas:
+                if area.type == 'VIEW_3D':
+                    area.spaces.active.region_3d.view_perspective = 'CAMERA'
+                    bpy.context.scene.render.resolution_x = config.resX
+                    bpy.context.scene.render.resolution_y = config.resY
+                    bpy.context.scene.camera = context.object
+                    cam = bpy.context.scene.camera
+                    frame = cam.data.view_frame(scene = bpy.context.scene)
+                    frame = [cam.matrix_world @ corner for corner in frame]
+                    region = bpy.context.region
+                    rv3d = bpy.context.region_data
+                    frame_px = [location_3d_to_region_2d(region, rv3d, corner) for corner in frame]           
+                    bias_X = min([v[0] for v in frame_px])
+                    bias_Y = min([v[1] for v in frame_px])
+                    res_X = max([v[0] for v in frame_px]) - min([v[0] for v in frame_px])
+                    res_Y = max([v[1] for v in frame_px]) - min([v[1] for v in frame_px])
+                    print(res_X, res_Y)
+            if event.mouse_x > bias_X \
+                and event.mouse_x < bias_X + res_X\
+                and event.mouse_y > bias_Y\
+                and event.mouse_x < bias_Y + res_Y:
+                print(event.mouse_x, event.mouse_y) 
+        return {'PASS_THROUGH'}
+        
+
+    def invoke(self, context, event):
+        self.current_depth = 0
+        context.window_manager.modal_handler_add(self)
+        return {'FINISHED'}
+
+class Lockcurrent3DArea(bpy.types.Operator):
+    """Move an object with the mouse, example"""
+    bl_idname = "object_property.lockcurrent3darea"
+    bl_label = "Lock the view (progresslabelelr)"
+
+    def execute(self, context):
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}  
+    
+    def modal(self, context, event):
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area_bottom = area.y
+                area_left = area.x
+                area_top= area.y + area.height
+                area_right = area.x + area.width  
+                if event.mouse_x >= area_left and event.mouse_x < area_right\
+                    and event.mouse_y >= area_bottom and event.mouse_y < area_top:
+                    if context.object is not None and _is_progresslabeller_object(context.object) and context.object["type"] == "camera":
+                        context.object["depth"]["UPDATEALPHA"] = True
+                        context.object["rgb"]["UPDATEALPHA"] = True
+                        floatscreen_handler = area.spaces[0].draw_handler_add(draw_for_area, (area, context.object), 'WINDOW', 'POST_PIXEL')
+                        registeration.register.area_image_pair[area] = {"camera" : context.object,
+                                                                        "handler" : floatscreen_handler}
+                        log_report(
+                            "Info", "Lock current 3D view area", None
+                        )
+                        return {'FINISHED'}
+                    else:
+                        log_report(
+                            "Info", "Doesn't Lock anything, please select a Progresslabeller camera object", None
+                        )
+                        return {'FINISHED'}
+        log_report(
+            "Info", "Doesn't Lock anything, please select a 3D view area", None
+        )
+        return {'FINISHED'}
+
+class Unlockcurrent3DArea(bpy.types.Operator):
+    """Move an object with the mouse, example"""
+    bl_idname = "object_property.unlockcurrent3darea"
+    bl_label = "Unlock the view (progresslabelelr)"
+
+    def execute(self, context):
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}  
+    
+    def modal(self, context, event):
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area_bottom = area.y
+                area_left = area.x
+                area_top= area.y + area.height
+                area_right = area.x + area.width  
+                if event.mouse_x >= area_left and event.mouse_x < area_right\
+                    and event.mouse_y >= area_bottom and event.mouse_y < area_top:
+                    if area in registeration.register.area_image_pair:
+                        # area.spaces[0].draw_handler_remove(registeration.register.area_image_pair[area]["handler"], 'WINDOW')
+                        bpy.types.SpaceView3D.draw_handler_remove(registeration.register.area_image_pair[area]["handler"], 'WINDOW')
+                        registeration.register.area_image_pair.pop(area)
+                        log_report(
+                            "Info", "Unlock current 3D view area", None
+                        )
+                        return {'FINISHED'}
+                    else:
+                        log_report(
+                            "Info", "Current 3D view area is not lock", None
+                        )
+                        return {'FINISHED'}                        
+        log_report(
+            "Info", "Doesn't Unlock anything, please select a 3D view area", None
+        )
+        return {'FINISHED'}
+
+            
 
 def register():
     # bpy.utils.register_class(ViewImage)
@@ -354,6 +483,11 @@ def register():
     bpy.utils.register_class(WorkspaceRename)
     bpy.utils.register_class(RemoveWorkspace)
 
+    bpy.utils.register_class(CurrentDepthOperator)
+    bpy.utils.register_class(Lockcurrent3DArea)
+    bpy.utils.register_class(Unlockcurrent3DArea)
+    
+
 def unregister():
     # bpy.utils.unregister_class(ViewImage)
     
@@ -367,3 +501,6 @@ def unregister():
     
     bpy.utils.unregister_class(WorkspaceRename)
     bpy.utils.unregister_class(RemoveWorkspace)
+    bpy.utils.unregister_class(CurrentDepthOperator)
+    bpy.utils.unregister_class(Lockcurrent3DArea)
+    bpy.utils.unregister_class(Unlockcurrent3DArea)

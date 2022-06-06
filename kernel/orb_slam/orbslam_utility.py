@@ -43,7 +43,7 @@ def orbslam_yaml(file_path, fx, fy, cx,cy, width, height, depthscale, frequency)
     f.write("#--------------------------------------------------------------------------------------------\n\n")
 
     f.write("# ORB Extractor: Number of features per image\n")
-    f.write("ORBextractor.nFeatures: 1000\n\n")
+    f.write("ORBextractor.nFeatures: 2000\n\n")
 
     f.write("# ORB Extractor: Scale factor between levels in the scale pyramid\n") 	
     f.write("ORBextractor.scaleFactor: 1.2\n\n")
@@ -84,7 +84,3 @@ def orbslam_associatefile(file_path, dataset_path, frequency):
             if perfix in depth_files:
                 f.write(f'{index} ' + 'rgb/{0} '.format(perfix) + f'{index} ' + 'depth/{0}\n'.format(perfix))
                 index += 1/frequency
-
-if __name__ == "__main__":
-    orbslam_yaml("/home/huijie/test.yaml", 904.1, 905.2, 335, 72, 1280, 720, 0.00025, 30)
-    orbslam_associatefile("/home/huijie/associate.txt", "/home/huijie/research/progresslabeller/data/NeualDataNew/515_lying_1", 30)

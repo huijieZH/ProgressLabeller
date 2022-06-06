@@ -8,16 +8,15 @@ import os
 
 class CreateNewWorkspace(Operator, ExportHelper):
     """This appears in the tooltip of the operator and in the generated docs"""
-    bl_idname = "new.new_work_space"  # important since its how bpy.ops.import_test.some_data is constructed
+    bl_idname = "new.new_work_space"  
     bl_label = "Create New Work Space"
 
-    # ExportHelper mixin class uses this
     filename_ext = ""
 
     filter_glob: StringProperty(
         default="/",
         options={'HIDDEN'},
-        maxlen=255,  # Max internal buffer length, longer would be clamped.
+        maxlen=255,  
     )
 
     def execute(self, context):
@@ -28,11 +27,6 @@ class CreateNewWorkspace(Operator, ExportHelper):
         
         return {'FINISHED'}
 
-    # def invoke(self, context, event):
-    #     context.window_manager.fileselect_add(self)
-    #     self.filepath = "/home/"
-    #     # Tells Blender to hang on for the slow user input
-    #     return {'RUNNING_MODAL'}
 
   
 

@@ -1,3 +1,4 @@
+from typing import Dict
 import bpy
 from file.fileImporter import model_loader, reconstruction_result_loader, configuration_loader
 from file.fileNew import new_workspace
@@ -5,9 +6,12 @@ from file.fileExporter import configuration_export, objectposes_export, data_exp
 from registeration import init_configuration
 from panel import ObjectPropertyPanel, FloatScreenPanel
 from operators import ObjectPropertyOperator, ReconstructionOperator
+from kernel.blender_utility import clear_initial_object
+
+area_image_pair = {
+}
 
 def register():
-
     init_configuration.register()
     configuration_loader.register()
     model_loader.register()

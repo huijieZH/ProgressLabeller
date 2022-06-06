@@ -31,8 +31,8 @@ class DataOutput(Operator, ExportHelper):
         items=(
             ('BOP', "BOP", "BOP challenge format"),
             ('YCBV', "YCBV", "YCBV dataset format"),
-            ('ProgressLabeller', "ProgressLabeller", "ProgressLabeller format")
-            ('Yourtype', "Yourtype", "Your own form (please define your own type first)")
+            ('ProgressLabeller', "ProgressLabeller", "ProgressLabeller format"),
+            ('Yourtype', "Yourtype", "Your own form (please define your own type first)"),
         ),
         default='ProgressLabeller',
     )

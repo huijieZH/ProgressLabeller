@@ -1,4 +1,4 @@
-# ProgressLabeller
+# ProgressLabeller: Visual Data Stream Annotation for Training Object-Centric 3D Perception
 
 <img src='doc/fig/overview.png' width="1000"/>
 
@@ -6,7 +6,7 @@
 
 ProgressLabeller is a method for more efficiently generating large amounts of 6D pose training data from color images sequences for custom scenes in a scalable manner. ProgressLabeller is intended to also support transparent or translucent objects, for which the previous methods based on depth dense reconstruction will fail. The project is an blender add-on implementation of Progresslabeller. 
 
-If you use this project for your research, please cite:
+If you use this project for your research, please cite: 
 ```bash
 @article{chen2022progresslabeller,
   title={ProgressLabeller: Visual Data Stream Annotation for Training Object-Centric 3D Perception},

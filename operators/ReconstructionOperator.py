@@ -371,7 +371,7 @@ class Reconstruction(Operator):
             row.prop(scene.scalealign, "THRESHOLD")
             row = layout.row()
             row.prop(scene.scalealign, "NUM_THRESHOLD") 
-            layout.label(text="Set ORB_SLAM2 Parameters:")   
+            layout.label(text="Set ORB_SLAM3 Parameters:")   
             box = layout.box() 
             row = box.row()
             row.prop(scene.orbslamparas, "orb_vocabularysrc") 

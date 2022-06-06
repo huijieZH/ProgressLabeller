@@ -62,7 +62,7 @@ class DataOutput(Operator, ExportHelper):
             log_report(
                 "Info", "Export data to" + self.filepath, None
             )
-            data_export("/tmp/progresslabeller.json", self.filepath, self.dataformatType, os.path.join(config.modelsrc, "object_label.json"))
+            data_export("/tmp/progresslabeller.json", self.filepath, self.dataformatType)
             os.remove("/tmp/progresslabeller.json")
         return {'FINISHED'}
 

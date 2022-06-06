@@ -9,17 +9,21 @@ from kernel.utility import _transstring2trans
 from kernel.geometry import _pose2Rotation, _rotation2Pose
 
 class offlineParam:
-    def __init__(self, config_path, object_label = None) -> None:
+    def __init__(self, config_path) -> None:
         f = open(config_path)
         configuration = json.load(f)
         self.config = configuration
         self.dir = os.path.dirname(config_path)
-        self.object_label = object_label
         self.parsecamera()
         self.parseenv()
         self.parsereconpara()
         self.parsedatapara()
         self.parseobj()
+        with open(os.path.join(self.config['modelsrc'], "object_label.json")) as objlabelf:
+            object_label = json.load(objlabelf)
+        for obj in object_label:
+            object_label[obj] = int(object_label[obj])  
+        self.object_label = object_label
         
 
 
@@ -63,9 +67,6 @@ class offlineParam:
                     self.objs[obj_instancename]['trans'] = _pose2Rotation(poses[obj_instancename]['pose'])
                     files = os.listdir(os.path.join(self.modelsrc, objname))
 
-        # print(objnames_list)
-        if self.object_label is None:
-            self.object_label = {objnames_list[i] : i + 1 for i in range(len(objnames_list))}
         
 
 

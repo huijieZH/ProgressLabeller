@@ -53,11 +53,13 @@ Our add-on depends on the following python libraries:
 * scikit-image
 * pyntcloud
 
-It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, we use conda to install library, __please replace </PATH/TO/BLENDER>, <PATH/TO/Progresslabeller> to your own path__: 
+It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, we use conda to install library, __please replace </PATH/TO/BLENDER>, <PATH/TO/Progresslabeller> to your own root directories of Progresslabeller and Blender__: 
 ```bash
+
 echo "export PROGRESSLABELLER_BLENDER_PATH=</PATH/TO/BLENDER>" >> ~/.bashrc
 echo "export PROGRESSLABELLER_PATH=<PATH/TO/Progresslabeller>" >> ~/.bashrc
 source ~/.bashrc
+cd $PROGRESSLABELLER_PATH
 conda create -n progresslabeller python=3.7
 conda activate progresslabeller
 python -m pip install -r requirements.txt

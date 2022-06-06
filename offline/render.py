@@ -34,8 +34,6 @@ class offlineRender:
             self._createallpkgs()
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
             self.renderAll()
-        
-        ## TODO only add key points to BOP
         elif pkg_type == "BOP":
             self.object_label = param.object_label
             self._prepare_scene_BOP()
@@ -46,12 +44,6 @@ class offlineRender:
             self._prepare_scene()
             self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
             self.renderYCBV()
-        elif pkg_type == "Transparent_YCBV":    
-            self.object_label = param.object_label
-            self._prepare_scene()
-            self.render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1])
-            self.normal_render = pyrender.OffscreenRenderer(self.param.camera["resolution"][0], self.param.camera["resolution"][1]) 
-            self.renderTransparent_YCBV()
         elif pkg_type == "Yourtype":
             self.object_label = param.object_label
             self._prepare_scene()
@@ -155,25 +147,20 @@ class offlineRender:
                                [0, 0, -1, 0],
                                [0, 0, 0, 1],]
                                 )
-        i = 0             
+       
         for cam in tqdm(self.camposes):
-            if (i%100) == 0:
-                camT = self.camposes[cam].dot(Axis_align)
-                segment = self._render(camT, self.scene)
-                perfix = cam.split(".")[0]
-                inputrgb = np.array(Image.open(os.path.join(self.datasrc, "rgb", cam)))
+            camT = self.camposes[cam].dot(Axis_align)
+            segment = self._render(camT, self.scene)
+            perfix = cam.split(".")[0]
+            inputrgb = np.array(Image.open(os.path.join(self.datasrc, "rgb", cam)))
 
-                for node in self.objectmap:
-                    posepath = os.path.join(self.outputpath, self.objectmap[node]["name"], "pose")
-                    rgbpath = os.path.join(self.outputpath, self.objectmap[node]["name"], "rgb")
-                    modelT = self.objectmap[node]["trans"]
-                    # model_camT = np.linalg.inv(camT.dot(Axis_align)).dot(modelT)
-                    model_camT = np.linalg.inv(self.camposes[cam]).dot(modelT)
-                    self._createpose(posepath, perfix, model_camT)
-                    self._createrbg(inputrgb, segment, os.path.join(rgbpath, cam), self.objectmap[node]["index"] + 1)
-            i+=1
-
-
+            for node in self.objectmap:
+                posepath = os.path.join(self.outputpath, self.objectmap[node]["name"], "pose")
+                rgbpath = os.path.join(self.outputpath, self.objectmap[node]["name"], "rgb")
+                modelT = self.objectmap[node]["trans"]
+                model_camT = np.linalg.inv(modelT).dot(self.camposes[cam])
+                self._createpose(posepath, perfix, model_camT)
+                self._createrbg(inputrgb, segment, os.path.join(rgbpath, cam), self.objectmap[node]["index"] + 1)
 
     def _createpose(self, path, perfix, T):
         posefileName = os.path.join(path, perfix + ".txt")
@@ -183,8 +170,6 @@ class offlineRender:
     def _createrbg(self, inputrgb, segment, outputpath, segment_index):
         rgb = inputrgb.copy()
         mask = np.repeat((segment != segment_index)[:, :, np.newaxis], 3, axis=2)
-        mask[:,:,1] = False
-        mask[:,:,2] = False
         rgb[mask] = 0
         img = Image.fromarray(rgb)
         img.save(outputpath)
@@ -367,107 +352,6 @@ class offlineRender:
             savemat(os.path.join(self.outputpath, "{0:06d}-meta.mat".format(idx)), mat)
             segimg_pillow = Image.fromarray(segimg)
             segimg_pillow.save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
-
-    def renderTransparent_YCBV(self):
-        import normalSpeed
-        self._createpkg(self.outputpath)
-        H, W = self.param.camera["resolution"][1], self.param.camera["resolution"][0]
-        U, V = np.tile(np.arange(W), (H, 1)), np.tile(np.arange(H), (W, 1)).T
-        fx, fy, cx, cy = self.intrinsic[0, 0], self.intrinsic[1, 1], self.intrinsic[0, 2], self.intrinsic[1, 2]
-        flags = pyrender.constants.RenderFlags.DEPTH_ONLY
-        Axis_align = np.array([[1, 0, 0, 0],
-                            [0, -1, 0, 0],
-                            [0, 0, -1, 0],
-                            [0, 0, 0, 1],])
-        rescale = True # from  1280*720 to 640*480            
-        normalspeed_distance_threshold = 100000
-        normalspeed_difference_threshold = 100000
-        normalspeed_k_size = 1
-
-        for idx, cam_name in tqdm(enumerate(self.camposes)):
-            if rescale:
-                img_rgb = cv2.imread(os.path.join(self.datasrc, "rgb", cam_name))
-                img_depth = cv2.imread(os.path.join(self.datasrc, "depth", cam_name), -1)
-                img_rgb = cv2.resize(img_rgb[:, 160:-160], (640, 480))
-                img_depth = cv2.resize(img_depth[:, 160:-160], (640, 480), interpolation=cv2.INTER_NEAREST)
-                cv2.imwrite(os.path.join(self.outputpath, "{0:06d}-color.png".format(idx)), img_rgb)
-                cv2.imwrite(os.path.join(self.outputpath, "{0:06d}-depth.png".format(idx)), img_depth)
-        
-            else:
-                img_depth = cv2.imread(os.path.join(self.datasrc, "depth", cam_name), -1)
-                os.system('cp ' + os.path.join(self.datasrc, "rgb", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-color.png".format(idx)))
-                os.system('cp ' + os.path.join(self.datasrc, "depth", cam_name) + ' ' + os.path.join(self.outputpath, "{0:06d}-depth.png".format(idx)))
-            # t1 = time.time() - t
-            # print('save rescale rgb + depth', t1)
-            # t = time.time()
-            ## render
-            camT = self.camposes[cam_name].dot(Axis_align)
-            self.scene.set_pose(self.nc, pose=camT)
-            for node in self.objectmap:
-                if self.objectmap[node]['name'] == 'round_table.instance001':
-                    node.mesh.is_visible = True
-                else:
-                    node.mesh.is_visible = False
-            table_depth = self.render.render(self.scene, flags=flags)
-            Image.fromarray((table_depth*1000).astype('uint16')).save(os.path.join(self.outputpath, "{0:06d}-tableplane_depth.png".format(idx)))
-            # t1 = time.time() - t
-            # print('render big tableplane and save', t1)
-            # t = time.time()
-            segimg = np.zeros((self.param.camera["resolution"][1], self.param.camera["resolution"][0]), dtype=np.uint8)
-            # vertmap = np.zeros((self.param.camera["resolution"][1], self.param.camera["resolution"][0]), dtype=np.float32)
-            for node in self.objectmap:
-                node.mesh.is_visible = not node.mesh.is_visible
-            obj_depth = self.render.render(self.scene, flags=flags)
-            
-            # ## create -label.txt
-            txtfile = open(os.path.join(self.outputpath, "{0:06d}-box.txt".format(idx)),"w+")
-            ## create -meta.mat
-            mat = {}
-            mat['cls_indexes'] = np.empty((0, 1), dtype = np.uint8)
-            mat['center'] = np.empty((0, 2))
-            mat['factor_depth'] = np.array([[np.around(1/self.param.data['depth_scale'])]], dtype = np.uint16)
-            mat['intrinsic_matrix'] = self.intrinsic
-            mat['poses'] = np.empty((3, 4, 0))
-            mat['rotation_translation_matrix'] = self.camposes[cam_name][:3, :]
-            camT_inv = np.linalg.inv(self.camposes[cam_name])
-            for node in self.objectmap:
-                node.mesh.is_visible = False
-            for obj_idx, node in enumerate(self.objectmap):
-                if self.objectmap[node]['name'] == 'round_table.instance001':
-                    continue
-                node.mesh.is_visible = True
-                depth = self.render.render(self.scene, flags = flags)
-                mask = np.logical_and(
-                    (np.abs(depth - obj_depth) < 1e-6), np.abs(obj_depth) > 0
-                )
-                mask_visiable = (mask * 255).astype('uint8')
-                segimg[mask] = self.object_label[self.objectmap[node]["name"].split(".")[0]]
-                node.mesh.is_visible = False
-                if not self._getbbxycb(mask_visiable)[0]:
-                    continue
-                else:
-                    bbx = self._getbbxycb(mask_visiable)[1]
-                    txtfile.write(self.objectmap[node]["name"].split(".")[0] + f' {bbx[0]} {bbx[1]} {bbx[2]} {bbx[3]}\n')
-                    mat['cls_indexes'] = np.vstack((mat['cls_indexes'], np.array([[self.object_label[self.objectmap[node]["name"].split(".")[0]]]], dtype = np.uint8)))
-                    
-                    modelT = self.objectmap[node]["trans"]
-                    model_camT = camT_inv.dot(modelT)
-                    center_homo = self.intrinsic @ model_camT[:3, 3]
-                    center = center_homo[:2]/center_homo[2]
-                    mat['center'] = np.vstack((mat['center'], center))
-                    mat['poses'] = np.concatenate((mat['poses'], model_camT[:3, :, np.newaxis]), axis = 2)
-
-            txtfile.close()
-            savemat(os.path.join(self.outputpath, "{0:06d}-meta.mat".format(idx)), mat)
-            Image.fromarray(segimg).save(os.path.join(self.outputpath, "{0:06d}-label.png".format(idx)))
-
-            obj_true_depth = (obj_depth * 1000).astype(np.uint16)
-            img_depth[obj_true_depth!=0] = obj_true_depth[obj_true_depth!=0]
-            Image.fromarray(img_depth).save(os.path.join(self.outputpath, "{0:06d}-depth_true.png".format(idx)))
-
-            vn = normalSpeed.depth_normal(img_depth, fx, fy, normalspeed_k_size, normalspeed_distance_threshold, normalspeed_difference_threshold, True)
-            normal = ((vn + 1)*255/2).astype(np.uint8)
-            Image.fromarray(normal).save(os.path.join(self.outputpath, "{0:06d}-normal_true.png".format(idx)))
 
     def _getbbxycb(self, mask):
         pixel_list = np.where(mask)

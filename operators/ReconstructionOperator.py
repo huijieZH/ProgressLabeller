@@ -15,9 +15,9 @@ from kernel.blender_utility import _get_configuration, _align_reconstruction, _c
 
 try: 
     from kernel.reconstruction import KinectfusionRecon, poseFusion
-except:
+except Exception as e:
     log_report(
-        "Error", "Please successfully install pycuda", None
+        "Error", e, None
     )        
 
 class Reconstruction(Operator):

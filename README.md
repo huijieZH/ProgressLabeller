@@ -40,7 +40,7 @@ Our blender add-on has been tested in the following environment:
 ### Install denpencies
 
 Our add-on depends on the following python libraries:
-
+* numpy>=1.18
 * open3d
 * Pillow
 * pycuda (only needed when you want to use build-in kinectfustion)

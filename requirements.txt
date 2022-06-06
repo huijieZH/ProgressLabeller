@@ -9,5 +9,4 @@ pyntcloud
 pycuda
 pybind11
 numba
-scikit-image == 0.18.3 
-Pillow
+scikit-image == 0.18.3

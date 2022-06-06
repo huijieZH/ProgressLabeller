@@ -74,7 +74,7 @@ class offlineParam:
 
         # print(objnames_list)
         if self.object_label is None:
-            self.object_label = {objnames_list[i] : i for i in range(1, len(objnames_list) + 1)}
+            self.object_label = {objnames_list[i] : i + 1 for i in range(len(objnames_list))}
         
 
 

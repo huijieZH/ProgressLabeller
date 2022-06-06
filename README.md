@@ -1,6 +1,6 @@
 # ProgressLabeller
 
-[<img src='doc/fig/overview.png' width="1000"/>](https://www.youtube.com/watch?v=GnahM0Z6A0U "Click to watch the ProgressLabeller usage")
+<img src='doc/fig/overview.png' width="1000"/>
 
 ## Overview
 
@@ -22,6 +22,7 @@ If you use this project for your research, please cite:
   * [Installation](#installation)
     * [Install denpencies](#install-denpencies)
     * [Install add-on in blender](#install-add-on-in-blender)
+    * [Run in terminal](#run-in-terminal)
   * [Data structure](#data-structure)
     * [Dataset](#dataset)
     * [Configuration](#configuration)
@@ -142,6 +143,9 @@ Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/Progr
 <img src='doc/fig/installadd-on.png' width="500"/>
 </p>
 
+### Run in terminal
+
+An alternative way to run progresslabeller is in terminal. The running info would display
 
 ## Data structure
 

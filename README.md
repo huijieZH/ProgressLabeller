@@ -28,6 +28,7 @@ If you use this project for your research, please cite:
     * [Configuration](#configuration)
     * [Collection](#collection)
   * [Usage](#usage)
+  * [Output](#output)
   * [Reference](#references)
 ------
 
@@ -72,7 +73,7 @@ python -m pip install -r requirements.txt --target $PROGRESSLABELLER_BLENDER_PAT
 For some reason, it is not recommended to directly use blender's python to install those package, you might meet some problems when install pycuda. Our way is to use the pip from python3.7 in conda.
 
 
-### Build COLMAP_extension(only needed when you want to use COLMAP)
+### Build COLMAP_extension(only needed when you want to use COLMAP [2])
 
 To enableing [COLMAP reconstruction](https://colmap.github.io/), please also following its official guidance to install COLMAP. Remember install the make file to the system use:
 ```bash
@@ -89,7 +90,7 @@ cmake ..
 make
 ```
 
-### Build ORB-SLAM2_extension(only needed when you want to use ORB_SLAM2)
+### Build ORB-SLAM2_extension(only needed when you want to use ORB_SLAM2 [3])
 
 To enableing ORB-SLAM2 reconstruction, you should clone [my branch](https://github.com/huijieZH/ORB_SLAM2), containing a little modification from official version. Please follow the guidance to install ORB_SLAM2.
 <!-- ```bash
@@ -112,7 +113,7 @@ make
 ```
 
 
-### Build ORB-SLAM3_extension(only needed when you want to use ORB_SLAM3)
+### Build ORB-SLAM3_extension(only needed when you want to use ORB_SLAM3 [4])
 
 To enableing ORB-SLAM3 reconstruction, you should clone [my branch](https://github.com/ZerenYu/ORB_SLAM3.git), containing a little modification from official version. Please follow the guidance to install ORB_SLAM3.
 
@@ -288,12 +289,59 @@ We create new collections in blender for a better arrangement for our pipline, i
 
 [<img src='doc/fig/video.png' width="1000"/>](https://www.youtube.com/watch?v=GnahM0Z6A0U "Click to watch the ProgressLabeller usage")
 
+## Output
+
+There are several formats for the ouput data. We have provide BOP [5] format, YCB-V format [6], our own Progresslabeller format.
+
+### Progresslabeller format
+
+```bash
+<outputpath>
+|-- <object1>              
+    |-- pose           
+        |-- 000000.txt  # object transformation for frame 000000
+        |-- 000001.txt
+        ...
+    |-- rgb         
+        |-- 000000.png  # object image after segmentation     
+        |-- 000001.png
+        ...
+|-- <object2>
+    |-- pose           
+        |-- 000000.txt  
+        |-- 000001.txt
+        ...
+    |-- rgb         
+        |-- 000000.png       
+        |-- 000001.png
+        ...
+...  
+```
+
+### Define your own format
+
+You could also specify your own format In function renderYourtype() in the file ``offline/render.py``. There are some guidances in the function to help you get access to parameters you need. 
+
+### Offline data generation
+
+It is also possible to generate the dataset offline for fully annotation workspace. 
+```bash
+cd $PROGRESSLABELLER_BLENDER_PATH
+python offline/main.py [path/to/configuration.json] [path/to/outputdir] [data_format] [path/to/objectlabelfile] 
+# <data_format> in ["ProgressLabeller", "BOP", "YCBV", "Yourtype"]
+```
+
+
 ## References
-[1] Marion, Pat, Peter R. Florence, Lucas Manuelli, and Russ Tedrake. **"Label fusion: A pipeline for generating ground truth labels for real rgbd data of cluttered scenes."** In 2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 3235-3242. IEEE, 2018.
+[1] Marion, Pat, Peter R. Florence, Lucas Manuelli, and Russ Tedrake. "Label fusion: A pipeline for generating ground truth labels for real rgbd data of cluttered scenes." In 2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 3235-3242. IEEE, 2018.
 
 [2] Schonberger, Johannes L., and Jan-Michael Frahm. "Structure-from-motion revisited." In Proceedings of the IEEE conference on computer vision and pattern recognition, pp. 4104-4113. 2016.
 
 [3] Mur-Artal, Raul, and Juan D. Tardós. "Orb-slam2: An open-source slam system for monocular, stereo, and rgb-d cameras." IEEE transactions on robotics 33, no. 5 (2017): 1255-1262.
 
 [4] Campos, Carlos, Richard Elvira, Juan J. Gómez Rodríguez, José MM Montiel, and Juan D. Tardós. "Orb-slam3: An accurate open-source library for visual, visual–inertial, and multimap slam." IEEE Transactions on Robotics 37, no. 6 (2021): 1874-1890.
+
+[5] Hodan, Tomas, Frank Michel, Eric Brachmann, Wadim Kehl, Anders GlentBuch, Dirk Kraft, Bertram Drost et al. "Bop: Benchmark for 6d object pose estimation." In Proceedings of the European Conference on Computer Vision (ECCV), pp. 19-34. 2018.
+
+[6] Xiang, Yu, Tanner Schmidt, Venkatraman Narayanan, and Dieter Fox. "Posecnn: A convolutional neural network for 6d object pose estimation in cluttered scenes." arXiv preprint arXiv:1711.00199 (2017).
 

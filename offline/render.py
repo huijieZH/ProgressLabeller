@@ -17,7 +17,7 @@ os.environ['PYOPENGL_PLATFORM'] = 'egl'
 
 class offlineRender:
     def __init__(self, param, outputdir, interpolation_type, pkg_type = "BOP") -> None:
-        assert(pkg_type in ["ProgressLabeller", "BOP", "YCBV", "Transparent_YCBV", "Yourtype"])
+        assert(pkg_type in ["ProgressLabeller", "BOP", "YCBV", "Yourtype"])
         print("Start offline rendering")
         self.param = param
         self.interpolation_type = interpolation_type

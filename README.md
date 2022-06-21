@@ -309,7 +309,7 @@ We create new collections in blender for a better arrangement for our pipline, i
 
 # Output
 
-Before ouput, make sure you have define your own [``object_label.json``](#objectlabelfile).
+Before ouput, make sure you have define your own [``object_label.json``](#object-label-file).
 
 There are several formats for the ouput data. We have provide BOP [5] format, YCB-V format [6], our own Progresslabeller format.
 

@@ -185,7 +185,7 @@ To prepare a new dataset, please follow the structure below. We also provide a *
 ```
 ### Object poses file
 
-Object pose file is a ``.yaml`` file stored all labelled pose in world coordinate. It will be created or stored every time you click "Save Object Poses":
+Object pose file is a ``.yaml`` file stored all labelled pose in world coordinate under ``<path/to/recon>``. It will be created or stored every time you click "Save Object Poses":
 
 ```bash
 object1.instance001:
@@ -205,7 +205,7 @@ object2.instance001:
 
 ### Camera poses file
 
-Object pose file is a ``.txt`` file stored camera poses for every image. It is generated from our pipeline. It is be aranged as:
+Object pose file is a ``.txt`` file stored camera poses for every image under ``<path/to/recon>``. It is generated from our pipeline. It should be aranged as:
 
 ```bash
 # IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME
@@ -214,6 +214,25 @@ Object pose file is a ``.txt`` file stored camera poses for every image. It is g
 2 qw, qx, qy, qz, tx, ty, tz, 1, 000001.png
 ...   
 ```
+
+### Object Label File
+```object_label.json``` is a dictionary file contains all objects name and the label you defined them under ``<path/to/model>``. It should be create by yourself before output. It should be aranged as:
+```bash
+{
+    "beaker_1": 1,
+    "dropper_1": 2,
+    "dropper_2": 3,
+    "flask_1": 4,
+    "funnel_1": 5,
+    "graduated_cylinder_1": 6,
+    "graduated_cylinder_2": 7,
+    "pan_1": 8,
+    "pan_2": 9,
+    "pan_3": 10,
+    "reagent_bottle_1": 11,
+}
+```
+
 
 ## Configuration
 
@@ -289,6 +308,8 @@ We create new collections in blender for a better arrangement for our pipline, i
 [<img src='doc/fig/video.png' width="1000"/>](https://www.youtube.com/watch?v=GnahM0Z6A0U "Click to watch the ProgressLabeller usage")
 
 # Output
+
+Before ouput, make sure you have define your own ``object_label.json``(#objectlabelfile).
 
 There are several formats for the ouput data. We have provide BOP [5] format, YCB-V format [6], our own Progresslabeller format.
 

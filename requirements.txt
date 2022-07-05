@@ -1,4 +1,4 @@
-numpy == 1.22
+numpy >= 1.20
 open3d 
 Pillow 
 scipy 
@@ -12,4 +12,3 @@ pybind11
 numba
 scikit-image == 0.18.3
 opencv-python
-normalSpeed

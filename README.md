@@ -20,13 +20,7 @@ If you use this project for your research, please cite:
 # Table of contents
 -----
   * [Installation](#installation)
-    * [Install denpencies](#install-denpencies)
-    * [Install add-on in blender](#install-add-on-in-blender)
-    * [Run in terminal](#run-in-terminal)
   * [Data structure](#data-structure)
-    * [Dataset](#dataset)
-    * [Configuration](#configuration)
-    * [Collection](#collection)
   * [Usage](#usage)
   * [Output](#output)
   * [Reference](#references)
@@ -39,7 +33,7 @@ Our blender add-on has been tested in the following environment:
 * Ubuntu 18.04/20.04
 * Blender 2.92/2.93
 
-## Install denpencies
+## Install dependencies
 
 Our add-on depends on the following python libraries:
 * numpy>=1.18
@@ -89,7 +83,7 @@ cmake ..
 make
 ```
 
-## Build ORB-SLAM2_extension(only needed when you want to use ORB_SLAM2 [3])
+## Build ORB-SLAM2_extension (only needed when you want to use ORB_SLAM2 [3])
 
 To enableing ORB-SLAM2 reconstruction, you should clone [my branch](https://github.com/huijieZH/ORB_SLAM2), containing a little modification from official version. Please follow the guidance to install ORB_SLAM2.
 <!-- ```bash
@@ -112,9 +106,9 @@ make
 ```
 
 
-## Build ORB-SLAM3_extension(only needed when you want to use ORB_SLAM3 [4])
+## Build ORB-SLAM3_extension (only needed when you want to use ORB_SLAM3 [4])
 
-To enableing ORB-SLAM3 reconstruction, you should clone [my branch](https://github.com/ZerenYu/ORB_SLAM3.git), containing a little modification from official version. Please follow the guidance to install ORB_SLAM3.
+To enabling ORB-SLAM3 reconstruction, you should clone [my branch](https://github.com/ZerenYu/ORB_SLAM3.git), containing a little modification from official version. Please follow the guidance to install ORB_SLAM3.
 
 Then to build the interface between ORB-SLAM3 and Progresslabeller. 
 ```bash
@@ -350,7 +344,9 @@ cd $PROGRESSLABELLER_BLENDER_PATH
 python offline/main.py [path/to/configuration.json] [path/to/outputdir] [data_format] [path/to/objectlabelfile] 
 # <data_format> in ["ProgressLabeller", "BOP", "YCBV", "Yourtype"]
 ```
+## Multi-camera YCB dataset
 
+We collected a 3 camera RGB-D dataset [link](https://drive.google.com/file/d/1pQwGeShNA6WGaErQvzRsnq2snAM3oKhc/view?usp=sharing) of YCB objects as discussed in the paper. We use RealSense L515, RealSense D435, and Primesense Carmine 1.09 RGB-D sensors to capture 11 training scenes and 5 test scenes over 10 YCB objects. The dataset contains about 120K images and is saved in [BOP format](https://github.com/thodan/bop_toolkit/blob/master/docs/bop_datasets_format.md).
 
 # References
 [1] Marion, Pat, Peter R. Florence, Lucas Manuelli, and Russ Tedrake. "Label fusion: A pipeline for generating ground truth labels for real rgbd data of cluttered scenes." In 2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 3235-3242. IEEE, 2018.

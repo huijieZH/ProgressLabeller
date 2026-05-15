@@ -129,6 +129,9 @@ dmypy.json
 .pyre/
 
 
-## ignore the dataset 
+## ignore the dataset
 ORBvoc.txt
 build/
+
+## docker-bootstrapped ORB_SLAM3 source tree (cloned by docker/build.sh)
+/ORB_SLAM3/

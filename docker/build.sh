@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
 # Idempotent first-run setup inside the progresslabeller container.
-#   1. Apply the ProgressLabeller patch to ORB_SLAM3 (skip if already applied).
-#   2. Build ORB_SLAM3 + its Thirdparty deps (skip if libORB_SLAM3.so exists).
-#   3. Build the orb3_extension pybind11 module.
+#   1. Clone UZ-SLAMLab/ORB_SLAM3 into the repo if missing.
+#   2. Apply the ProgressLabeller patch (skip if already applied).
+#   3. Build ORB_SLAM3 + Thirdparty deps (skip if libORB_SLAM3.so up-to-date).
+#   4. Build the orb3_extension pybind11 module against Blender's Python 3.7.
 set -euo pipefail
 
 : "${ORB3_SOURCE_DIR:?ORB3_SOURCE_DIR must be set (compose.yaml provides it)}"
 : "${PROGRESSLABELLER_PATH:=/workspace/ProgressLabeller}"
+: "${BLENDERPY:?BLENDERPY must be set (Dockerfile provides it)}"
 
+# 1. Clone ORB_SLAM3 source if it's not present.
+if [ ! -d "$ORB3_SOURCE_DIR/.git" ]; then
+    echo "Cloning ORB_SLAM3 into $ORB3_SOURCE_DIR ..."
+    git clone https://github.com/UZ-SLAMLab/ORB_SLAM3.git "$ORB3_SOURCE_DIR"
+fi
+
+# 2. Apply the additive ProgressLabeller patch.
 cd "$ORB3_SOURCE_DIR"
 patch_applied_now=0
 if ! grep -q "GetTrackedMapPoints_progresslabeler" include/System.h; then
@@ -17,7 +26,7 @@ if ! grep -q "GetTrackedMapPoints_progresslabeler" include/System.h; then
     patch_applied_now=1
 fi
 
-# Rebuild if the lib is missing OR if it predates the patched System.cc.
+# 3. Rebuild libORB_SLAM3.so if missing or stale.
 need_build=0
 if [ ! -f lib/libORB_SLAM3.so ]; then
     need_build=1
@@ -25,10 +34,12 @@ elif [ src/System.cc -nt lib/libORB_SLAM3.so ] || [ "$patch_applied_now" -eq 1 ]
     need_build=1
 fi
 if [ "$need_build" -eq 1 ]; then
-    echo "Building ORB_SLAM3 (incremental rebuild picks up patched System.cc)..."
+    echo "Building ORB_SLAM3..."
+    chmod +x build.sh
     ./build.sh
 fi
 
+# 4. Build the orb3_extension pybind11 module against Blender's Python 3.7.
 cd "$PROGRESSLABELLER_PATH/kernel/orb_slam3"
 rm -rf build  # force re-detect Python on each run
 mkdir -p build

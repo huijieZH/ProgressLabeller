@@ -28,58 +28,55 @@ If you use this project for your research, please cite:
 
 # Installation
 
-ProgressLabeller now runs out of a Docker image — `orbslam3:dev` — that is
-shared with the [ORB_SLAM3 sibling repo](https://github.com/ZerenYu/ORB_SLAM3).
-The image bundles the C++ toolchain, Pangolin, OpenCV 4.5, Eigen, Blender 2.92,
-and the cp37-pinned Python deps. The ProgressLabeller patch to ORB_SLAM3 (two
-extra `_progresslabeler` methods on `ORB_SLAM3::System`) lives in
-`docker/orb_slam3_progresslabeller.patch` and is applied at first-run by
-`docker/build.sh`.
+ProgressLabeller runs in a self-contained Docker image
+(`progresslabeller:dev`) built entirely from `docker/` in this repo. The image
+bundles the ORB_SLAM3 C++ toolchain (Pangolin v0.6, OpenCV 4.5, Eigen, Boost),
+Blender 2.92, and the cp37-pinned Python deps. ORB_SLAM3 source is
+auto-cloned from upstream UZ-SLAMLab and the ProgressLabeller patch
+(four extra `_progresslabeler` methods on `ORB_SLAM3::System`) is applied
+in-tree by `docker/build.sh` on first run.
 
-The legacy native install via conda/Blender (kept for reference) is no longer
-required.
+The legacy native install via conda/Blender is kept at the bottom for users
+who can't use Docker.
 
 ## Prerequisites
 
 * Linux host with NVIDIA driver new enough for your GPU (CUDA 12.8+ for
-  Blackwell, but the image itself contains **no CUDA toolkit** — KinectFusion
-  is disabled by default; see "Optional backends" below).
+  Blackwell, but the image contains **no CUDA toolkit** — KinectFusion is
+  disabled by default; see "Optional backends" below).
 * Docker Engine 20.10+ with the `compose` plugin.
 * [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
   so `runtime: nvidia` works.
-* A sibling clone of [ORB_SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3) next
-  to this repo (stock UZ-SLAMLab is fine — the patch is applied in-tree):
 
-  ```
-  /your/workspace/
-      ├── ProgressLabeller/
-      └── ORB_SLAM3/
-  ```
+That's it — no sibling repos required.
 
-## Build the shared image (one-time)
-
-```bash
-cd /path/to/ORB_SLAM3/docker
-UID=$(id -u) GID=$(id -g) docker compose build           # ~15 min first time
-```
-
-The build caches the existing orbslam3 layers; only Blender 2.92 + Python deps
-are added on top.
-
-## First-run setup: patch ORB_SLAM3 + build orb3_extension
+## Build the image (one-time)
 
 ```bash
 cd /path/to/ProgressLabeller/docker
-docker compose run --rm progresslabeller bash docker/build.sh   # ~2-3 min
+UID=$(id -u) GID=$(id -g) docker compose build           # ~15 min first time
+```
+
+The `UID`/`GID` build args map the in-container `dev` user to your host user
+so build artifacts (libORB_SLAM3.so, kernel/orb_slam3/build/) are owned by
+you, not root.
+
+## First-run setup: clone ORB_SLAM3 + patch + build orb3_extension
+
+```bash
+cd /path/to/ProgressLabeller/docker
+docker compose run --rm progresslabeller bash docker/build.sh   # ~5 min
 ```
 
 `build.sh` is idempotent:
 
-1. Applies the `_progresslabeler` patch to `../ORB_SLAM3/include/System.h` +
-   `src/System.cc` (no-op if already applied).
-2. Rebuilds `libORB_SLAM3.so` if the patched `System.cc` is newer than the
-   library.
-3. Builds `orb3_extension.cpython-37m-*.so` against Blender's bundled Python.
+1. Clones UZ-SLAMLab/ORB_SLAM3 into `ProgressLabeller/ORB_SLAM3/` (gitignored)
+   if not already present.
+2. Applies the `_progresslabeler` patch to `include/System.h` + `src/System.cc`
+   (no-op if already applied).
+3. Rebuilds `lib/libORB_SLAM3.so` if the patched `System.cc` is newer.
+4. Builds `kernel/orb_slam3/build/orb3_extension.cpython-37m-*.so` against
+   Blender's bundled Python.
 
 All artifacts land on the host via bind mount, so they survive container
 restarts.
@@ -117,15 +114,17 @@ The default image deliberately omits:
 
 ## Files of interest
 
-* `docker/Dockerfile` — pointer at the shared image; does not build anything.
-* `docker/compose.yaml` — bind-mounts `../` and `../../ORB_SLAM3`, forwards
-  X11 + `runtime: nvidia`.
-* `docker/build.sh` — patch + ORB_SLAM3 rebuild + orb3_extension build.
-* `docker/install_addon.py` — Blender-side: symlink + `addon_enable`.
+* `docker/Dockerfile` — full image recipe (Ubuntu 22.04 + Pangolin + Blender).
+* `docker/requirements.docker.txt` — cp37-pinned Python deps installed into
+  Blender's bundled Python.
+* `docker/compose.yaml` — bind-mounts `../`, forwards X11 + `runtime: nvidia`.
+* `docker/build.sh` — clone + patch + ORB_SLAM3 build + orb3_extension build.
+* `docker/install_addon.py` — Blender startup script: symlink the repo into
+  Blender's addons dir + `addon_enable`.
 * `docker/orb_slam3_progresslabeller.patch` — additive patch generated from
   `ZerenYu/ORB_SLAM3` vs UZ-SLAMLab v1.0; adds 4 methods to `System`.
 * `requirements.txt` — kept for reference (legacy native install). The Docker
-  image uses `../ORB_SLAM3/docker/requirements.docker.txt` (cp37-pinned).
+  image uses `docker/requirements.docker.txt` (cp37-pinned).
 
 ## Legacy native install (conda + Blender)
 

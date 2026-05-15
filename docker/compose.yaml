@@ -1,6 +1,12 @@
 services:
   progresslabeller:
-    image: orbslam3:dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+    image: progresslabeller:dev
     container_name: progresslabeller_dev
     network_mode: host
     runtime: nvidia
@@ -12,10 +18,9 @@ services:
       - PYOPENGL_PLATFORM=egl
       - PROGRESSLABELLER_PATH=/workspace/ProgressLabeller
       - PROGRESSLABELLER_BLENDER_PATH=/opt/blender-2.92
-      - ORB3_SOURCE_DIR=/workspace/ORB_SLAM3
+      - ORB3_SOURCE_DIR=/workspace/ProgressLabeller/ORB_SLAM3
     volumes:
       - ../:/workspace/ProgressLabeller
-      - ../../ORB_SLAM3:/workspace/ORB_SLAM3
       - /tmp/.X11-unix:/tmp/.X11-unix
     devices:
       - /dev/dri:/dev/dri

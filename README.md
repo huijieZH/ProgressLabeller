@@ -28,118 +28,124 @@ If you use this project for your research, please cite:
 
 # Installation
 
-Our blender add-on has been tested in the following environment:
+ProgressLabeller now runs out of a Docker image — `orbslam3:dev` — that is
+shared with the [ORB_SLAM3 sibling repo](https://github.com/ZerenYu/ORB_SLAM3).
+The image bundles the C++ toolchain, Pangolin, OpenCV 4.5, Eigen, Blender 2.92,
+and the cp37-pinned Python deps. The ProgressLabeller patch to ORB_SLAM3 (two
+extra `_progresslabeler` methods on `ORB_SLAM3::System`) lives in
+`docker/orb_slam3_progresslabeller.patch` and is applied at first-run by
+`docker/build.sh`.
 
-* Ubuntu 18.04/20.04
-* Blender 2.92/2.93
+The legacy native install via conda/Blender (kept for reference) is no longer
+required.
 
-## Install dependencies
+## Prerequisites
 
-Our add-on depends on the following python libraries:
-* numpy>=1.18
-* open3d
-* Pillow
-* pycuda (only needed when you want to use build-in kinectfustion)
-* pybind11 (only needed when you want to use COLMAP, ORB2-SLAM)
-* scipy
-* pyyaml
-* tqdm
-* pyrender
-* trimesh
-* scikit-image
-* pyntcloud
-* opencv-python
+* Linux host with NVIDIA driver new enough for your GPU (CUDA 12.8+ for
+  Blackwell, but the image itself contains **no CUDA toolkit** — KinectFusion
+  is disabled by default; see "Optional backends" below).
+* Docker Engine 20.10+ with the `compose` plugin.
+* [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+  so `runtime: nvidia` works.
+* A sibling clone of [ORB_SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3) next
+  to this repo (stock UZ-SLAMLab is fine — the patch is applied in-tree):
 
-It should be mentioned that blender itself use it build-in python, so be sure to install the packages in the correct way. More specific, we use conda to install library, __please replace </PATH/TO/BLENDER>, <PATH/TO/Progresslabeller> to your own root directories of Progresslabeller and Blender__: 
+  ```
+  /your/workspace/
+      ├── ProgressLabeller/
+      └── ORB_SLAM3/
+  ```
+
+## Build the shared image (one-time)
+
 ```bash
+cd /path/to/ORB_SLAM3/docker
+UID=$(id -u) GID=$(id -g) docker compose build           # ~15 min first time
+```
 
+The build caches the existing orbslam3 layers; only Blender 2.92 + Python deps
+are added on top.
+
+## First-run setup: patch ORB_SLAM3 + build orb3_extension
+
+```bash
+cd /path/to/ProgressLabeller/docker
+docker compose run --rm progresslabeller bash docker/build.sh   # ~2-3 min
+```
+
+`build.sh` is idempotent:
+
+1. Applies the `_progresslabeler` patch to `../ORB_SLAM3/include/System.h` +
+   `src/System.cc` (no-op if already applied).
+2. Rebuilds `libORB_SLAM3.so` if the patched `System.cc` is newer than the
+   library.
+3. Builds `orb3_extension.cpython-37m-*.so` against Blender's bundled Python.
+
+All artifacts land on the host via bind mount, so they survive container
+restarts.
+
+## Launch ProgressLabeller
+
+```bash
+cd /path/to/ProgressLabeller/docker
+bash run.bash
+```
+
+`run.bash` does three things:
+
+1. `xhost +local:docker` — authorize the container to draw on your X server.
+2. `docker compose run --rm progresslabeller blender --python install_addon.py`
+   — start Blender with X11 forwarded from the host.
+3. `install_addon.py` symlinks the bind-mounted repo into Blender's user
+   addons dir and enables the `ProgressLabeller` add-on. The panel appears
+   in the 3D viewport sidebar (press `N` to toggle) at startup.
+
+If `$DISPLAY` is empty, you're SSH'd in without `-X`; reconnect with `ssh -X`
+or run from the desktop terminal directly.
+
+## Optional backends
+
+The default image deliberately omits:
+
+* **pycuda / KinectFusion** — needs the CUDA toolkit and ~5 GB extra. The
+  `kernel.reconstruction` module imports pycuda lazily, so the add-on loads
+  fine without it; only the "KinectFusion" backend in the UI will error.
+* **COLMAP** — extra ~1-2 GB. Add it by installing COLMAP into the image and
+  running `cmake .. && make` inside `kernel/colmap/build/`.
+* **ORB_SLAM2** — clone `huijieZH/ORB_SLAM2` next to ORB_SLAM3, point
+  `ORB_SOURCE_DIR` at it, and build `kernel/orb_slam/build/` the same way.
+
+## Files of interest
+
+* `docker/Dockerfile` — pointer at the shared image; does not build anything.
+* `docker/compose.yaml` — bind-mounts `../` and `../../ORB_SLAM3`, forwards
+  X11 + `runtime: nvidia`.
+* `docker/build.sh` — patch + ORB_SLAM3 rebuild + orb3_extension build.
+* `docker/install_addon.py` — Blender-side: symlink + `addon_enable`.
+* `docker/orb_slam3_progresslabeller.patch` — additive patch generated from
+  `ZerenYu/ORB_SLAM3` vs UZ-SLAMLab v1.0; adds 4 methods to `System`.
+* `requirements.txt` — kept for reference (legacy native install). The Docker
+  image uses `../ORB_SLAM3/docker/requirements.docker.txt` (cp37-pinned).
+
+## Legacy native install (conda + Blender)
+
+Kept for users who can't use Docker. Requires Ubuntu 18.04/20.04, Blender
+2.92/2.93, a CUDA toolkit matching your GPU, and the following Python deps in
+both Blender's bundled Python and a conda env:
+
+```bash
 echo "export PROGRESSLABELLER_BLENDER_PATH=</PATH/TO/BLENDER>" >> ~/.bashrc
 echo "export PROGRESSLABELLER_PATH=<PATH/TO/Progresslabeller>" >> ~/.bashrc
 source ~/.bashrc
 cd $PROGRESSLABELLER_PATH
-conda create -n progresslabeller python=3.7 ## note that the version of python here should be consistent with the version of your blender's python. For blender 2.92, its python version is 3.7
+conda create -n progresslabeller python=3.7
 conda activate progresslabeller
 python -m pip install -r requirements.txt
-python -m pip install -r requirements.txt --target $PROGRESSLABELLER_BLENDER_PATH/2.92/python/lib/python3.7/site-packages 
+python -m pip install -r requirements.txt --target $PROGRESSLABELLER_BLENDER_PATH/2.92/python/lib/python3.7/site-packages
 ```
 
-For some reason, it is not recommended to directly use blender's python to install those package, you might meet some problems when install pycuda. Our way is to use the pip from python3.7 in conda.
-
-
-## Build COLMAP_extension(only needed when you want to use COLMAP [2])
-
-To enableing [COLMAP reconstruction](https://colmap.github.io/), please also following its official guidance to install COLMAP. Remember install the make file to the system use:
-```bash
-sudo make install
-```
-
-We use pybind to transform COLMAP C++ code to python interface， so after installing COLMAP and pybind, we could build the interface in Progresslabeller. 
-```bash
-cd $PROGRESSLABELLER_PATH/kernel/colmap
-conda activate progresslabeller
-mkdir build
-cd build
-cmake ..
-make
-```
-
-## Build ORB-SLAM2_extension (only needed when you want to use ORB_SLAM2 [3])
-
-To enableing ORB-SLAM2 reconstruction, you should clone [my branch](https://github.com/huijieZH/ORB_SLAM2), containing a little modification from official version. Please follow the guidance to install ORB_SLAM2.
-<!-- ```bash
-git clone https://github.com/huijieZH/ORB_SLAM2.git ORB_SLAM2
-cd ORB_SLAM2
-chmod +x build.sh
-./build.sh
-``` -->
-
-Then to build the interface between ORB-SLAM2 and Progresslabeller. 
-```bash
-export ORB_SOURCE_DIR=</PATH/TO/ORB_SLAM2>
-cd $PROGRESSLABELLER_PATH/kernel/orb_slam
-tar -xf ORBvoc.txt.tar.gz
-conda activate progresslabeller
-mkdir build
-cd build
-cmake ..
-make
-```
-
-
-## Build ORB-SLAM3_extension (only needed when you want to use ORB_SLAM3 [4])
-
-To enabling ORB-SLAM3 reconstruction, you should clone [my branch](https://github.com/ZerenYu/ORB_SLAM3.git), containing a little modification from official version. Please follow the guidance to install ORB_SLAM3.
-
-Then to build the interface between ORB-SLAM3 and Progresslabeller. 
-```bash
-export ORB3_SOURCE_DIR=</PATH/TO/ORB_SLAM3>
-cd $PROGRESSLABELLER_PATH/kernel/orb_slam3
-tar -xf ../orb_slam/ORBvoc.txt.tar.gz
-conda activate progresslabeller
-mkdir build
-cd build
-cmake ..
-make
-```
-
-## Run in terminal
-In order to see some running message about our pipeline, it is recommended to run the blender in the terminal. Just run:
-```bash
-cd $PROGRESSLABELLER_PATH
-blender --python __init__.py ## remember to add blender to your bash first.
-```
-## Install add-on in blender
-
-First prepare the zip file for blender:
-```bash
-sudo apt-get install zip
-cd $PROGRESSLABELLER_PATH/..
-zip -r ProgressLabeller.zip ProgressLabeller/
-```
-Open ``Edit > Preferences > Install...`` in blender, search ``PATH/TO/REPO/ProgressLabeller.zip`` and install it. After successful installation, you could see Progress Labeller in your Add-ons lists.
-<p align="center">
-<img src='doc/fig/installadd-on.png' width="500"/>
-</p>
+For COLMAP / ORB_SLAM2 / ORB_SLAM3 build instructions, see the git history of
+this README (commit before the Docker migration).
 
 
 # Data structure

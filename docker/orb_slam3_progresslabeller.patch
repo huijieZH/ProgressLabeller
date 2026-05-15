@@ -1,0 +1,242 @@
+diff --git a/include/System.h b/include/System.h
+index 872c86e..74a76de 100644
+--- a/include/System.h
++++ b/include/System.h
+@@ -167,6 +167,10 @@ public:
+     // See format details at: http://www.cvlibs.net/datasets/kitti/eval_odometry.php
+     void SaveTrajectoryKITTI(const string &filename);
+ 
++    vector<Eigen::Vector3f> GetTrackedMapPoints_progresslabeler();
++    void SaveCameraFeature_progresslabeler(const string &filename, vector<string> images);
++    void SaveFeature3D_progresslabeler(const string &filename);
++    void SaveTrajectory_progresslabeler(const string &filename, vector<string> images, vector<double> timestamps, float frequence);
+     // TODO: Save/Load functions
+     // SaveMap(const string &filename);
+     // LoadMap(const string &filename);
+diff --git a/src/System.cc b/src/System.cc
+index 60d9c51..7600f47 100644
+--- a/src/System.cc
++++ b/src/System.cc
+@@ -1330,12 +1330,222 @@ vector<MapPoint*> System::GetTrackedMapPoints()
+     return mTrackedMapPoints;
+ }
+ 
++vector<Eigen::Vector3f> System::GetTrackedMapPoints_progresslabeler()
++{
++    std::vector<Eigen::Vector3f> pointloc;
++    std::vector<MapPoint*> mpPoint;
++    std::vector<KeyFrame*> mpKeyframe;
++    mpPoint = mpAtlas->GetAllMapPoints();
++    mpKeyframe = mpAtlas->GetAllKeyFrames();
++    
++    for (auto& p : mpPoint){
++        pointloc.push_back(p->GetWorldPos());
++        // std::map<KeyFrame*,size_t> mObservations;
++        // cout << "PointId: " << p->mnId << endl;
++        // mObservations = p->GetObservations();
++        // for (auto& data : mObservations){
++        //     KeyFrame* keyframe = data.first;
++        //     size_t index = data.second;
++        //     cout << "FrameId: " << keyframe->mnFrameId << " timestamp: " << keyframe->mTimeStamp<< endl;
++            
++        // }
++        // cout << endl << endl << endl;
++    }
++    return pointloc;
++}
++
+ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
+ {
+     unique_lock<mutex> lock(mMutexState);
+     return mTrackedKeyPointsUn;
+ }
+ 
++template<typename _Tp, int _rows, int _cols, int _options, int _maxRows, int _maxCols>
++void eigen2cv(const Eigen::Matrix<_Tp, _rows, _cols, _options, _maxRows, _maxCols>& src, cv::Mat& dst)
++{
++    if (!(src.Flags & Eigen::RowMajorBit))
++    {
++        cv::Mat _src(src.cols(), src.rows(), cv::DataType<_Tp>::type,
++            (void*)src.data(), src.stride() * sizeof(_Tp));
++        cv::transpose(_src, dst);
++    }
++    else
++    {
++        cv::Mat _src(src.rows(), src.cols(), cv::DataType<_Tp>::type,
++            (void*)src.data(), src.stride() * sizeof(_Tp));
++        _src.copyTo(dst);
++    }
++}
++
++void System::SaveCameraFeature_progresslabeler(const string &filename, vector<string> images){
++    ofstream f;
++    f.open(filename.c_str());
++    f << fixed;
++    f << "# Image list with two lines of data per image:" << endl;
++    f << "#   IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME" << endl;
++    f << "#   POINTS2D[] as (X, Y, POINT3D_ID)" << endl;
++    cv::Mat Trans = cv::Mat::eye(4,4,CV_32F);
++    std::vector<KeyFrame*> mpKeyframe = mpAtlas->GetAllKeyFrames();
++    for (auto& kf : mpKeyframe){
++        Sophus::SE3f Tcw_SE3f = kf->GetPose();;
++        Eigen::Matrix4f Tcw_Matrix = Tcw_SE3f.matrix();
++        cv::Mat Tcw;
++        eigen2cv(Tcw_Matrix, Tcw);
++        cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
++        cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);       
++
++        cv::Mat intrinsic = (cv::Mat_<float>(3,3) << kf->fx, 0, kf->cx, 
++                                                     0, kf->fy, kf->cy, 
++                                                     0, 0, 1);
++        cv::Mat pose = Tcw(cv::Range(0, 3), cv::Range(0, 4));
++        
++
++        std::vector<float> q = Converter::toQuaternion(Rwc);
++        std::string imagename = images[kf->mnFrameId];
++        f << kf->mnFrameId + 1 << " " 
++          << q[3] << " " << q[0] << " " << q[1] << " " << q[2] << " " 
++          << twc.at<float>(0) << " " << twc.at<float>(1) << " " << twc.at<float>(2) 
++          << " 1 " << imagename.substr(4, images[kf->mnFrameId].length() - 1)<< endl;
++        for(auto& kp : kf->GetMapPoints()){
++            Eigen::Vector3f loc_eig = kp->GetWorldPos();
++            cv::Mat loc;
++            eigen2cv(loc_eig, loc);
++            // cv::Mat loc = kp->GetWorldPos();
++            cv::Mat one = cv::Mat::ones(1, 1, CV_32F);
++            loc.push_back(one);
++            cv::Mat pixel = intrinsic * pose * loc;
++            // cout << pixel.at<float>(0)/pixel.at<float>(2) << " " << pixel.at<float>(1)/pixel.at<float>(2) << endl;
++            f << pixel.at<float>(0)/pixel.at<float>(2) << " " << pixel.at<float>(1)/pixel.at<float>(2) << " " << kp->mnId << " ";
++        }
++        f << endl;
++    }
++}
++
++void System::SaveFeature3D_progresslabeler(const string &filename){
++    ofstream f;
++    f.open(filename.c_str());
++    f << fixed;
++    f << "# 3D point list with one line of data per point:" << endl;
++    f << "#   POINT3D_ID, X, Y, Z, R, G, B, ERROR, TRACK[] as (IMAGE_ID, POINT2D_IDX)" << endl;
++    std::vector<MapPoint*> mpPoint;
++    mpPoint = mpAtlas->GetAllMapPoints();    
++    for (auto& p : mpPoint){
++        Eigen::Vector3f pointloc_eig = p->GetWorldPos();
++        cv::Mat pointloc;
++        eigen2cv(pointloc_eig, pointloc);
++        // cv::Mat pointloc = p->GetWorldPos();
++        f << p->mnId << " " << pointloc.at<float>(0) << " " << pointloc.at<float>(1) << " " << pointloc.at<float>(2)
++          << " 255 0 0 0 ";
++        std::map<KeyFrame*,std::tuple<int,int>> mObservations;
++        mObservations = p->GetObservations();
++        for (auto& data : mObservations){
++            KeyFrame* keyframe = data.first;
++            size_t index = std::get<0>(data.second);
++            f << keyframe->mnFrameId + 1 << " " << index << " " ;
++        }
++        f << endl;
++    }    
++}
++
++void System::SaveTrajectory_progresslabeler(const string &filename, vector<string> images, vector<double> timestamps, float frequence)
++{
++    cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
++    if(mSensor==MONOCULAR)
++    {
++        cerr << "ERROR: SaveTrajectoryTUM cannot be used for monocular." << endl;
++        return;
++    }
++
++    vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
++    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
++
++    // Transform all keyframes so that the first keyframe is at the origin.
++    // After a loop closure the first keyframe might not be at the origin.
++    Sophus::SE3f Two = vpKFs[0]->GetPoseInverse();
++
++    ofstream f;
++    f.open(filename.c_str());
++    f << fixed;
++    f << "# IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME" << endl;
++    f << endl;
++
++    // Frame pose is stored relative to its reference keyframe (which is optimized by BA and pose graph).
++    // We need to get first the keyframe pose and then concatenate the relative transformation.
++    // Frames not localized (tracking failure) are not saved.
++
++    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
++    list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
++    list<bool>::iterator lbL = mpTracker->mlbLost.begin();
++
++    for(list<Sophus::SE3f>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
++        lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++, lbL++)
++    {
++        if(*lbL)
++            continue;
++
++        KeyFrame* pKF = *lRit;
++
++        Sophus::SE3f Trw;
++
++        // If the reference keyframe was culled, traverse the spanning tree to get a suitable keyframe.
++        while(pKF->isBad())
++        {
++            Trw = Trw * pKF->mTcp;
++            pKF = pKF->GetParent();
++        }
++
++        Trw = Trw * pKF->GetPose() * Two;
++
++        Sophus::SE3f Tcw = (*lit) * Trw;
++        Sophus::SE3f Twc = Tcw.inverse();
++
++        Eigen::Vector3f twc = Twc.translation();
++        Eigen::Quaternionf q = Twc.unit_quaternion();
++
++        string image_name = images[int(round(*lT * frequence)) - 1];
++        f << int(round(*lT * frequence)) << " " <<  setprecision(9)  
++                << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << " " 
++                << twc(0) << " " << twc(1) << " " << twc(2) 
++                << " " << image_name.substr(4, image_name.length() - 1) << endl;
++
++    }
++    f.close();
++
++    // for (list<Tracking::TrackedFrame>::iterator iter = mpTracker->tracked_frames.begin(), iter_end = mpTracker->tracked_frames.end(); iter != iter_end; iter++)
++    // {
++    //     if(iter->lost)
++    //         continue;
++
++    //     KeyFrame* pKF = iter->reference_keyframe;
++
++    //     cv::Mat Trw = cv::Mat::eye(4,4,CV_32F);
++
++    //     // If the reference keyframe was culled, traverse the spanning tree to get a suitable keyframe.
++    //     while(pKF->isBad())
++    //     {
++    //         Trw = Trw*pKF->mTcp;
++    //         pKF = pKF->GetParent();
++    //     }
++
++    //     // Trw = Trw*pKF->GetPose()*Two;
++    //     Trw = Trw*pKF->GetPose();
++
++    //     cv::Mat Tcw = iter->relative_frame_pose*Trw;
++    //     cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
++    //     cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
++
++    //     vector<float> q = Converter::toQuaternion(Rwc);
++    //     string image_name = images[int(round(iter->time * frequence)) - 1];
++    //     f << int(round(iter->time * frequence)) << " " <<  setprecision(9)  
++    //             << q[3] << " " << q[0] << " " << q[1] << " " << q[2] << " " 
++    //             << twc.at<float>(0) << " " << twc.at<float>(1) << " " << twc.at<float>(2) 
++    //             << " " << image_name.substr(4, image_name.length() - 1) << endl;
++    // }
++    // f.close();
++    cout << endl << "trajectory saved!" << endl;
++}
++
++
+ double System::GetTimeFromIMUInit()
+ {
+     double aux = mpLocalMapper->GetCurrKFTime()-mpLocalMapper->mFirstTs;

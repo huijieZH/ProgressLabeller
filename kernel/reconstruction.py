@@ -1,5 +1,3 @@
-from kernel.kf_pycuda.config import set_config, print_config
-from kernel.kf_pycuda.kinect_fusion import KinectFusion
 from offline.parse import offlineParam
 from kernel.geometry import _pose2Rotation
 from tqdm import tqdm
@@ -11,10 +9,15 @@ import open3d as o3d
 
 def KinectfusionRecon(
     data_folder, save_folder, prefix_list,
-    resX, resY, fx, fy, cx, cy, 
-    tsdf_voxel_size, tsdf_trunc_margin, pcd_voxel_size, depth_scale, depth_ignore, 
+    resX, resY, fx, fy, cx, cy,
+    tsdf_voxel_size, tsdf_trunc_margin, pcd_voxel_size, depth_scale, depth_ignore,
     DISPLAY, frame_per_display,
     ):
+    # pycuda is only required for KinectFusion; import lazily so the rest of
+    # the add-on loads even when pycuda/CUDA toolkit isn't installed.
+    from kernel.kf_pycuda.config import set_config, print_config
+    from kernel.kf_pycuda.kinect_fusion import KinectFusion
+
     depth_path = os.path.join(data_folder, "depth")
     color_path = os.path.join(data_folder, "rgb")
 
@@ -61,15 +64,18 @@ def poseFusion(
                 origin_pose = np.linalg.inv(origin_pose)
             param.camposes[cam] = trans.dot(origin_pose)  
     
+    from kernel.kf_pycuda.config import set_config, print_config
+    from kernel.kf_pycuda.kinect_fusion import KinectFusion
+
     param = offlineParam(param_path)
     parsecamfile(param)
     applytrans2cam(param)
     depth_path = os.path.join(param.datasrc, "depth")
     rgb_path = os.path.join(param.datasrc, "rgb")
 
-    config = set_config(param.camera["resolution"][0], param.camera["resolution"][1], 
+    config = set_config(param.camera["resolution"][0], param.camera["resolution"][1],
                         param.camera["intrinsic"][0, 0], param.camera["intrinsic"][1, 1],
-                        param.camera["intrinsic"][0, 2], param.camera["intrinsic"][1, 2], 
+                        param.camera["intrinsic"][0, 2], param.camera["intrinsic"][1, 2],
                         tsdf_voxel_size = tsdf_voxel_size, tsdf_trunc_margin = tsdf_trunc_margin, pcd_voxel_size = pcd_voxel_size)
     depth_ignore = depth_ignore
     kf = KinectFusion(cfg=config)

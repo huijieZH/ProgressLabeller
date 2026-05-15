@@ -1,6 +1,10 @@
-XSOCK=/tmp/.X11-unix
-XAUTH=/tmp/.docker.xauth
-touch $XAUTH
-xauth nlist $DISPLAY | sed -e 's/^..../ffff/' | xauth -f $XAUTH nmerge -
+#!/usr/bin/env bash
+# Launch the ProgressLabeller container with X11 forwarding for the Blender GUI.
+# The container uses the shared `orbslam3:dev` image, built from
+# /home/yuzeren/sudo/ws/ORB_SLAM3/docker/Dockerfile.
+set -euo pipefail
 
-sudo docker run --gpus all -it -v $XSOCK:$XSOCK:rw -v $XAUTH:$XAUTH:rw --device=/dev/dri/card0:/dev/dri/card0 -e DISPLAY=$DISPLAY -e XAUTHORITY=$XAUTH blender blender
+xhost +local:docker
+cd "$(dirname "$0")"
+docker compose run --rm progresslabeller \
+    blender --python /workspace/ProgressLabeller/docker/install_addon.py

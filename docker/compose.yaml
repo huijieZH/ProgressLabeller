@@ -1,0 +1,28 @@
+services:
+  progresslabeller:
+    image: orbslam3:dev
+    container_name: progresslabeller_dev
+    network_mode: host
+    runtime: nvidia
+    environment:
+      - DISPLAY=${DISPLAY:-}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=graphics,display,compute,utility
+      - PYOPENGL_PLATFORM=egl
+      - PROGRESSLABELLER_PATH=/workspace/ProgressLabeller
+      - PROGRESSLABELLER_BLENDER_PATH=/opt/blender-2.92
+      - ORB3_SOURCE_DIR=/workspace/ORB_SLAM3
+    volumes:
+      - ../:/workspace/ProgressLabeller
+      - ../../ORB_SLAM3:/workspace/ORB_SLAM3
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "44"
+      - "110"
+    working_dir: /workspace/ProgressLabeller
+    stdin_open: true
+    tty: true
+    command: bash

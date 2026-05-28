@@ -30,9 +30,10 @@ def _select_sample_files(files, sample_rate):
     return selected_files
 
 def _generate_image_list(path, files):
-    f= open(os.path.join(path, "image-list.txt"),"w+")
-    for file in files:
-        f.write(file + "\n")
+    os.makedirs(path, exist_ok=True)
+    with open(os.path.join(path, "image-list.txt"), "w") as f:
+        for file in files:
+            f.write(file + "\n")
 
 def _parse_camfile(camera_rgb_file):
     camera_lines = []

@@ -141,6 +141,12 @@ def _align_reconstruction(config, scene, THRESHOLD = 0.01, NUM_THRESHOLD = 5):
 
     depth_scale = config.depth_scale
 
+    depth_dir = os.path.join(datapath, "depth")
+    if not os.path.isdir(depth_dir):
+        print("Auto-scale alignment skipped: data/depth/ not found "
+              "(this step requires depth data).")
+        return 1.0
+
     Camera_dict = {}
     PointsDict = {}
     PointsDepth = {}
@@ -149,7 +155,7 @@ def _align_reconstruction(config, scene, THRESHOLD = 0.01, NUM_THRESHOLD = 5):
     print("Auto Aligning the scale:....")
     for camera_idx in tqdm.tqdm(Camera_dict):
             rgb_name = Camera_dict[camera_idx]["name"]
-            with Image.open(os.path.join(datapath, "depth", rgb_name)) as im:
+            with Image.open(os.path.join(depth_dir, rgb_name)) as im:
                 depth = np.array(im) * depth_scale
                 _scaleFordepth(depth, camera_idx, intrinsic, Camera_dict, PointsDict, PointsDepth, POSE_INVERSE = config.inverse_pose)
         

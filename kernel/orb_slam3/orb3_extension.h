@@ -12,9 +12,13 @@
 
 #include<pybind11/pybind11.h>
 
-int orb3_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, string strAssociationFilename, string recon_path, float image_frequence, float display);
+// sensor_mode: 0 = MONOCULAR, 1 = RGBD, 2 = STEREO
+int orb3_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, string strAssociationFilename, string recon_path, float image_frequence, float display, int sensor_mode);
 
-void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
-                vector<string> &vstrImageFilenamesD, vector<double> &vTimestamps);
+void LoadImagesMonocular(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
+                         vector<double> &vTimestamps);
+
+void LoadImagesPaired(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
+                     vector<string> &vstrImageFilenamesAux, vector<double> &vTimestamps);
 
 void savePly(const string &path, const vector<Eigen::Vector3f> points);

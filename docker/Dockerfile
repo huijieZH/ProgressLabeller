@@ -1,4 +1,7 @@
-FROM ubuntu:22.04
+# CUDA 12.8 devel base (Ubuntu 22.04 underneath, so the CPU-built Pangolin /
+# ORB_SLAM3 / Blender layers below are unchanged). The toolkit is needed for
+# the VGGT-SLAM 2.0 sidecar (GPU inference + any CUDA extension builds).
+FROM nvidia/cuda:12.8.0-cudnn-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
@@ -63,9 +66,64 @@ RUN rm -rf /opt/blender-2.92/2.92/python/lib/python3.7/site-packages/numpy \
     && $BLENDERPY -m ensurepip \
     && $BLENDERPY -m pip install --no-cache-dir --upgrade "pip<24" "setuptools<68" "wheel"
 
-COPY requirements.docker.txt /tmp/requirements.docker.txt
+COPY docker/requirements.docker.txt /tmp/requirements.docker.txt
 RUN $BLENDERPY -m pip install --no-cache-dir -r /tmp/requirements.docker.txt \
     && rm /tmp/requirements.docker.txt
+
+# pycolmap sidecar venv. pycolmap 4.x wheels are cp310+ and Blender 2.92
+# ships Python 3.7m, so we run COLMAP under a separate interpreter and
+# invoke it as a subprocess from operators/ReconstructionOperator.py. The
+# wheel bundles libcolmap; no system COLMAP install needed.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3.10 python3.10-venv \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3.10 -m venv /opt/colmap-venv \
+    && /opt/colmap-venv/bin/pip install --no-cache-dir --upgrade pip \
+    && /opt/colmap-venv/bin/pip install --no-cache-dir \
+        pycolmap==4.0.4 numpy
+ENV COLMAP_PY=/opt/colmap-venv/bin/python
+
+# VGGT-SLAM 2.0 sidecar venv. Like COLMAP, it needs a newer Python (3.11) + CUDA
+# than Blender 2.92's bundled 3.7, so it runs under its own interpreter and is
+# invoked as a subprocess from operators/ReconstructionOperator.py. The upstream
+# setup.sh installs requirements.txt and the third_party stack (Salad, the
+# MIT-SPARK VGGT fork, Perception Encoder, SAM 3). The ~GB VGGT-1B weights are
+# NOT baked in -- they download lazily into $VGGT_WEIGHTS (the bind-mounted repo
+# weights/ folder) on the first reconstruction, via TORCH_HOME.
+ENV VGGT_SLAM_DIR=/opt/VGGT-SLAM
+ENV VGGT_WEIGHTS=/workspace/ProgressLabeller/weights
+ENV TORCH_HOME=/workspace/ProgressLabeller/weights
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        software-properties-common \
+    && add-apt-repository -y ppa:deadsnakes/ppa \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        python3.11 python3.11-venv python3.11-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && git clone https://github.com/MIT-SPARK/VGGT-SLAM.git "$VGGT_SLAM_DIR" \
+    && python3.11 -m venv /opt/vggt-venv \
+    && /opt/vggt-venv/bin/pip install --no-cache-dir --upgrade pip setuptools wheel \
+    && bash -c 'set -e && source /opt/vggt-venv/bin/activate && cd "$VGGT_SLAM_DIR" && ./setup.sh'
+ENV VGGT_PY=/opt/vggt-venv/bin/python
+
+# Clone ORB_SLAM3, apply the ProgressLabeller patch, build libORB_SLAM3.so + Thirdparty.
+ENV ORB3_SOURCE_DIR=/opt/ORB_SLAM3
+COPY docker/orb_slam3_progresslabeller.patch /tmp/orb_slam3_progresslabeller.patch
+RUN git clone https://github.com/UZ-SLAMLab/ORB_SLAM3.git "$ORB3_SOURCE_DIR" \
+    && cd "$ORB3_SOURCE_DIR" \
+    && git apply /tmp/orb_slam3_progresslabeller.patch \
+    && chmod +x build.sh && ./build.sh \
+    && rm /tmp/orb_slam3_progresslabeller.patch
+
+# Build the orb3_extension pybind11 module (linked against the ORB_SLAM3 above).
+COPY kernel/orb_slam3/CMakeLists.txt \
+     kernel/orb_slam3/orb3_extension.cpp \
+     kernel/orb_slam3/orb3_extension.h \
+     /opt/orb3_extension_src/
+RUN cd /opt/orb3_extension_src && mkdir build && cd build \
+    && cmake .. -DPython_EXECUTABLE="$BLENDERPY" \
+                -DPython3_EXECUTABLE="$BLENDERPY" \
+                -DPYTHON_EXECUTABLE="$BLENDERPY" \
+    && make -j"$(nproc)"
 
 USER dev
 WORKDIR /workspace/ProgressLabeller

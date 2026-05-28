@@ -1,11 +1,11 @@
 services:
   progresslabeller:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
       args:
-        UID: "${UID:-1000}"
-        GID: "${GID:-1000}"
+        UID: "${HOST_UID:-1000}"
+        GID: "${HOST_GID:-1000}"
     image: progresslabeller:dev
     container_name: progresslabeller_dev
     network_mode: host
@@ -18,7 +18,12 @@ services:
       - PYOPENGL_PLATFORM=egl
       - PROGRESSLABELLER_PATH=/workspace/ProgressLabeller
       - PROGRESSLABELLER_BLENDER_PATH=/opt/blender-2.92
-      - ORB3_SOURCE_DIR=/workspace/ProgressLabeller/ORB_SLAM3
+      - ORB3_SOURCE_DIR=/opt/ORB_SLAM3
+      - COLMAP_PY=/opt/colmap-venv/bin/python
+      - VGGT_PY=/opt/vggt-venv/bin/python
+      - VGGT_SLAM_DIR=/opt/VGGT-SLAM
+      - VGGT_WEIGHTS=/workspace/ProgressLabeller/weights
+      - TORCH_HOME=/workspace/ProgressLabeller/weights
     volumes:
       - ../:/workspace/ProgressLabeller
       - /tmp/.X11-unix:/tmp/.X11-unix

@@ -70,20 +70,21 @@ class ObjectPropertyPanel(bpy.types.Panel):
                     row.prop(scene.floatscreenproperty, "display_X")
                     row.prop(scene.floatscreenproperty, "display_Y")
                 
-                layout.label(text="Set depth filter parameter:")
-                
-                box = layout.box() 
-                row = box.row(align=True)
-                row = box.row()
-                row.prop(scene.floatscreenproperty, "UPDATE_DEPTHFILTER")
-                row = box.row()
-                row.prop(scene.floatscreenproperty, "IGNORE_ZERODEPTH")
-                row = box.row()
-                row.prop(config, "depth_scale")
-                row = box.row()
-                row.prop(config, "depth_ignore")
-                meandepth = np.mean(np.array(context.object["depth"]["depth"])) * config.depth_scale
-                box.label(text="Mean depth for current image is : {0:.3f}m".format(meandepth))
+                if "depth" in context.object:
+                    layout.label(text="Set depth filter parameter:")
+
+                    box = layout.box()
+                    row = box.row(align=True)
+                    row = box.row()
+                    row.prop(scene.floatscreenproperty, "UPDATE_DEPTHFILTER")
+                    row = box.row()
+                    row.prop(scene.floatscreenproperty, "IGNORE_ZERODEPTH")
+                    row = box.row()
+                    row.prop(config, "depth_scale")
+                    row = box.row()
+                    row.prop(config, "depth_ignore")
+                    meandepth = np.mean(np.array(context.object["depth"]["depth"])) * config.depth_scale
+                    box.label(text="Mean depth for current image is : {0:.3f}m".format(meandepth))
                 
 
             elif object_type == "setting":
@@ -94,6 +95,12 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 row = layout.row()
                 row.prop(config, 'projectname')
                 row.operator("object_property.workspacerename")
+
+                layout.label(text="Set Sensor Mode:")
+                box = layout.box()
+                row = box.row()
+                row.prop(config, "sensor_mode")
+
                 layout.label(text="Set Environment:")
 
                 row = layout.row()
@@ -105,9 +112,13 @@ class ObjectPropertyPanel(bpy.types.Panel):
                 row.operator("import_data.modelfrompose")
                 row.operator("export_data.objectposes")
 
+                import_label = {
+                    "STEREO": "Import Stereo Frames",
+                    "MONOCULAR": "Import RGB",
+                }.get(config.sensor_mode, "Import RGB & Depth")
                 row = layout.row()
                 row.prop(config, 'datasrc')
-                row.operator("object_property.importcamrgbdepth")
+                row.operator("object_property.importcamrgbdepth", text=import_label)
 
                 row = layout.row()
                 row.prop(config, 'reconstructionsrc')

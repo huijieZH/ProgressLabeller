@@ -22,19 +22,26 @@ config_json_dict = {
     'reconstructionscale': [['reconstruction', 'scale']],
     'cameradisplayscale': [['reconstruction', 'cameradisplayscale']],
     'recon_trans': [['reconstruction', 'recon_trans']],
+    'sensor_mode': [['reconstruction', 'sensor_mode']],
     'sample_rate': [['data', 'sample_rate']],
     'depth_scale': [['data', 'depth_scale']],
     'depth_ignore': [['data', 'depth_ignore']],
 
 }
 
+_DECODE_MISSING = object()
+
+
 def decode_dict(configuration, code):
     value = configuration
-    for item in code[0]:
-        value = value[item]
-    if len(code) == 2:
-        for item in code[1]:
-            value = value[int(item)]
+    try:
+        for item in code[0]:
+            value = value[item]
+        if len(code) == 2:
+            for item in code[1]:
+                value = value[int(item)]
+    except (KeyError, IndexError, TypeError):
+        return _DECODE_MISSING
     return value
 
 def encode_dict(configuration):
@@ -56,7 +63,8 @@ def encode_dict(configuration):
         'reconstruction':{
         "scale": configuration.reconstructionscale,
         "cameradisplayscale": configuration.cameradisplayscale,
-        "recon_trans": configuration.recon_trans
+        "recon_trans": configuration.recon_trans,
+        "sensor_mode": configuration.sensor_mode,
         },
         'data':{
         "sample_rate": configuration.sample_rate,
@@ -98,6 +106,16 @@ class config(bpy.types.PropertyGroup):
     )       
     
     recon_trans: bpy.props.StringProperty(name = "recon_trans", default = "1,0,0,0;0,1,0,0;0,0,1,0;0,0,0,1;")
+
+    sensor_mode: bpy.props.EnumProperty(
+        name="Sensor Mode",
+        description="Sensor configuration for this workspace. MONOCULAR: RGB-only (data/rgb/). RGBD: RGB+depth (data/rgb/+data/depth/). STEREO: rectified stereo pair (data/left/+data/right/)",
+        items=(
+            ('MONOCULAR', "Monocular (RGB only)", "Single RGB stream from data/rgb/"),
+            ('RGBD', "RGB-D", "RGB+depth from data/rgb/ and data/depth/"),
+            ('STEREO', "Stereo", "Rectified stereo pair from data/left/ and data/right/"),
+        ),
+        default='RGBD')
     
     sample_rate: bpy.props.FloatProperty(name="Sample Rate", 
                                         description="Sample rate for loading in blender for visualize", 

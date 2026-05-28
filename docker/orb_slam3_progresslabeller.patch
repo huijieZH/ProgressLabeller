@@ -17,7 +17,7 @@ diff --git a/src/System.cc b/src/System.cc
 index 60d9c51..7600f47 100644
 --- a/src/System.cc
 +++ b/src/System.cc
-@@ -1330,12 +1330,222 @@ vector<MapPoint*> System::GetTrackedMapPoints()
+@@ -1330,12 +1330,218 @@ vector<MapPoint*> System::GetTrackedMapPoints()
      return mTrackedMapPoints;
  }
  
@@ -141,12 +141,6 @@ index 60d9c51..7600f47 100644
 +void System::SaveTrajectory_progresslabeler(const string &filename, vector<string> images, vector<double> timestamps, float frequence)
 +{
 +    cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
-+    if(mSensor==MONOCULAR)
-+    {
-+        cerr << "ERROR: SaveTrajectoryTUM cannot be used for monocular." << endl;
-+        return;
-+    }
-+
 +    vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
 +    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
 +
@@ -194,10 +188,12 @@ index 60d9c51..7600f47 100644
 +        Eigen::Quaternionf q = Twc.unit_quaternion();
 +
 +        string image_name = images[int(round(*lT * frequence)) - 1];
-+        f << int(round(*lT * frequence)) << " " <<  setprecision(9)  
-+                << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << " " 
-+                << twc(0) << " " << twc(1) << " " << twc(2) 
-+                << " " << image_name.substr(4, image_name.length() - 1) << endl;
++        size_t slash = image_name.find_last_of('/');
++        string image_base = (slash == string::npos) ? image_name : image_name.substr(slash + 1);
++        f << int(round(*lT * frequence)) << " " <<  setprecision(9)
++                << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << " "
++                << twc(0) << " " << twc(1) << " " << twc(2)
++                << " " << image_base << endl;
 +
 +    }
 +    f.close();

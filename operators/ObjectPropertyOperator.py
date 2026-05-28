@@ -113,28 +113,52 @@ class ImportCamRGBDepth(Operator):
     bl_label = "Import RGB & Depth"
 
 
-    def execute(self, context): 
+    _required_folders = {
+        "STEREO": ["left", "right"],
+        "RGBD": ["rgb", "depth"],
+        "MONOCULAR": ["rgb"],
+    }
+
+    def execute(self, context):
         config_id, config = _get_configuration(context.object)
         packagepath = config.datasrc
-        files = os.listdir(packagepath)
-        if "rgb" not in files or "depth" not in files:
+        sensor_mode = config.sensor_mode
+        required = self._required_folders[sensor_mode]
+        if not os.path.isdir(packagepath):
             log_report(
-                "Error", "either rgb or depth package is not in the datasrc", None
-            )       
+                "Error", "datasrc directory does not exist: {0}".format(packagepath), None
+            )
+            return {'FINISHED'}
+        files = os.listdir(packagepath)
+        missing = [d for d in required if d not in files]
+        if missing:
+            log_report(
+                "Error", "missing {0} folder(s) under datasrc for sensor mode {1}".format(missing, sensor_mode), None
+            )
         elif config.resX == 0 or config.resY == 0\
             or config.fx == 0 or config.fy == 0\
             or config.cx == 0 or config.cy == 0:
             log_report(
                 "ERROR", "Please set the camera parameters before loading the RGB and Camera", None
-            )   
-            return {'FINISHED'}      
-        else:   
+            )
+            return {'FINISHED'}
+        else:
             load_cam_img_depth(packagepath, config_id, camera_display_scale = 0.1, sample_rate=config.sample_rate)
         return {'FINISHED'}
-    
+
     def invoke(self, context, event):
         config_id, config = _get_configuration(context.object)
-        files = os.listdir(os.path.join(config.datasrc, "rgb"))
+        sensor_mode = config.sensor_mode
+        primary_dir = "left" if sensor_mode == "STEREO" else "rgb"
+        primary_path = os.path.join(config.datasrc, primary_dir)
+        if not os.path.isdir(primary_path):
+            log_report(
+                "Error",
+                "missing '{0}' folder under datasrc for sensor mode {1}: {2}".format(primary_dir, sensor_mode, primary_path),
+                None,
+            )
+            return {'CANCELLED'}
+        files = os.listdir(primary_path)
         self.total_files = len(files)
         return context.window_manager.invoke_props_dialog(self, width = 400)
 
@@ -410,8 +434,15 @@ class Lockcurrent3DArea(bpy.types.Operator):
                 if event.mouse_x >= area_left and event.mouse_x < area_right\
                     and event.mouse_y >= area_bottom and event.mouse_y < area_top:
                     if context.object is not None and _is_progresslabeller_object(context.object) and context.object["type"] == "camera":
-                        context.object["depth"]["UPDATEALPHA"] = True
+                        if "depth" in context.object:
+                            context.object["depth"]["UPDATEALPHA"] = True
                         context.object["rgb"]["UPDATEALPHA"] = True
+                        # Snap the area to the camera's reconstructed pose. Done from
+                        # the operator (not the draw handler) so Blender honors it.
+                        space = area.spaces[0]
+                        space.use_local_camera = True
+                        space.camera = context.object
+                        space.region_3d.view_perspective = 'CAMERA'
                         floatscreen_handler = area.spaces[0].draw_handler_add(draw_for_area, (area, context.object), 'WINDOW', 'POST_PIXEL')
                         registeration.register.area_image_pair[area] = {"camera" : context.object,
                                                                         "handler" : floatscreen_handler}

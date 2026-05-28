@@ -17,7 +17,7 @@ from kernel.ply_importer.utility import(
 from kernel.utility import _transstring2trans, _parse_camfile
 
 from kernel.logging_utility import log_report
-from registeration.init_configuration import config_json_dict, decode_dict
+from registeration.init_configuration import config_json_dict, decode_dict, _DECODE_MISSING
 from kernel.blender_utility import \
     _get_configuration, _get_obj_insameworkspace, _apply_trans2obj, \
     _clear_allrgbdcam_insameworkspace, _getsameinstance, _getnextperfixforinstance
@@ -157,178 +157,205 @@ def load_pc(filepath, pointcloudscale, config_id, name = 'reconstruction'):
 
 def load_cam_img_depth(packagepath, config_id, camera_display_scale, sample_rate):
 
-    workspace_name = bpy.context.scene.configuration[config_id].projectname
+    cfg = bpy.context.scene.configuration[config_id]
+    workspace_name = cfg.projectname
+    sensor_mode = cfg.sensor_mode
 
     work_space_collection = create_collection(workspace_name, parent_collection = None)
-    recon_collection = create_collection(workspace_name + ":Reconstruction", 
+    recon_collection = create_collection(workspace_name + ":Reconstruction",
                                          parent_collection = work_space_collection)
-    cam_collection = create_collection(workspace_name + ":Camera", 
+    cam_collection = create_collection(workspace_name + ":Camera",
                                        parent_collection = recon_collection)
-    
 
-    rgb_path = os.path.join(packagepath, "rgb")
-    depth_path = os.path.join(packagepath, "depth")
-    
+    primary_dir = "left" if sensor_mode == "STEREO" else "rgb"
+    rgb_path = os.path.join(packagepath, primary_dir)
     rgb_files = os.listdir(rgb_path)
-    depth_files = os.listdir(depth_path)
+
+    if sensor_mode == "RGBD":
+        depth_path = os.path.join(packagepath, "depth")
+        depth_files = set(os.listdir(depth_path))
+    else:
+        depth_path = None
+        depth_files = None
 
     rgb_files.sort()
     rgb_sample_files = _select_sample_files(rgb_files, sample_rate)
-    os.system("mkdir -p " + bpy.context.scene.configuration[config_id].reconstructionsrc)
-    _generate_image_list(bpy.context.scene.configuration[config_id].reconstructionsrc, rgb_sample_files)
-    _clear_allrgbdcam_insameworkspace(bpy.context.scene.configuration[config_id])
+    _generate_image_list(cfg.reconstructionsrc, rgb_sample_files)
+    _clear_allrgbdcam_insameworkspace(cfg)
     log_report(
-        "INFO", "Loading camera, rgb and depth images", None
+        "INFO", "Loading camera and image data (mode={0})".format(sensor_mode), None
     )
     for rgb in tqdm(rgb_sample_files):
         perfix = rgb.split(".")[0]
-        if perfix + ".png" in depth_files:
-            cam_name = workspace_name + ":view" + perfix
-            if cam_name not in bpy.data.objects:
-                cam_data = bpy.data.cameras.new(cam_name)
-                cam_data.lens = bpy.context.scene.configuration[config_id].lens
-                f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2
-                cam_data.sensor_width = cam_data.lens * bpy.context.scene.configuration[config_id].resX/f
-                cam_data.display_size = camera_display_scale
-                
-                cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX/2 - bpy.context.scene.configuration[config_id].cx)/bpy.context.scene.configuration[config_id].resX
-                cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/bpy.context.scene.configuration[config_id].resX
-                cam_data.background_images.new()
-                
-                cam_object = bpy.data.objects.new(cam_name, cam_data)
-                cam_collection.objects.link(cam_object)
-                cam_object.rotation_mode = 'QUATERNION'
-                cam_object.location = [0, 0, 0]
-                cam_object.rotation_quaternion = [1., 0, 0, 0]
-            else:
-                cam_object = bpy.data.objects[cam_name]
+        if sensor_mode == "RGBD" and (perfix + ".png") not in depth_files:
+            continue
 
-            ## load rgb
-            rgb_name = workspace_name + ":rgb" + perfix
-            if rgb_name not in bpy.data.images:
-                bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), show_multiview=False)
-                bpy.data.images[perfix + ".png"].name = rgb_name
-            bpy.data.images[rgb_name]["UPDATEALPHA"] = True
-            bpy.data.images[rgb_name]["alpha"] = [0.5]
-            ## load depth
+        cam_name = workspace_name + ":view" + perfix
+        if cam_name not in bpy.data.objects:
+            cam_data = bpy.data.cameras.new(cam_name)
+            cam_data.lens = cfg.lens
+            f = (cfg.fx + cfg.fy) / 2
+            cam_data.sensor_width = cam_data.lens * cfg.resX / f
+            cam_data.display_size = camera_display_scale
+
+            cam_data.shift_x = (cfg.resX / 2 - cfg.cx) / cfg.resX
+            cam_data.shift_y = (cfg.cy - cfg.resY / 2) / cfg.resX
+            cam_data.background_images.new()
+
+            cam_object = bpy.data.objects.new(cam_name, cam_data)
+            cam_collection.objects.link(cam_object)
+            cam_object.rotation_mode = 'QUATERNION'
+            cam_object.location = [0, 0, 0]
+            cam_object.rotation_quaternion = [1., 0, 0, 0]
+        else:
+            cam_object = bpy.data.objects[cam_name]
+
+        ## load rgb (or left image in stereo mode)
+        rgb_name = workspace_name + ":rgb" + perfix
+        if rgb_name not in bpy.data.images:
+            bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), show_multiview=False)
+            bpy.data.images[perfix + ".png"].name = rgb_name
+        bpy.data.images[rgb_name]["UPDATEALPHA"] = True
+        bpy.data.images[rgb_name]["alpha"] = [0.5]
+
+        if sensor_mode == "RGBD":
             depth_name = workspace_name + ":depth" + perfix
             if depth_name not in bpy.data.images:
-                bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + ".png"), 
-                                    directory=depth_path, 
-                                    files=[{"name":perfix + ".png"}], 
+                bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + ".png"),
+                                    directory=depth_path,
+                                    files=[{"name":perfix + ".png"}],
                                     relative_path=True, show_multiview=False)
                 bpy.data.images[perfix + ".png"].name = depth_name
-                
+
                 depth = np.array(Image.open(os.path.join(depth_path, perfix + ".png")))
                 depth = depth[::-1, ::]
                 bpy.data.images[depth_name]["depth"] = depth.flatten().astype(np.float32)
-                ## change transparency
             bpy.data.images[depth_name]["UPDATEALPHA"] = True
             bpy.data.images[depth_name]["alpha"] = [0.5]
             cam_object["depth"] = bpy.data.images[depth_name]
-            cam_object["rgb"] = bpy.data.images[rgb_name]
-            cam_object["type"] = "camera"
+
+        cam_object["rgb"] = bpy.data.images[rgb_name]
+        cam_object["type"] = "camera"
 
 
 
-def load_reconstruction_result(filepath, 
-                               pointcloudscale, 
+def load_reconstruction_result(filepath,
+                               pointcloudscale,
                                datasrc,
                                config_id,
                                camera_display_scale = 0.1,
                                IMPORT_RATIO = 1.0,
                                CAMPOSE_INVERSE = False
                                ):
-                            
-    packagepath = bpy.context.scene.configuration[config_id].datasrc
-    rgb_path = os.path.join(datasrc, "rgb")
-    depth_path = os.path.join(datasrc, "depth")    
 
-    workspace_name = bpy.context.scene.configuration[config_id].projectname
+    cfg = bpy.context.scene.configuration[config_id]
+    packagepath = cfg.datasrc
+    sensor_mode = cfg.sensor_mode
+
+    primary_dir = "left" if sensor_mode == "STEREO" else "rgb"
+    rgb_path = os.path.join(datasrc, primary_dir)
+    if sensor_mode == "RGBD":
+        depth_path = os.path.join(datasrc, "depth")
+        depth_files = set(os.listdir(depth_path))
+    else:
+        depth_path = None
+        depth_files = None
+
+    workspace_name = cfg.projectname
     work_space_collection = create_collection(workspace_name, parent_collection = None)
-    recon_collection = create_collection(workspace_name + ":Reconstruction", 
+    recon_collection = create_collection(workspace_name + ":Reconstruction",
                                          parent_collection = work_space_collection)
-    cam_collection = create_collection(workspace_name + ":Camera", 
+    cam_collection = create_collection(workspace_name + ":Camera",
                                        parent_collection = recon_collection)
-    pc_collection = create_collection(workspace_name + ":Pointcloud", 
-                                      parent_collection = recon_collection)    
+    pc_collection = create_collection(workspace_name + ":Pointcloud",
+                                      parent_collection = recon_collection)
     ## load reconstruction result
-    
+
     camera_rgb_file = os.path.join(filepath, "campose.txt")
     reconstruction_path = os.path.join(filepath, "fused.ply")
     load_pc(reconstruction_path, pointcloudscale, config_id)
     bpy.ops.object.select_all(action='DESELECT')
 
-    rgb_files = os.listdir(rgb_path)
-    depth_files = os.listdir(depth_path)
-    
+    rgb_files = set(os.listdir(rgb_path))
+
     ## load camera and image result
     camera_lines = _parse_camfile(camera_rgb_file)
     camera_selected_lines = _select_sample_files(camera_lines, IMPORT_RATIO)
-    _clear_allrgbdcam_insameworkspace(bpy.context.scene.configuration[config_id])
+    _clear_allrgbdcam_insameworkspace(cfg)
     for l in tqdm(camera_selected_lines):
         data = l.split(" ")
-        if data[0].isnumeric():
-            pose = [[float(data[5]) * pointcloudscale, float(data[6]) * pointcloudscale, float(data[7]) * pointcloudscale], 
-                    [float(data[1]), float(data[2]), float(data[3]), float(data[4])]]
-            Axis_align = np.array([[1, 0, 0, 0],
-                                    [0, -1, 0, 0],
-                                    [0, 0, -1, 0],
-                                    [0, 0, 0, 1],]
-            )
-            Trans = _pose2Rotation(pose).dot(Axis_align) if not CAMPOSE_INVERSE else np.linalg.inv(_pose2Rotation(pose)).dot(Axis_align)
-            pose = _rotation2Pose(Trans)
-            framename = data[-1]
-            perfix = framename.split(".")[0]
+        if not data[0].isnumeric():
+            continue
+        pose = [[float(data[5]) * pointcloudscale, float(data[6]) * pointcloudscale, float(data[7]) * pointcloudscale],
+                [float(data[1]), float(data[2]), float(data[3]), float(data[4])]]
+        Axis_align = np.array([[1, 0, 0, 0],
+                                [0, -1, 0, 0],
+                                [0, 0, -1, 0],
+                                [0, 0, 0, 1],]
+        )
+        Trans = _pose2Rotation(pose).dot(Axis_align) if not CAMPOSE_INVERSE else np.linalg.inv(_pose2Rotation(pose)).dot(Axis_align)
+        pose = _rotation2Pose(Trans)
+        # C++ writer may include a directory prefix (e.g. "left/000000.png");
+        # take only the basename so the lookup against rgb_files works.
+        framename = os.path.basename(data[-1])
+        perfix = framename.split(".")[0]
 
-            cam_name = workspace_name + ":view" + perfix
-            if cam_name in bpy.data.objects:
-                cam_object = bpy.data.objects[cam_name]
-                cam_object.location = pose[0]
-                cam_object.rotation_quaternion = pose[1]
-            elif perfix + ".png" in rgb_files and perfix + ".png" in depth_files:
-                cam_data = bpy.data.cameras.new(cam_name)
-                cam_data.lens = bpy.context.scene.configuration[config_id].lens
-                f = (bpy.context.scene.configuration[config_id].fx + bpy.context.scene.configuration[config_id].fy)/2
-                cam_data.sensor_width = cam_data.lens * bpy.context.scene.configuration[config_id].resX/f
-                cam_data.shift_x = (bpy.context.scene.configuration[config_id].resX/2 - bpy.context.scene.configuration[config_id].cx)/bpy.context.scene.configuration[config_id].resX
-                ### divide resX not resY
-                cam_data.shift_y = (bpy.context.scene.configuration[config_id].cy - bpy.context.scene.configuration[config_id].resY/2)/bpy.context.scene.configuration[config_id].resX
-                cam_data.display_size = camera_display_scale
-                ## allow background display
-                cam_data.background_images.new()
+        cam_name = workspace_name + ":view" + perfix
+        if cam_name in bpy.data.objects:
+            cam_object = bpy.data.objects[cam_name]
+            cam_object.location = pose[0]
+            cam_object.rotation_quaternion = pose[1]
+            continue
 
-                cam_object = bpy.data.objects.new(cam_name, cam_data)
-                cam_collection.objects.link(cam_object)
-                cam_object.rotation_mode = 'QUATERNION'
-                cam_object.location = pose[0]
-                cam_object.rotation_quaternion = pose[1]
-                ## load rgb
-                rgb_name = workspace_name + ":rgb" + perfix
-                if rgb_name not in bpy.data.images:
-                    bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"), 
-                                        directory=rgb_path, 
-                                        files=[{"name":perfix + ".png"}], 
-                                        relative_path=True, show_multiview=False)
-                    bpy.data.images[perfix + ".png"].name = rgb_name
-                bpy.data.images[rgb_name]["UPDATEALPHA"] = True
-                bpy.data.images[rgb_name]["alpha"] = [0.5]
-                ## load depth
-                depth_name = workspace_name + ":depth" + perfix
-                if depth_name not in bpy.data.images:
-                    bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + ".png"), 
-                                        directory=depth_path, 
-                                        files=[{"name":perfix + ".png"}], 
-                                        relative_path=True, show_multiview=False)
-                    bpy.data.images[perfix + ".png"].name = depth_name
-                    depth = np.array(Image.open(os.path.join(depth_path, perfix + ".png")))
-                    depth = depth[::-1, ::]
-                    bpy.data.images[depth_name]["depth"] = depth.flatten().astype(np.float32)
-                bpy.data.images[depth_name]["UPDATEALPHA"] = True
-                bpy.data.images[depth_name]["alpha"] = [0.5]
-                cam_object["depth"] = bpy.data.images[depth_name]
-                cam_object["rgb"] = bpy.data.images[rgb_name]
-                cam_object["type"] = "camera" 
+        if (perfix + ".png") not in rgb_files:
+            continue
+        if sensor_mode == "RGBD" and (perfix + ".png") not in depth_files:
+            continue
+
+        cam_data = bpy.data.cameras.new(cam_name)
+        cam_data.lens = cfg.lens
+        f = (cfg.fx + cfg.fy) / 2
+        cam_data.sensor_width = cam_data.lens * cfg.resX / f
+        cam_data.shift_x = (cfg.resX / 2 - cfg.cx) / cfg.resX
+        ### divide resX not resY
+        cam_data.shift_y = (cfg.cy - cfg.resY / 2) / cfg.resX
+        cam_data.display_size = camera_display_scale
+        ## allow background display
+        cam_data.background_images.new()
+
+        cam_object = bpy.data.objects.new(cam_name, cam_data)
+        cam_collection.objects.link(cam_object)
+        cam_object.rotation_mode = 'QUATERNION'
+        cam_object.location = pose[0]
+        cam_object.rotation_quaternion = pose[1]
+        ## load rgb (or left image in stereo mode)
+        rgb_name = workspace_name + ":rgb" + perfix
+        if rgb_name not in bpy.data.images:
+            bpy.ops.image.open(filepath=os.path.join(rgb_path, perfix + ".png"),
+                                directory=rgb_path,
+                                files=[{"name":perfix + ".png"}],
+                                relative_path=True, show_multiview=False)
+            bpy.data.images[perfix + ".png"].name = rgb_name
+        bpy.data.images[rgb_name]["UPDATEALPHA"] = True
+        bpy.data.images[rgb_name]["alpha"] = [0.5]
+
+        if sensor_mode == "RGBD":
+            depth_name = workspace_name + ":depth" + perfix
+            if depth_name not in bpy.data.images:
+                bpy.ops.image.open(filepath=os.path.join(depth_path, perfix + ".png"),
+                                    directory=depth_path,
+                                    files=[{"name":perfix + ".png"}],
+                                    relative_path=True, show_multiview=False)
+                bpy.data.images[perfix + ".png"].name = depth_name
+                depth = np.array(Image.open(os.path.join(depth_path, perfix + ".png")))
+                depth = depth[::-1, ::]
+                bpy.data.images[depth_name]["depth"] = depth.flatten().astype(np.float32)
+            bpy.data.images[depth_name]["UPDATEALPHA"] = True
+            bpy.data.images[depth_name]["alpha"] = [0.5]
+            cam_object["depth"] = bpy.data.images[depth_name]
+
+        cam_object["rgb"] = bpy.data.images[rgb_name]
+        cam_object["type"] = "camera"
     
     obj_lists = _get_obj_insameworkspace(cam_object, ["reconstruction", "camera"])
     _, config = _get_configuration(cam_object)
@@ -405,6 +432,8 @@ def setting_init(name, collection, path):
 def config_from_file(config, configuration):
     for item in config_json_dict:
         value = decode_dict(configuration, config_json_dict[item])
+        if value is _DECODE_MISSING:
+            continue
         setattr(config, item, value)
 
 

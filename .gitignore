@@ -135,3 +135,9 @@ build/
 
 ## docker-bootstrapped ORB_SLAM3 source tree (cloned by docker/build.sh)
 /ORB_SLAM3/
+
+## VGGT-SLAM model weights (download lazily into the bind-mounted weights/ dir)
+/weights/
+
+## local datasets / reconstruction inputs
+/data/

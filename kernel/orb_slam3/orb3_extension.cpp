@@ -2,38 +2,44 @@
 
 using namespace std;
 
-int orb3_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, string strAssociationFilename, string recon_path, float image_frequence, float display)
+int orb3_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, string strAssociationFilename, string recon_path, float image_frequence, float display, int sensor_mode)
 {
-
     // Retrieve paths to images
     vector<string> vstrImageFilenamesRGB;
-    vector<string> vstrImageFilenamesD;
+    vector<string> vstrImageFilenamesAux;
     vector<double> vTimestamps;
-    // string strAssociationFilename = string(argv[4]);
-    LoadImages(strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
 
-    // Check consistency in the number of images and depthmaps
+    if (sensor_mode == 0) {
+        LoadImagesMonocular(strAssociationFilename, vstrImageFilenamesRGB, vTimestamps);
+    } else {
+        LoadImagesPaired(strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesAux, vTimestamps);
+    }
+
     int nImages = vstrImageFilenamesRGB.size();
     if(vstrImageFilenamesRGB.empty())
     {
         cerr << endl << "No images found in provided path." << endl;
         return 1;
     }
-    else if(vstrImageFilenamesD.size()!=vstrImageFilenamesRGB.size())
+    if(sensor_mode != 0 && vstrImageFilenamesAux.size() != vstrImageFilenamesRGB.size())
     {
-        cerr << endl << "Different number of images for rgb and depth." << endl;
+        cerr << endl << "Different number of images for primary and auxiliary streams." << endl;
         return 1;
     }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    bool DISPALY;
-    if (display == 1){
-        DISPALY = true;
-    } else{
-        DISPALY = false;
+    bool DISPALY = (display == 1);
+
+    ORB_SLAM3::System::eSensor sensor;
+    if (sensor_mode == 0) {
+        sensor = ORB_SLAM3::System::MONOCULAR;
+    } else if (sensor_mode == 2) {
+        sensor = ORB_SLAM3::System::STEREO;
+    } else {
+        sensor = ORB_SLAM3::System::RGBD;
     }
-    
-    ORB_SLAM3::System SLAM(ORBvoc_path, ORB_slam_config, ORB_SLAM3::System::RGBD, DISPALY);
+    ORB_SLAM3::System SLAM(ORBvoc_path, ORB_slam_config, sensor, DISPALY);
+
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
     vTimesTrack.resize(nImages);
@@ -43,12 +49,13 @@ int orb3_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, 
     cout << "Images in the sequence: " << nImages << endl << endl;
 
     // Main loop
-    cv::Mat imRGB, imD;
+    cv::Mat imRGB, imAux;
     for(int ni=0; ni<nImages; ni++)
     {
-        // Read image and depthmap from file
-        imRGB = cv::imread(string(datasrc)+"/"+vstrImageFilenamesRGB[ni],CV_LOAD_IMAGE_UNCHANGED);
-        imD = cv::imread(string(datasrc)+"/"+vstrImageFilenamesD[ni],CV_LOAD_IMAGE_UNCHANGED);
+        imRGB = cv::imread(string(datasrc)+"/"+vstrImageFilenamesRGB[ni], CV_LOAD_IMAGE_UNCHANGED);
+        if(sensor_mode != 0) {
+            imAux = cv::imread(string(datasrc)+"/"+vstrImageFilenamesAux[ni], CV_LOAD_IMAGE_UNCHANGED);
+        }
         double tframe = vTimestamps[ni];
 
         if(imRGB.empty())
@@ -59,9 +66,14 @@ int orb3_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, 
         }
         auto t1 = std::chrono::system_clock::now();
 
-        // Pass the image to the SLAM system
         cout << "Tracking " << vstrImageFilenamesRGB[ni] << " frame\n" << endl;
-        SLAM.TrackRGBD(imRGB,imD,tframe);
+        if (sensor_mode == 0) {
+            SLAM.TrackMonocular(imRGB, tframe);
+        } else if (sensor_mode == 2) {
+            SLAM.TrackStereo(imRGB, imAux, tframe);
+        } else {
+            SLAM.TrackRGBD(imRGB, imAux, tframe);
+        }
 
         auto t2 = std::chrono::system_clock::now();
 
@@ -69,7 +81,6 @@ int orb3_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, 
 
         vTimesTrack[ni]=ttrack;
 
-        // Wait to load the next frame
         double T=0;
         if(ni<nImages-1)
             T = vTimestamps[ni+1]-tframe;
@@ -80,10 +91,8 @@ int orb3_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, 
             usleep((T-ttrack)*1e6);
     }
 
-    // Stop all threads
     SLAM.Shutdown();
 
-    // Tracking time statistics
     sort(vTimesTrack.begin(),vTimesTrack.end());
     float totaltime = 0;
     for(int ni=0; ni<nImages; ni++)
@@ -94,18 +103,10 @@ int orb3_slam_recon(string ORBvoc_path, string ORB_slam_config, string datasrc, 
     cout << "median tracking time: " << vTimesTrack[nImages/2] << endl;
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
-    // Save camera trajectory
-    
-    // string recon_path = string(argv[5]);
-    // SLAM.SaveTrajectoryTUM(recon_path + "/CameraTrajectory.txt");
-    // SLAM.SaveKeyFrameTrajectoryTUM(recon_path + "/KeyFrameTrajectory.txt");  
-    
     SLAM.SaveTrajectory_progresslabeler(recon_path + "/campose.txt", vstrImageFilenamesRGB, vTimestamps, image_frequence);
     vector<Eigen::Vector3f> mapping_points;
     mapping_points = SLAM.GetTrackedMapPoints_progresslabeler();
     savePly(recon_path, mapping_points);
-    // SLAM.SaveCameraFeature_progresslabeler(recon_path + "/images.txt", vstrImageFilenamesRGB);
-    // SLAM.SaveFeature3D_progresslabeler(recon_path + "/points3D.txt");
     return 0;
 }
 
@@ -125,8 +126,8 @@ void savePly(const string &path, const vector<Eigen::Vector3f> points) {
     f.close();
 }
 
-void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
-                vector<string> &vstrImageFilenamesD, vector<double> &vTimestamps)
+void LoadImagesMonocular(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
+                         vector<double> &vTimestamps)
 {
     ifstream fAssociation;
     fAssociation.open(strAssociationFilename.c_str());
@@ -136,18 +137,40 @@ void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageF
         getline(fAssociation,s);
         if(!s.empty())
         {
-            stringstream ss;
-            ss << s;
+            stringstream ss(s);
             double t;
-            string sRGB, sD;
+            string sRGB;
+            ss >> t;
+            ss >> sRGB;
+            if(sRGB.empty())
+                continue;
+            vTimestamps.push_back(t);
+            vstrImageFilenamesRGB.push_back(sRGB);
+        }
+    }
+}
+
+void LoadImagesPaired(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
+                     vector<string> &vstrImageFilenamesAux, vector<double> &vTimestamps)
+{
+    ifstream fAssociation;
+    fAssociation.open(strAssociationFilename.c_str());
+    while(!fAssociation.eof())
+    {
+        string s;
+        getline(fAssociation,s);
+        if(!s.empty())
+        {
+            stringstream ss(s);
+            double t;
+            string sRGB, sAux;
             ss >> t;
             vTimestamps.push_back(t);
             ss >> sRGB;
             vstrImageFilenamesRGB.push_back(sRGB);
             ss >> t;
-            ss >> sD;
-            vstrImageFilenamesD.push_back(sD);
-
+            ss >> sAux;
+            vstrImageFilenamesAux.push_back(sAux);
         }
     }
 }

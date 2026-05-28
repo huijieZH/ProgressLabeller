@@ -100,6 +100,33 @@ bash run.bash
 If `$DISPLAY` is empty, you're SSH'd in without `-X`; reconnect with `ssh -X`
 or run from the desktop terminal directly.
 
+## Included backends
+
+* **ORB_SLAM3** — built from source during image build (see "First-run setup").
+* **COLMAP** — `pycolmap==4.0.4` lives in `/opt/colmap-venv` and is invoked
+  as a subprocess from the COLMAP backend (Blender 2.92 ships Python 3.7m,
+  which pycolmap 4.x doesn't support, so it runs out-of-process). CPU-only;
+  GPU SIFT would require building pycolmap from source against CUDA.
+* **VGGT-SLAM** — VGGT-SLAM 2.0 (MIT-SPARK) is a feed-forward transformer SLAM
+  that produces a dense map from RGB images. It runs under its own Python 3.11
+  + CUDA interpreter at `/opt/vggt-venv` (env var `VGGT_PY`), invoked as a
+  subprocess like COLMAP; the repo is cloned to `/opt/VGGT-SLAM`
+  (`VGGT_SLAM_DIR`) and built by its upstream `setup.sh` during the image build.
+  Needs an NVIDIA GPU at runtime (the image uses a CUDA 12.8 base and
+  `compose.yaml` requests `runtime: nvidia`). The ~GB VGGT-1B weights download
+  lazily on the first reconstruction into the bind-mounted `weights/` folder
+  (`VGGT_WEIGHTS` / `TORCH_HOME`), so they persist across runs.
+
+  In the Reconstruction panel pick method **VGGT-SLAM**:
+  - **Monocular** (`MONOCULAR` sensor mode, `data/rgb/`): up-to-scale; adjust the
+    reconstruction scale slider in Blender afterward.
+  - **Stereo** (`STEREO` sensor mode, `data/left/` + `data/right/`): left and
+    right frames are reconstructed together, then a single metric scale is
+    recovered by RANSAC — comparing the reconstructed distance between each
+    left/right camera pair to the known baseline (`baseline` in the stereo
+    calibration file, i.e. ‖translation of `T_c1_c2`‖, so a non-parallel rig is
+    fine). The recovered scale is written to `recon/vggt_scale_info.txt`.
+
 ## Optional backends
 
 The default image deliberately omits:
@@ -107,14 +134,13 @@ The default image deliberately omits:
 * **pycuda / KinectFusion** — needs the CUDA toolkit and ~5 GB extra. The
   `kernel.reconstruction` module imports pycuda lazily, so the add-on loads
   fine without it; only the "KinectFusion" backend in the UI will error.
-* **COLMAP** — extra ~1-2 GB. Add it by installing COLMAP into the image and
-  running `cmake .. && make` inside `kernel/colmap/build/`.
 * **ORB_SLAM2** — clone `huijieZH/ORB_SLAM2` next to ORB_SLAM3, point
   `ORB_SOURCE_DIR` at it, and build `kernel/orb_slam/build/` the same way.
 
 ## Files of interest
 
-* `docker/Dockerfile` — full image recipe (Ubuntu 22.04 + Pangolin + Blender).
+* `docker/Dockerfile` — full image recipe (CUDA 12.8 / Ubuntu 22.04 base +
+  Pangolin + Blender + COLMAP and VGGT-SLAM sidecar venvs).
 * `docker/requirements.docker.txt` — cp37-pinned Python deps installed into
   Blender's bundled Python.
 * `docker/compose.yaml` — bind-mounts `../`, forwards X11 + `runtime: nvidia`.
@@ -157,19 +183,28 @@ We collected a 3 camera RGB-D dataset [link](https://drive.google.com/file/d/1IR
 
 To prepare a new dataset, please follow the structure below. We also provide a **demo dataset** [here](https://www.dropbox.com/s/3z7ky2q1izdywm9/progresslabellerdemo.zip?dl=0)
 
+The folder layout under `<path/to/data>` depends on the ORB-SLAM3 sensor mode you pick in the panel
+(`Monocular` / `RGB-D` / `Stereo`). Files in each subfolder should share a common filename so they can be
+paired by name; sorting follows Python's `.sort()`.
+
 ```bash
 <dataset>
-|-- <path/to/data>              # pairwise rgb and depth images
-                                # should have the same name
-                                # the perfix sequential should follow the view sequential. 
-                                # We use .sort() function to sort filenames
-    |-- rgb           
-        |-- 000000.png        
+|-- <path/to/data>
+    # Monocular (RGB-only, default) and RGB-D modes:
+    |-- rgb
+        |-- 000000.png
         |-- 000001.png
         ...
-    |-- depth         # 
-        |-- 000000.png        
+    |-- depth                   # required only for RGB-D mode
+        |-- 000000.png
         |-- 000001.png
+        ...
+    # Stereo mode:
+    |-- left
+        |-- 000000.png
+        ...
+    |-- right
+        |-- 000000.png
         ...
 |-- <path/to/model>
     |-- object1        # model for pose labelling, should have the same package name and model file name. (right now only support .obj model)
@@ -186,6 +221,34 @@ To prepare a new dataset, please follow the structure below. We also provide a *
     ...
 |-- <path/to/output>           # Stored output labelled objects poses and segmentation per frame, generated from our pipline.
 ```
+### Stereo calibration file (Stereo mode only)
+
+In Stereo mode, point the panel field "Stereo Calibration File" at a YAML or JSON file describing the
+right camera and its pose relative to the left camera:
+
+```yaml
+fx2: 615.123     # right camera intrinsics
+fy2: 615.456
+cx2: 320.0
+cy2: 240.0
+k1: 0.0          # right camera distortion (optional, default 0)
+k2: 0.0
+p1: 0.0
+p2: 0.0
+baseline: 0.0745 # stereo baseline in meters
+T_c1_c2:         # 4x4 transform from left to right camera
+  - [1.0, 0.0, 0.0, 0.0745]
+  - [0.0, 1.0, 0.0, 0.0]
+  - [0.0, 0.0, 1.0, 0.0]
+  - [0.0, 0.0, 0.0, 1.0]
+```
+
+### Rebuilding ORB-SLAM3
+
+The bundled patch (`docker/orb_slam3_progresslabeller.patch`) enables monocular trajectory output.
+After pulling a fresh checkout you must rebuild the Docker image via `docker/build.sh` so the patched
+ORB-SLAM3 library and the `kernel/orb_slam3/build/orb3_extension*.so` module are regenerated.
+
 ### Object poses file
 
 Object pose file is a ``.yaml`` file stored all labelled pose in world coordinate under ``<path/to/recon>``. It will be created or stored every time you click "Save Object Poses":
@@ -263,12 +326,12 @@ You could design your own configuration in a ``.json`` file, it could also be cr
       "lens": 30.0, # just leave this as 30.0
     },
     "reconstruction": {
-       "scale": 1.0,  # scale for the reconstruction, for depth-based method, it would be 1; 
-                      # for rgb-based method, we use depth information to auto-align the scale
-                      # You could also slightly change it for a better label result
+       "scale": 1.0,  # scale for the reconstruction. For depth-based and stereo methods this is metric (~1.0);
+                      # for monocular ORB-SLAM3 you set it manually (the reconstruction has arbitrary scale).
        "cameradisplayscale": 0.01,
                       # display size for the camera, just use default
-       "recon_trans":[t11, t12, t13, t14; t21, t22, t23, t24; t31, t32, t33, t34; t41, t42, t43, t44;] ## 4X4 transformation matrix
+       "recon_trans":[t11, t12, t13, t14; t21, t22, t23, t24; t31, t32, t33, t34; t41, t42, t43, t44;], ## 4X4 transformation matrix
+       "sensor_mode": "MONOCULAR" # one of "MONOCULAR" | "RGBD" | "STEREO" (default "MONOCULAR")
     },
     "data": {
         "sample_rate": 0.1,

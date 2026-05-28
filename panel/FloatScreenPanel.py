@@ -21,23 +21,26 @@ def draw():
         config_id =  bpy.data.objects[name + ":Setting"]['config_id']
         config = scene.configuration[config_id]
         if obj['type'] == "camera":
+            has_depth = "depth" in obj
             if scene.floatscreenproperty.viewimage_mode == "RGB Origin":
                 show_frame = obj["rgb"]
                 if show_frame.bindcode == 0:
                     show_frame.gl_load()
             elif scene.floatscreenproperty.viewimage_mode == "Depth Origin":
+                if not has_depth:
+                    return
                 show_frame = obj["depth"]
                 if show_frame.bindcode == 0:
                     show_frame.gl_load()
-            
+
             for area in bpy.context.screen.areas:
-                if area.type == 'IMAGE_EDITOR': 
+                if area.type == 'IMAGE_EDITOR':
                     area.spaces.active.image = show_frame
 
             if show_frame:
-                if show_frame["UPDATEALPHA"] and scene.floatscreenproperty.UPDATE_DEPTHFILTER:
+                if has_depth and show_frame["UPDATEALPHA"] and scene.floatscreenproperty.UPDATE_DEPTHFILTER:
                     alpha = depthfilter(obj["depth"]["depth"], config.depth_scale, config.depth_ignore, scene.floatscreenproperty.IGNORE_ZERODEPTH)
-                    pixels = list(show_frame.pixels) 
+                    pixels = list(show_frame.pixels)
                     for i in range(0, int(len(pixels)/4)):
                         pixels[4 * i + 3] = float(alpha[i]) * 1
                     show_frame.pixels[:] = pixels                   
@@ -58,6 +61,19 @@ def draw():
                 show_frame["UPDATEALPHA"] = False
 
 def draw_for_area(area, camera_obj):
+    # The locked camera may have been deleted (e.g. by re-running
+    # reconstruction, which clears the previous camera collection).
+    # Detach this handler instead of crashing on the dead reference.
+    try:
+        camera_obj.name
+    except ReferenceError:
+        pair = registeration.register.area_image_pair.pop(area, None)
+        if pair is not None:
+            try:
+                bpy.types.SpaceView3D.draw_handler_remove(pair["handler"], 'WINDOW')
+            except Exception:
+                pass
+        return
     context = bpy.context
     scene = context.scene
     config_id, config = _get_configuration(camera_obj)
@@ -175,8 +191,13 @@ class FloatScreenProperty(bpy.types.PropertyGroup):
             )
     
     def ignorezerodepthUpdate(self, context):
-        context.object['depth']["UPDATEALPHA"] = True
-        context.object['rgb']["UPDATEALPHA"] = True
+        obj = context.object
+        if obj is None:
+            return
+        if "depth" in obj:
+            obj['depth']["UPDATEALPHA"] = True
+        if "rgb" in obj:
+            obj['rgb']["UPDATEALPHA"] = True
     IGNORE_ZERODEPTH: BoolProperty(
                 name="Ignore zero depth",
                 description="If true, depth with zero value would be filtered out",

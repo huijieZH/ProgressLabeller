@@ -125,6 +125,14 @@ RUN cd /opt/orb3_extension_src && mkdir build && cd build \
                 -DPYTHON_EXECUTABLE="$BLENDERPY" \
     && make -j"$(nproc)"
 
+# Override VGGT-SLAM's pinned torch==2.3.1 (default cu121 wheel, kernels only up
+# to sm_90) with a CUDA 12.8 (cu128) build so it runs on Blackwell GPUs (sm_120,
+# RTX 50-series / B-series), which otherwise fail with "no kernel image is
+# available for execution on the device". torch >= 2.7 adds sm_120. Kept as the
+# last layer so the expensive setup.sh layer above stays cached on rebuild.
+RUN /opt/vggt-venv/bin/pip install --no-cache-dir --upgrade --force-reinstall \
+        --index-url https://download.pytorch.org/whl/cu128 torch torchvision torchaudio
+
 USER dev
 WORKDIR /workspace/ProgressLabeller
 CMD ["bash"]

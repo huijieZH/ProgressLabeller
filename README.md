@@ -127,6 +127,20 @@ or run from the desktop terminal directly.
     calibration file, i.e. ‖translation of `T_c1_c2`‖, so a non-parallel rig is
     fine). The recovered scale is written to `recon/vggt_scale_info.txt`.
 
+  VGGT-SLAM is dense (per-pixel), so the raw cloud can be tens of millions of
+  points. The panel's **Display Voxel Size** voxel-downsamples `fused.ply`
+  before it's written so the viewport stays responsive — it's in meters in
+  stereo mode (e.g. `0.005` = 5 mm) and in reconstruction units in monocular;
+  set it to `0` to keep the full per-pixel cloud (heavy in Blender).
+
+  Enable **Delta-Pose Keyframe Filter** to load only the most confident frames:
+  each frame is scored by how far its camera moved between the initial estimate
+  and the pose-graph-optimized pose (small move = well-constrained). Frames
+  passing the translation/rotation thresholds are kept, optionally capped to a
+  max count (the lowest-delta ones). Per-frame deltas are logged to
+  `recon/keyframe_delta.txt`. This filters only the loaded cameras
+  (`campose.txt`); the dense `fused.ply` stays full.
+
 ## Optional backends
 
 The default image deliberately omits:

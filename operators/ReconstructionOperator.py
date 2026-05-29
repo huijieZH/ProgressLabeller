@@ -276,9 +276,17 @@ class Reconstruction(Operator):
                 "--max_loops", str(scene.vggtslamparas.max_loops),
                 "--conf_threshold", str(scene.vggtslamparas.conf_threshold),
                 "--min_disparity", str(scene.vggtslamparas.min_disparity),
+                "--vis_voxel_size", str(scene.vggtslamparas.vis_voxel_size),
             ]
             if scene.vggtslamparas.use_keyframe_downsample:
                 cmd += ["--use_keyframe_downsample"]
+            if scene.vggtslamparas.keyframe_filter:
+                cmd += [
+                    "--kf_filter",
+                    "--kf_max_delta_trans", str(scene.vggtslamparas.kf_max_delta_trans),
+                    "--kf_max_delta_rot", str(scene.vggtslamparas.kf_max_delta_rot),
+                    "--kf_max_frames", str(scene.vggtslamparas.kf_max_frames),
+                ]
             if is_stereo:
                 cmd += ["--stereo", "--baseline", "{0}".format(stereo_calib["baseline"])]
 
@@ -576,6 +584,17 @@ class Reconstruction(Operator):
             if scene.vggtslamparas.use_keyframe_downsample:
                 row = box.row()
                 row.prop(scene.vggtslamparas, "min_disparity")
+            row = box.row()
+            row.prop(scene.vggtslamparas, "vis_voxel_size")
+            row = box.row()
+            row.prop(scene.vggtslamparas, "keyframe_filter")
+            if scene.vggtslamparas.keyframe_filter:
+                row = box.row()
+                row.prop(scene.vggtslamparas, "kf_max_delta_trans")
+                row = box.row()
+                row.prop(scene.vggtslamparas, "kf_max_delta_rot")
+                row = box.row()
+                row.prop(scene.vggtslamparas, "kf_max_frames")
 
 
 class DepthFusion(Operator):
@@ -821,6 +840,53 @@ class VGGTSLAMConfig(bpy.types.PropertyGroup):
         description="Drop low-disparity frames via optical flow. Off (default) "
                     "reconstructs every uploaded frame so each gets a pose.",
         default=False,
+    )
+    vis_voxel_size: bpy.props.FloatProperty(
+        name="Display Voxel Size (m)",
+        description="Voxel size for downsampling the displayed dense cloud. "
+                    "Metric (meters) in stereo mode; reconstruction units in "
+                    "monocular. 0 = full per-pixel density (may be heavy in Blender).",
+        default=0.005,
+        min=0.0,
+        max=1.0,
+        step=1,
+        precision=4,
+    )
+    keyframe_filter: bpy.props.BoolProperty(
+        name="Delta-Pose Keyframe Filter",
+        description="Load only confident frames, ranked by how far each camera "
+                    "moved between its initial and pose-graph-optimized pose. "
+                    "Filters the loaded cameras only; the dense cloud stays full.",
+        default=False,
+    )
+    kf_max_delta_trans: bpy.props.FloatProperty(
+        name="Max Pose Shift (m)",
+        description="Drop frames whose camera center moved more than this between "
+                    "the initial and optimized pose. Meters in stereo; "
+                    "reconstruction units in monocular.",
+        default=0.02,
+        min=0.0,
+        max=10.0,
+        step=1,
+        precision=4,
+    )
+    kf_max_delta_rot: bpy.props.FloatProperty(
+        name="Max Pose Rotation (deg)",
+        description="Drop frames whose camera rotated more than this many degrees "
+                    "during optimization.",
+        default=2.0,
+        min=0.0,
+        max=180.0,
+        step=10,
+        precision=2,
+    )
+    kf_max_frames: bpy.props.IntProperty(
+        name="Max Keyframes (0 = all)",
+        description="Cap on kept frames; if more pass the thresholds, keep the "
+                    "ones that moved least. 0 = no cap.",
+        default=0,
+        min=0,
+        max=100000,
     )
 
 

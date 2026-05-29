@@ -111,7 +111,86 @@ def _collect_pointcloud(solver):
     return points, colors
 
 
-def _write_ply(points, colors, ply_path):
+def _compute_delta_poses(solver, initial_homs):
+    """Per-frame camera move from the initial estimate to the optimized pose.
+
+    Returns {img_basename: (dt, dtheta_deg)} where dt is the camera-center
+    translation delta (in reconstruction units) and dtheta the rotation delta in
+    degrees. Frames the global pose-graph optimization barely moved are
+    well-constrained / confident. node_id = submap.get_id() + frame_index; the
+    homography becomes a camera pose via proj_mats[i] @ inv(H), decomposed the
+    same way as _collect_poses.
+    """
+    from vggt_slam.slam_utils import decompose_camera
+
+    delta = {}
+    for submap in solver.map.ordered_submaps_by_key():
+        if submap.get_lc_status():
+            continue
+        for i in range(len(submap.poses)):
+            node_id = submap.get_id() + i
+            h_init = initial_homs.get(node_id)
+            if h_init is None:
+                continue
+            proj = submap.proj_mats[i]
+            h_final = solver.graph.get_homography(node_id)
+            _, r_init, t_init, _ = decompose_camera(proj @ np.linalg.inv(h_init))
+            _, r_final, t_final, _ = decompose_camera(proj @ np.linalg.inv(h_final))
+            dt = float(np.linalg.norm(np.asarray(t_init) - np.asarray(t_final)))
+            r_rel = np.asarray(r_init).T @ np.asarray(r_final)
+            cos_angle = (np.trace(r_rel) - 1.0) / 2.0
+            dtheta = float(np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0))))
+            delta[os.path.basename(submap.img_names[i])] = (dt, dtheta)
+    return delta
+
+
+def _select_keyframes(delta_by_name, max_trans, max_rot, max_frames):
+    """Names to keep: pass the abs thresholds, then cap to the lowest-delta ones.
+
+    delta_by_name: {name: (dt, dtheta_deg)}. Keep names with dt <= max_trans and
+    dtheta <= max_rot; if more than max_frames (>0) pass, rank by a
+    median-normalized dt+dtheta score and keep the smallest max_frames. If the
+    thresholds pass zero frames, keep all (never produce an empty campose.txt).
+    """
+    passing = {n: v for n, v in delta_by_name.items()
+               if v[0] <= max_trans and v[1] <= max_rot}
+    if not passing:
+        print("[vggt_slam_runner] WARNING: delta-pose thresholds "
+              "(trans<={0}, rot<={1} deg) kept 0 frames; keeping all.".format(
+                  max_trans, max_rot))
+        return set(delta_by_name)
+
+    if max_frames and len(passing) > max_frames:
+        names = list(passing)
+        dts = np.array([passing[n][0] for n in names], dtype=np.float64)
+        rots = np.array([passing[n][1] for n in names], dtype=np.float64)
+        dt_med = np.median(dts) or 1.0
+        rot_med = np.median(rots) or 1.0
+        score = dts / dt_med + rots / rot_med
+        keep_idx = np.argsort(score)[:max_frames]
+        return {names[i] for i in keep_idx}
+
+    return set(passing)
+
+
+def _write_keyframe_delta(output_path, delta_by_name, kept):
+    """Per-frame delta log for transparency (name dt dtheta kept)."""
+    with open(os.path.join(output_path, "keyframe_delta.txt"), "w") as f:
+        f.write("# NAME DT_TRANS DTHETA_DEG KEPT\n")
+        for name in sorted(delta_by_name):
+            dt, dtheta = delta_by_name[name]
+            f.write("{0} {1:.8f} {2:.6f} {3}\n".format(
+                name, dt, dtheta, int(name in kept)))
+
+
+def _write_ply(points, colors, ply_path, voxel_size=0.0):
+    """Write the fused colored cloud, optionally voxel-downsampled for display.
+
+    voxel_size is in the same units as `points` (metric meters once the stereo
+    scale has been applied; arbitrary reconstruction units in monocular). 0
+    keeps the full per-pixel cloud. open3d's voxel_down_sample averages the
+    per-voxel colors, so colors survive. Returns the written point count.
+    """
     import open3d as o3d
 
     colors = np.asarray(colors, dtype=np.float64)
@@ -120,7 +199,10 @@ def _write_ply(points, colors, ply_path):
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(np.asarray(points, dtype=np.float64))
     pcd.colors = o3d.utility.Vector3dVector(colors)
+    if voxel_size and voxel_size > 0.0:
+        pcd = pcd.voxel_down_sample(voxel_size)
     o3d.io.write_point_cloud(ply_path, pcd)
+    return len(pcd.points)
 
 
 def _write_campose(campose_path, ordered_names, poses):
@@ -217,11 +299,33 @@ def _recover_stereo_scale(poses, stage_map, baseline, min_pairs, inlier_tol):
     return scale, inlier_count, len(scales), left_poses
 
 
+_SALAD_CKPT_URL = "https://github.com/serizba/salad/releases/download/v1.0.0/dino_salad.ckpt"
+
+
+def _ensure_salad_checkpoint():
+    """VGGT-SLAM's loop-closure ImageRetrieval loads SALAD from
+    torch.hub.get_dir()/checkpoints/dino_salad.ckpt with a bare torch.load and
+    no download; pull it here (once) so it persists under TORCH_HOME, matching
+    how VGGT-1B / DINOv2 are fetched lazily."""
+    import torch
+
+    ckpt_dir = os.path.join(torch.hub.get_dir(), "checkpoints")
+    os.makedirs(ckpt_dir, exist_ok=True)
+    dest = os.path.join(ckpt_dir, "dino_salad.ckpt")
+    if not os.path.isfile(dest):
+        print("[vggt_slam_runner] downloading SALAD checkpoint ->", dest)
+        torch.hub.download_url_to_file(_SALAD_CKPT_URL, dest)
+
+
 def _build_solver_and_model(conf_threshold):
     """Construct the VGGT-SLAM Solver (viewer stubbed out) and VGGT model."""
     import torch
     import vggt_slam.solver as solver_module
     from vggt.models.vggt import VGGT
+
+    # Solver.__init__ builds ImageRetrieval, which torch.loads the SALAD
+    # checkpoint from disk without downloading it -- make sure it is present.
+    _ensure_salad_checkpoint()
 
     # Solver.__init__ starts a viser web server; we run headless and never
     # visualize, so replace it with a no-op before constructing the solver.
@@ -247,7 +351,9 @@ def run(image_dir, output_path, image_list_path=None,
         stereo=False, left_subdir="left", right_subdir="right", baseline=None,
         min_pairs=10, inlier_tol=0.05,
         submap_size=16, overlapping_window_size=1, max_loops=1,
-        conf_threshold=25.0, min_disparity=50.0, use_keyframe_downsample=False):
+        conf_threshold=25.0, min_disparity=50.0, use_keyframe_downsample=False,
+        vis_voxel_size=0.0, kf_filter=False, kf_max_delta_trans=0.02,
+        kf_max_delta_rot=2.0, kf_max_frames=0):
     os.makedirs(output_path, exist_ok=True)
     campose_path = os.path.join(output_path, "campose.txt")
     ply_path = os.path.join(output_path, "fused.ply")
@@ -279,6 +385,20 @@ def run(image_dir, output_path, image_list_path=None,
         image_paths = [os.path.join(image_dir, b) for b in basenames]
 
     solver, model = _build_solver_and_model(conf_threshold)
+
+    # Snapshot each node's initial homography at insertion: optimize() overwrites
+    # graph.values, so the pre-optimization pose is otherwise unrecoverable.
+    initial_homs = {}
+    if kf_filter:
+        _orig_add = solver.graph.add_homography
+
+        def _recording_add(key, global_h, _o=_orig_add, _d=initial_homs):
+            if key not in _d:
+                _d[key] = np.array(global_h, dtype=float)
+            return _o(key, global_h)
+
+        solver.graph.add_homography = _recording_add
+
     _run_slam(solver, model, image_paths, max_loops,
               use_keyframe_downsample, min_disparity,
               submap_size, overlapping_window_size)
@@ -288,6 +408,7 @@ def run(image_dir, output_path, image_list_path=None,
 
     poses = _collect_poses(solver)
     points, colors = _collect_pointcloud(solver)
+    delta = _compute_delta_poses(solver, initial_homs) if kf_filter else None
 
     if stereo:
         scale, inliers, pairs, left_poses = _recover_stereo_scale(
@@ -300,6 +421,21 @@ def run(image_dir, output_path, image_list_path=None,
                        for base, (rotation, center) in left_poses.items()}
         points = points * scale
         ordered = [b for b in basenames if b in scaled_left]
+        if kf_filter:
+            # delta is keyed by staged left frame name; map to original base and
+            # scale the translation delta to metric meters.
+            base_to_left = {base: staged for staged, (base, cam) in stage_map.items()
+                            if cam == 0}
+            delta_by_base = {}
+            for base in ordered:
+                ls = base_to_left.get(base)
+                if ls in delta:
+                    dt, dtheta = delta[ls]
+                    delta_by_base[base] = (dt * scale, dtheta)
+            kept = _select_keyframes(delta_by_base, kf_max_delta_trans,
+                                     kf_max_delta_rot, kf_max_frames)
+            _write_keyframe_delta(output_path, delta_by_base, kept)
+            ordered = [b for b in ordered if b in kept]
         _write_campose(campose_path, ordered, scaled_left)
         with open(os.path.join(output_path, "vggt_scale_info.txt"), "w") as f:
             f.write("scale: {0:.9f}\n".format(scale))
@@ -310,11 +446,20 @@ def run(image_dir, output_path, image_list_path=None,
         shutil.rmtree(staging_dir, ignore_errors=True)
     else:
         ordered = [b for b in basenames if b in poses]
+        if kf_filter:
+            # Monocular is up-to-scale, so the translation threshold is in
+            # reconstruction units (documented in the panel).
+            delta_by_base = {b: delta[b] for b in ordered if b in delta}
+            kept = _select_keyframes(delta_by_base, kf_max_delta_trans,
+                                     kf_max_delta_rot, kf_max_frames)
+            _write_keyframe_delta(output_path, delta_by_base, kept)
+            ordered = [b for b in ordered if b in kept]
         _write_campose(campose_path, ordered, poses)
 
-    _write_ply(points, colors, ply_path)
-    print("[vggt_slam_runner] wrote {0} poses + {1} points".format(
-        len(ordered), len(points)))
+    written = _write_ply(points, colors, ply_path, voxel_size=vis_voxel_size)
+    print("[vggt_slam_runner] wrote {0} poses + {1} points "
+          "({2} dense, voxel_size={3})".format(
+              len(ordered), written, len(points), vis_voxel_size))
 
 
 def _parse_args(argv):
@@ -342,6 +487,20 @@ def _parse_args(argv):
     p.add_argument("--min_disparity", type=float, default=50.0)
     p.add_argument("--use_keyframe_downsample", action="store_true",
                    help="Drop low-disparity frames via optical flow (default: keep all)")
+    p.add_argument("--vis_voxel_size", type=float, default=0.0,
+                   help="Voxel-downsample the written fused.ply for display "
+                        "(metric meters in stereo; 0 = full per-pixel density)")
+    # delta-pose keyframe filtering (only the cameras / campose.txt are filtered)
+    p.add_argument("--kf_filter", action="store_true",
+                   help="Keep only confident frames by delta-pose (how far a "
+                        "camera moved between its initial and optimized pose)")
+    p.add_argument("--kf_max_delta_trans", type=float, default=0.02,
+                   help="Max camera-center move to keep a frame (meters in stereo; "
+                        "reconstruction units in monocular)")
+    p.add_argument("--kf_max_delta_rot", type=float, default=2.0,
+                   help="Max camera rotation move (degrees) to keep a frame")
+    p.add_argument("--kf_max_frames", type=int, default=0,
+                   help="Cap on kept frames (keep the lowest-delta ones); 0 = no cap")
     return p.parse_args(argv)
 
 
@@ -364,6 +523,11 @@ def main(argv):
         conf_threshold=args.conf_threshold,
         min_disparity=args.min_disparity,
         use_keyframe_downsample=args.use_keyframe_downsample,
+        vis_voxel_size=args.vis_voxel_size,
+        kf_filter=args.kf_filter,
+        kf_max_delta_trans=args.kf_max_delta_trans,
+        kf_max_delta_rot=args.kf_max_delta_rot,
+        kf_max_frames=args.kf_max_frames,
     )
     return 0
 

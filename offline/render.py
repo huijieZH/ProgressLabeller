@@ -128,12 +128,8 @@ class offlineRender:
         return segimg
 
     def _createpkg(self, dir):
-        if os.path.exists(dir):
-            return True
-        else:
-            if self._createpkg(os.path.dirname(dir)):
-                os.mkdir(dir)
-                return self._createpkg(os.path.dirname(dir))
+        os.makedirs(dir, exist_ok=True)
+        return True
 
     def _createallpkgs(self):
         for node in self.objectmap:
@@ -151,8 +147,9 @@ class offlineRender:
         for cam in tqdm(self.camposes):
             camT = self.camposes[cam].dot(Axis_align)
             segment = self._render(camT, self.scene)
-            perfix = cam.split(".")[0]
-            inputrgb = np.array(Image.open(os.path.join(self.datasrc, "rgb", cam)))
+            cam_filename = os.path.basename(cam)
+            perfix = os.path.splitext(cam_filename)[0]
+            inputrgb = np.array(Image.open(self._rgb_path(cam)))
 
             for node in self.objectmap:
                 posepath = os.path.join(self.outputpath, self.objectmap[node]["name"], "pose")
@@ -160,7 +157,16 @@ class offlineRender:
                 modelT = self.objectmap[node]["trans"]
                 model_camT = np.linalg.inv(modelT).dot(self.camposes[cam])
                 self._createpose(posepath, perfix, model_camT)
-                self._createrbg(inputrgb, segment, os.path.join(rgbpath, cam), self.objectmap[node]["index"] + 1)
+                self._createrbg(inputrgb, segment, os.path.join(rgbpath, cam_filename), self.objectmap[node]["index"] + 1)
+
+    def _rgb_path(self, cam):
+        # Stereo datasets put frames in datasrc/left/<frame>.png and the camera
+        # name already carries the subfolder (e.g. "left/001759.png"); monocular
+        # datasets put them in datasrc/rgb/<frame>.png.
+        direct = os.path.join(self.datasrc, cam)
+        if os.path.exists(direct):
+            return direct
+        return os.path.join(self.datasrc, "rgb", cam)
 
     def _createpose(self, path, perfix, T):
         posefileName = os.path.join(path, perfix + ".txt")

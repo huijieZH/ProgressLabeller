@@ -100,6 +100,33 @@ bash run.bash
 If `$DISPLAY` is empty, you're SSH'd in without `-X`; reconnect with `ssh -X`
 or run from the desktop terminal directly.
 
+### Headless offline render
+
+`run.bash` also has a `render` mode that runs the offline pipeline
+(`offline/main.py`) inside the container under Blender's bundled Python, headless
+via EGL — no X server needed. It renders a labeled dataset (camera poses +
+`label_pose.yaml`) into an output dataset.
+
+```bash
+cd /path/to/ProgressLabeller/docker
+bash run.bash render [CONFIG] [OUTPUT] [FORMAT]
+```
+
+All three arguments are optional and default to the bundled `left_hand_dataset`
+demo. Paths are **container paths** under `/workspace/ProgressLabeller` (which is
+the bind-mounted repo root):
+
+| Arg      | Default                                                                  |
+|----------|--------------------------------------------------------------------------|
+| `CONFIG` | `/workspace/ProgressLabeller/data/left_hand_dataset/configuration.json`  |
+| `OUTPUT` | `/workspace/ProgressLabeller/data/left_hand_dataset/output`              |
+| `FORMAT` | `ProgressLabeller` (one of `ProgressLabeller` / `BOP` / `YCBV` / `Yourtype`) |
+
+Output lands under the bind-mounted repo, so it's visible on the host. See
+[Offline data generation](#offline-data-generation) for the output formats. Note
+`BOP`/`YCBV` need a depth channel; stereo datasets without depth (e.g.
+`left_hand_dataset`) only support `ProgressLabeller`.
+
 ## Included backends
 
 * **ORB_SLAM3** — built from source during image build (see "First-run setup").
@@ -424,12 +451,25 @@ You could also specify your own format In function renderYourtype() in the file 
 
 ## Offline data generation
 
-It is also possible to generate the dataset offline for fully annotation workspace. 
+It is also possible to generate the dataset offline (without the Blender GUI) for
+a fully annotated workspace. The recommended way is the `render` mode of
+`run.bash`, which runs the command below inside the container for you (see
+[Headless offline render](#headless-offline-render)):
+
 ```bash
-cd $PROGRESSLABELLER_BLENDER_PATH
-python offline/main.py [path/to/configuration.json] [path/to/outputdir] [data_format] [path/to/objectlabelfile] 
+bash docker/run.bash render [path/to/configuration.json] [path/to/outputdir] [data_format]
 # <data_format> in ["ProgressLabeller", "BOP", "YCBV", "Yourtype"]
 ```
+
+Under the hood this invokes:
+
+```bash
+$PROGRESSLABELLER_BLENDER_PATH/2.92/python/bin/python3.7m \
+    offline/main.py [path/to/configuration.json] [path/to/outputdir] [data_format]
+```
+
+The object label file is read automatically from `<modelsrc>/object_label.json`
+(the `modelsrc` set in your `configuration.json`).
 
 
 # References

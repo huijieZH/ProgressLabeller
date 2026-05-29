@@ -17,11 +17,16 @@ class offlineRecon:
         self.keyposes = {} ## mapping all key frames to their poses
         self._parsecamfile()
         self._applytrans2cam()
-        self._parsewholeimg()
-        self.rgb_path = os.path.join(self.datasrc, "rgb")
-        self.depth_path = os.path.join(self.datasrc, "depth")
-        self.depth_scale = self.param.data['depth_scale']
-        self._interpolation(type = interpolation_type)
+        if interpolation_type == "all":
+            # No KinectFusion interpolation: just re-save the transformed key poses.
+            # Skips the datasrc/rgb listing, which stereo datasets (left/right) lack.
+            self.wholecam = {name: self.keyposes[name] for name in sorted(self.keyposes)}
+        else:
+            self._parsewholeimg()
+            self.rgb_path = os.path.join(self.datasrc, "rgb")
+            self.depth_path = os.path.join(self.datasrc, "depth")
+            self.depth_scale = self.param.data['depth_scale']
+            self._interpolation(type = interpolation_type)
         self._savecampose("campose_all_{0}.txt".format(interpolation_type))
     
     def _parsewholeimg(self):
